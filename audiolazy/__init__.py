@@ -28,6 +28,7 @@ from .lazy_stream import *
 from .lazy_itertools import *
 from .lazy_poly import *
 from .lazy_filters import *
+from .lazy_io import *
 
 # Metadata (see setup.py for more information about these)
 __version__ = "0.02dev"
