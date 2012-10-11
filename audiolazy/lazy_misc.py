@@ -330,3 +330,13 @@ def pair_strings_sum_formatter(a, b):
   if b[:1] == "-":
     return "{0} - {1}".format(a, b[1:])
   return "{0} + {1}".format(a, b)
+
+
+def sHz(rate):
+  """
+  Creates a tuple (s, Hz), where "s" is the second unit and "Hz" is the hertz
+  unit. Useful for casting to/from the default package units (number of
+  samples and rad per second). You can use 440*Hz to tell a frequency value,
+  or assign kHz = 1e3 * Hz to use other unit, as you wish.
+  """
+  return rate, 2 * pi / rate
