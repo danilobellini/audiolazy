@@ -203,27 +203,3 @@ class TestStream(object):
     expected = [op(x, y) for x, y in zip(input1, input2)]
     assert isinstance(data, Stream)
     assert list(data) == expected
-
-
-class TestStreamMaker(object):
-  rate_list = [1., 44100, 22050, pi]
-  noargs_func_list = [lambda rate: Stream(rate),
-                      lambda rate: count() * rate,
-                      lambda rate: cycle([rate/2, Stream, TestStreamMaker]),
-                     ]
-
-  @p("rate", rate_list)
-  @p("func", noargs_func_list)
-  def test_noargs(self, rate, func):
-    sm = StreamMaker(func)
-    assert sm(rate=rate).take(40) == func(rate).take(40)
-
-  @p("rate", rate_list)
-  def test_operators_with_stream(self, rate):
-    func = lambda rate: count() * 440 // rate
-    sm = (+StreamMaker(func) + count()) * cycle([17, -1,])
-    sm2 = cycle([17, -1,]) * (count() - (-StreamMaker(func)))
-    expected = ((count() * 440 // rate) + count()) * cycle([17, -1])
-    exp_list = expected.take(40)
-    assert sm(rate=rate).take(40) == exp_list
-    assert sm2(rate=rate).take(40) == exp_list
