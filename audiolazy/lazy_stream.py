@@ -46,25 +46,25 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
 
   def binary_dunder(cls, op_func):
     def dunder(self, other):
-      if isinstance(other, cls):
-        return cls(it.imap(op_func, self.data, other.data))
+      if isinstance(other, Stream):
+        return Stream(it.imap(op_func, self.data, other.data))
       if isinstance(other, collections.Iterable):
-        return cls(it.imap(op_func, self.data, other))
-      return cls(it.imap(lambda a: op_func(a, other), self.data))
+        return Stream(it.imap(op_func, self.data, other))
+      return Stream(it.imap(lambda a: op_func(a, other), self.data))
     return dunder
 
   def reverse_binary_dunder(cls, op_func):
     def dunder(self, other):
-      if isinstance(other, cls):
-        return cls(it.imap(op_func, other.data, self.data))
+      if isinstance(other, Stream):
+        return Stream(it.imap(op_func, other.data, self.data))
       if isinstance(other, collections.Iterable):
-        return cls(it.imap(op_func, other, self.data))
-      return cls(it.imap(lambda a: op_func(other, a), self.data))
+        return Stream(it.imap(op_func, other, self.data))
+      return Stream(it.imap(lambda a: op_func(other, a), self.data))
     return dunder
 
   def unary_dunder(cls, op_func):
     def dunder(self):
-      return cls(it.imap(op_func, self.data))
+      return Stream(it.imap(op_func, self.data))
     return dunder
 
 
