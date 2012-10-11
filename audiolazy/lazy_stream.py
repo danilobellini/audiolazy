@@ -50,13 +50,13 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
         return Stream(it.imap(op_func, self.data, other.data))
       if isinstance(other, collections.Iterable):
         return Stream(it.imap(op_func, self.data, other))
+      if isinstance(other, StreamMaker):
+        return NotImplemented
       return Stream(it.imap(lambda a: op_func(a, other), self.data))
     return dunder
 
   def reverse_binary_dunder(cls, op_func):
     def dunder(self, other):
-      if isinstance(other, Stream):
-        return Stream(it.imap(op_func, other.data, self.data))
       if isinstance(other, collections.Iterable):
         return Stream(it.imap(op_func, other, self.data))
       return Stream(it.imap(lambda a: op_func(other, a), self.data))
@@ -206,7 +206,7 @@ class Stream(collections.Iterable):
     (found by the name string) on each element of the stream.
     """
     return lambda *args, **kwargs: \
-             Stream((getattr(a, name)(*args, **kwargs) for a in self))
+             Stream((getattr(a, name)(*args, **kwargs) for a in self.data))
 
   def append(self, *other):
     """
@@ -260,3 +260,52 @@ class ControlStream(Stream):
         yield self.value
 
     self.data = data_generator()
+
+
+class StreamMakerMeta(AbstractOperatorOverloaderMeta):
+  __operators__ = StreamMeta.__operators__
+
+  def binary_dunder(cls, op_func):
+    def dunder(self, other):
+      if isinstance(other, StreamMaker):
+        return StreamMaker(lambda rate: op_func(self(rate), other(rate)))
+      return StreamMaker(lambda rate: op_func(self(rate), other))
+    return dunder
+
+  def reverse_binary_dunder(cls, op_func):
+    def dunder(self, other):
+      return StreamMaker(lambda rate: op_func(other, self(rate)))
+    return dunder
+
+  def unary_dunder(cls, op_func):
+    def dunder(self):
+      return StreamMaker(lambda rate: op_func(self(rate)))
+    return dunder
+
+
+class StreamMaker(object):
+  """
+  All instances of this class are represents a function that can be converted
+  into a Stream by calling it. There should be only one parameter missing to
+  the function used in the constructor: the kwarg "rate".
+  """
+  __metaclass__ = StreamMakerMeta
+
+  def __init__(self, func, *args, **kwargs):
+    self.func = func
+    self.args = args
+    self.kwargs = kwargs.items()
+
+  def __call__(self, rate):
+    kws = dict(self.kwargs + [("rate", rate)])
+    return self.func(*self.args, **kws)
+
+  def __nonzero__(self):
+    raise TypeError("StreamMaker instances can't be used as booleans")
+
+  def take(self, *args, **kwargs):
+    raise AttributeError("Undefined rate (StreamMaker isn't a Stream)")
+
+  def __getattr__(self, name):
+    return lambda *args, **kwargs: \
+             StreamMaker(lambda rate: self(rate).name, args, kwargs)
