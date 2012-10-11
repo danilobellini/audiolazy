@@ -32,6 +32,7 @@ import itertools as it
 # Audiolazy internal imports
 from ..lazy_misc import chunks, array_chunks, elementwise, almost_eq
 
+
 class TestChunks(object):
 
   _data = [17., -3.42, 5.4, 8.9, 27., 45.2, 1e-5, -3.7e-4, 7.2, .8272, -4.]
