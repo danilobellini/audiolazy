@@ -245,3 +245,18 @@ def tostream(func):
     return Stream(func(*args, **kwargs))
   return new_func
 
+
+class ControlStream(Stream):
+  """
+  A Stream that yields a control value that can be changed at any time.
+  You just need to set the attribute "value" for doing so, and the next
+  value the Stream will yield is the given value.
+  """
+  def __init__(self, value):
+    self.value = value
+
+    def data_generator():
+      while True:
+        yield self.value
+
+    self.data = data_generator()
