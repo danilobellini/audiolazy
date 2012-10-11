@@ -30,6 +30,7 @@ from functools import wraps
 import types
 import itertools as it
 import sys
+from math import pi
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -339,4 +340,4 @@ def sHz(rate):
   samples and rad per second). You can use 440*Hz to tell a frequency value,
   or assign kHz = 1e3 * Hz to use other unit, as you wish.
   """
-  return rate, 2 * pi / rate
+  return float(rate), 2 * pi / rate
