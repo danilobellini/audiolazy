@@ -32,7 +32,7 @@ from .lazy_io import *
 from .lazy_synth import *
 
 # Metadata (see setup.py for more information about these)
-__version__ = "0.02dev"
+__version__ = "0.03dev"
 __author__ = "Danilo de Jesus da Silva Bellini"
 __author_email__  = "danilo [dot] bellini [at] gmail [dot] com"
 __url__ = "http://github.com/danilobellini/audiolazy"
