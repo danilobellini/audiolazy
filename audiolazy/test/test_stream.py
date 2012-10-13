@@ -28,12 +28,11 @@ p = pytest.mark.parametrize
 
 import itertools as it
 import operator
-from math import pi
 
 # Audiolazy internal imports
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
-from ..lazy_itertools import imap, ifilter, count, cycle
+from ..lazy_itertools import imap, ifilter
 
 
 class TestStream(object):
