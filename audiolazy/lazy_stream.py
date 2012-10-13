@@ -203,7 +203,7 @@ class Stream(collections.Iterable):
     Returns a Stream of attributes or methods, got in an elementwise fashion.
     """
     if name == "next":
-      return NotImplemented
+      raise NotImplementedError("Streams are iterable, not iterators")
     return Stream(getattr(a, name) for a in self.data)
 
   def __call__(self, *args, **kwargs):

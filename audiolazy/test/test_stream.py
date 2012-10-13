@@ -213,3 +213,7 @@ class TestStream(object):
     expected = [op(x, y) for x, y in zip(input1, input2)]
     assert isinstance(data, Stream)
     assert list(data) == expected
+
+  def test_next(self):
+    """ Streams should have no "next" method! """
+    assert not hasattr(Stream(2), "next")
