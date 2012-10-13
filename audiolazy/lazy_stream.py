@@ -44,7 +44,7 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
                    "and rand or ror xor rxor invert "
                    "lt le eq ne gt ge")
 
-  def binary_dunder(cls, op_func):
+  def __binary__(cls, op_func):
     def dunder(self, other):
       if isinstance(other, Stream):
         return Stream(it.imap(op_func, self.data, other.data))
@@ -53,14 +53,14 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       return Stream(it.imap(lambda a: op_func(a, other), self.data))
     return dunder
 
-  def reverse_binary_dunder(cls, op_func):
+  def __rbinary__(cls, op_func):
     def dunder(self, other):
       if isinstance(other, collections.Iterable):
         return Stream(it.imap(op_func, other, self.data))
       return Stream(it.imap(lambda a: op_func(other, a), self.data))
     return dunder
 
-  def unary_dunder(cls, op_func):
+  def __unary__(cls, op_func):
     def dunder(self):
       return Stream(it.imap(op_func, self.data))
     return dunder

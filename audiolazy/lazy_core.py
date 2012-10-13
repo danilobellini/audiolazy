@@ -40,22 +40,38 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
   for unary in "pos neg invert".split():
     __operator_inputs__[unary] = 1 # coz' we can't inspect the operator module
 
-  def __new__(mcs, name, bases, namespace):
-    cls = ABCMeta.__new__(mcs, name, bases, namespace)
+  def __new__(mcls, name, bases, namespace):
+    cls = super(AbstractOperatorOverloaderMeta,
+                mcls).__new__(mcls, name, bases, namespace)
+
+    # Enforce __operators__ as an abstract attribute
+    if getattr(mcls.__operators__, "__isabstractmethod__", False):
+      msg = "Can't instantiate from '{0}' since '__operators__' is abstract"
+      raise TypeError(msg.format(mcls.__name__))
+
+    # Inserts the operators into the class
     for op_no_under in cls.__operators__.split():
+      op_under = "__" + op_no_under + "__"
+      if op_under not in namespace: # Added manually shouldn't use template
 
-      # Find the operator
-      op_name = op_no_under.lstrip("r")
-      if op_name == "shift":
-        op_name = "rshift"
-      op_func = getattr(operator, "__" + op_name + "__")
+        # Find the operator
+        op_name = op_no_under.lstrip("r")
+        if op_name == "shift":
+          op_name = "rshift"
+        op_func = getattr(operator, "__" + op_name + "__")
 
-      # Creates the dunder
-      dunder = cls.new_dunder(op_func=op_func,
-                              is_reversed=op_no_under.startswith("r") and
-                                          op_no_under != "rshift",
-                              ninputs=mcs.__operator_inputs__[op_no_under])
-      if dunder is not NotImplemented:
+        # Creates the dunder
+        dunder = cls.new_dunder(op_func=op_func,
+                                is_reversed=op_no_under.startswith("r") and
+                                            op_no_under != "rshift",
+                                ninputs=mcls.__operator_inputs__[op_no_under])
+
+        # Abstract enforcement
+        if not callable(dunder):
+          msg = "Class '{0}' has no operator template for '{1}'"
+          raise TypeError(msg.format(cls.__name__, op_under))
+
+        # Inserts the dunder into the class
         dunder.__name__ = "__" + op_no_under + "__"
         setattr(cls, dunder.__name__, dunder)
     return cls
@@ -66,6 +82,7 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     Should be overridden by a string with all operator names to be overloaded.
     Reversed operators should be given explicitly.
     """
+    return ""
 
   def new_dunder(cls, op_func, is_reversed, ninputs):
     """
@@ -75,9 +92,9 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     dunder as a function. The ninputs tells us if is the dunder is
     unary(self) or binary(self, other).
     """
-    return {(False, 1): cls.unary_dunder,
-            (False, 2): cls.binary_dunder,
-            (True, 2): cls.reverse_binary_dunder,
+    return {(False, 1): cls.__unary__,
+            (False, 2): cls.__binary__,
+            (True, 2): cls.__rbinary__,
            }[is_reversed, ninputs](op_func)
 
   # The 3 methods below should be overloaded, but they shouldn't be
@@ -89,4 +106,4 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     operator function.
     """
     return NotImplemented
-  unary_dunder = binary_dunder = reverse_binary_dunder = _not_implemented
+  __unary__ = __binary__ = __rbinary__ = _not_implemented

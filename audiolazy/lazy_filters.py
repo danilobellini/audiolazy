@@ -22,7 +22,7 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import operator
-from cmath import exp, pi
+from cmath import exp
 from collections import deque
 import itertools as it
 
@@ -120,19 +120,19 @@ class LTI(object):
 
 
 class LTIFreqMeta(AbstractOperatorOverloaderMeta):
-  __operators__ = ("pos neg and radd sub rsub mul rmul div rdiv "
+  __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
                    "truediv rtruediv pow "
                    "eq ne " # almost_eq comparison of Poly terms
                   )
 
-  def reverse_binary_dunder(cls, op_func):
+  def __rbinary__(cls, op_func):
     def dunder(self, other):
       if isinstance(other, LTI):
         raise ValueError("Filter equations have different domains")
       return op_func(cls([other]), self) # The "other" is probably a number
     return dunder
 
-  def unary_dunder(cls, op_func):
+  def __unary__(cls, op_func):
     def dunder(self):
       return cls(op_func(self.numpoly), self.denpoly)
     return dunder

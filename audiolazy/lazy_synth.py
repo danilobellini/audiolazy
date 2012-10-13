@@ -164,7 +164,7 @@ class TableLookupMeta(AbstractOperatorOverloaderMeta):
                    "pos neg lshift rshift rlshift rrshift "
                    "and rand or ror xor rxor invert ")
 
-  def binary_dunder(cls, op_func):
+  def __binary__(cls, op_func):
     def dunder(self, other):
       if isinstance(other, TableLookup):
         if self.cycles != other.cycles:
@@ -180,7 +180,7 @@ class TableLookupMeta(AbstractOperatorOverloaderMeta):
       raise NotImplementedError("Unknown action do be done")
     return dunder
 
-  def reverse_binary_dunder(cls, op_func):
+  def __rbinary__(cls, op_func):
     def dunder(self, other):
       if isinstance(other, (int, float, complex)):
         new_table = [op_func(other, data) for data in self.table]
@@ -188,7 +188,7 @@ class TableLookupMeta(AbstractOperatorOverloaderMeta):
       raise NotImplementedError("Unknown action do be done")
     return dunder
 
-  def unary_dunder(cls, op_func):
+  def __unary__(cls, op_func):
     def dunder(self):
       new_table = [op_func(data) for data in self.table]
       return TableLookup(new_table, self.cycles)
