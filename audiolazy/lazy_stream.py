@@ -200,11 +200,18 @@ class Stream(collections.Iterable):
 
   def __getattr__(self, name):
     """
-    Creates a function that returns stream by applying the given method
-    (found by the name string) on each element of the stream.
+    Returns a Stream of attributes or methods, got in an elementwise fashion.
     """
-    return lambda *args, **kwargs: \
-             Stream((getattr(a, name)(*args, **kwargs) for a in self.data))
+    if name == "next":
+      return NotImplemented
+    return Stream(getattr(a, name) for a in self.data)
+
+  def __call__(self, *args, **kwargs):
+    """
+    Returns the results from calling elementwise (where each element is
+    assumed to be callable), with the same arguments.
+    """
+    return Stream(a(*args, **kwargs) for a in self.data)
 
   def append(self, *other):
     """

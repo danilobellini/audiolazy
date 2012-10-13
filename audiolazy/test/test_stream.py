@@ -165,7 +165,7 @@ class TestStream(object):
     with pytest.raises(TypeError):
       c.take()
 
-  def test_getattr_and_equalness_operator(self):
+  def test_getattr_with_methods_and_equalness_operator(self):
     data = "trying again with strings...a bizarre iterable"
     a = Stream(data)
     b = a.copy()
@@ -176,6 +176,16 @@ class TestStream(object):
         [False, True, True, True]
     assert list(a == c) == d
     assert "".join(list(b.upper())) == data.upper()
+
+  def test_getattr_with_non_callable_attributes(self):
+           #[(-2+1j), (40+24j), (3+1j), (-3+5j), (8+16j), (8-2j)]
+    data = Stream(1 + 2j, 5 + 3j) * Stream(1j, 8, 1 - 1j)
+    real = Stream(-2, 40, 3, -3, 8, 8)
+    imag = Stream(1, 24, 1, 5, 16, -2)
+    assert data.copy().real.take(6) == real.copy().take(6)
+    assert data.copy().imag.take(6) == imag.copy().take(6)
+    sum_data = data.copy().real + data.copy().imag
+    assert sum_data.take(6) == (real + imag).take(6)
 
   @p("data", [xrange(5), xrange(9,0,-2), [7,22,-5], [8., 3., 15.],
               range(20,40,3)])
