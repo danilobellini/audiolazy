@@ -27,15 +27,14 @@ danilo [dot] bellini [at] gmail [dot] com
 from ..lazy_midi import MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq
 from ..lazy_misc import almost_eq
 
-class TestMIDI(object):
 
-  def test_midi2freq(self):
-    assert almost_eq(midi2freq(MIDI_A4), FREQ_A4)
-    assert almost_eq(midi2freq(MIDI_A4+12), FREQ_A4*2)
-    assert almost_eq(midi2freq(MIDI_A4+24), FREQ_A4*4)
-    assert almost_eq(midi2freq(MIDI_A4-12), FREQ_A4*.5)
-    assert almost_eq(midi2freq(MIDI_A4-24), FREQ_A4*.25)
-    assert almost_eq(midi2freq(MIDI_A4+1), FREQ_A4*SEMITONE_RATIO)
-    assert almost_eq(midi2freq(MIDI_A4+2), FREQ_A4*SEMITONE_RATIO**2)
-    assert almost_eq(midi2freq(MIDI_A4-1), FREQ_A4/SEMITONE_RATIO)
-    assert almost_eq(midi2freq(MIDI_A4-13), FREQ_A4*.5/SEMITONE_RATIO)
+def test_midi2freq():
+  assert almost_eq(midi2freq(MIDI_A4), FREQ_A4)
+  assert almost_eq(midi2freq(MIDI_A4+12), FREQ_A4*2)
+  assert almost_eq(midi2freq(MIDI_A4+24), FREQ_A4*4)
+  assert almost_eq(midi2freq(MIDI_A4-12), FREQ_A4*.5)
+  assert almost_eq(midi2freq(MIDI_A4-24), FREQ_A4*.25)
+  assert almost_eq(midi2freq(MIDI_A4+1), FREQ_A4*SEMITONE_RATIO)
+  assert almost_eq(midi2freq(MIDI_A4+2), FREQ_A4*SEMITONE_RATIO**2)
+  assert almost_eq(midi2freq(MIDI_A4-1), FREQ_A4/SEMITONE_RATIO)
+  assert almost_eq(midi2freq(MIDI_A4-13), FREQ_A4*.5/SEMITONE_RATIO)
