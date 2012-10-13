@@ -34,6 +34,20 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
   Dunders dont't appear within "getattr" nor "getattribute", and they should
   be inside the class dictionary, not the class instance one, otherwise they
   won't be found by the usual mechanism. That's why we have to be eager here.
+  You need a concrete class inherited from this one, and the "abstract"
+  enforcement and specification is:
+    - You have to override __operators__ with a string, given the operators
+      to be used by its dunder name "without the dunders" (i.e., "__add__"
+      should be written as "add"), all in a single string separated by spaces
+      and including reversed operators, like "add radd sub rsub eq".
+      Its a good idea to tell all operators that will be used, since the
+      metaclass will enforce their existance.
+    - All operators should be implemented by the metaclass hierarchy or by
+      the class directly, and the class has priority when both exists,
+      neglecting the template in this case.
+    - There are three templates: __binary__, __rbinary__, __unary__, all
+      receives 2 parameters (the class being instantiated and the operator
+      function) and should return a function for the specific dunder.
   """
   # Operator number of inputs, as a dictionary with default value equals to 2
   __operator_inputs__ = defaultdict(lambda: 2)
