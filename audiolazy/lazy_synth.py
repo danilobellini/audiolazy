@@ -114,7 +114,8 @@ def attack(a, d, s):
 @tostream
 def ones(self, dur):
   """
-  Finite stream that repeats "1.0" for the given time duration, in sample
+  Creates a finite Stream that repeats "1.0" for the given time duration
+  "dur", in number of samples.
   You may multiply your endless stream by this to enforce an end to it.
   """
   for x in xrange(int(.5 + dur)):
@@ -124,7 +125,8 @@ def ones(self, dur):
 @tostream
 def zeros(self, dur):
   """
-  Stream that repeats "0.0" during a given time duration.
+  Creates a finite Stream that repeats "0.0" during a given time duration
+  "dur", in number of samples.
   You may multiply your endless stream by this to enforce an end to it.
   """
   for x in xrange(int(.5 + dur)):
