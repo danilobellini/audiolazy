@@ -31,7 +31,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_filters import LTIFreq, z
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, almost_eq_diff
 
 
 class TestLTIFreq(object):
@@ -268,22 +268,20 @@ class TestLTIFreq(object):
     assert num.diff(n=2, mul_after=mul) == numd2ma
     assert den.diff(n=2, mul_after=mul) == dend2ma
 
-    def denoise(the_filter):
-      """
-      Remove noisy "-4.440892098500626e-16" or anything like that from the
-      expected filter, so the almost_eq comparison can work (-4e-16 isn't
-      almost zero even for float32: it's strongly different from 1e-100)
-      """
-      nnn = {k: v for k, v in the_filter.numpoly.terms() # No Noise Numerator
-                  if abs(v) > 1e-10} # Values here are much bigger
-      return LTIFreq(nnn, the_filter.denominator)
-
     filtd2 = ((numd2 * den - num * dend2) * den - 2 * filtd_num * dend
              ) / den ** 3
-    assert denoise(filt.diff(n=2)) == denoise(filtd2)
+    filt_to_test = filt.diff(n=2)
+    assert almost_eq_diff(filt_to_test.numerator, filtd2.numerator,
+                          max_diff=1e-10)
+    assert almost_eq_diff(filt_to_test.denominator, filtd2.denominator,
+                          max_diff=1e-10)
 
     if 1/(1 + z**-2) != mul: # Too difficult to group together with others
       filtd2ma = ((numd2 * den - num * dend2) * mul * den +
                   filtd_num * (muld * den - 2 * mul * dend)
                  ) * mul / den ** 3
-      assert denoise(filt.diff(n=2, mul_after=mul)) == denoise(filtd2ma)
+      filt_to_testma = filt.diff(n=2, mul_after=mul)
+      assert almost_eq_diff(filt_to_testma.numerator, filtd2ma.numerator,
+                            max_diff=1e-10)
+      assert almost_eq_diff(filt_to_testma.denominator, filtd2ma.denominator,
+                            max_diff=1e-10)
