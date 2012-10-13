@@ -34,7 +34,7 @@ from math import pi
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
-DEFAULT_CHUNK_SIZE = 16 #2048 # Samples
+DEFAULT_CHUNK_SIZE = 2048 # Samples
 
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
