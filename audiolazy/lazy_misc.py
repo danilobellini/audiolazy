@@ -153,111 +153,66 @@ def zero_pad(seq, left=0, right=0, zero_data=0.):
   for _ in xrange(right): yield zero_data
 
 
-def elementwise(parameter=0):
+def elementwise(name="", pos=None):
   """
-    Creates an elementwise decorator for a parameter other than the first.
-    Parameter can be a string (for a keyword argument) or a number (for a
-    positional argument).
+    Creates an elementwise decorator for one input parameter. To create such,
+    it should know the name (for use as a keyword argument and the position
+    "pos" (input as a positional argument). Without a name, only the
+    positional argument will be used. Without both name and position, the
+    first positional argument will be used.
   """
-  if isinstance(parameter, int):
-    def elementwise_decorator(func):
-      """
-        Element-wise decorator for functions known to have 1 input and 1
-        output be applied directly on iterables. When made to work with more
-        than 1 input, all "secondary" parameters will the same in all
-        function calls (i.e., they will not even be a copy).
-      """
-      @wraps(func)
-      def wrapper(*args, **kwargs):
-        arg = args[parameter]
-        if isinstance(arg, Iterable):
-          argsp = list(args[:parameter]) # Since tuple is immutable
-          argsn = list(args[parameter+1:])
+  if (name == "") and (pos is None):
+    pos = 0
+  def elementwise_decorator(func):
+    """
+      Element-wise decorator for functions known to have 1 input and 1
+      output be applied directly on iterables. When made to work with more
+      than 1 input, all "secondary" parameters will the same in all
+      function calls (i.e., they will not even be a copy).
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
 
-          # An always-recursive Iterable that must be joined afterwards
-          if isinstance(arg, str):
-            return "".join(func(*(argsp + [x] + argsn),
-                                **kwargs)
-                           for x in arg)
+      # Find the possibly Iterable argument
+      positional = (pos is not None) and (pos < len(args))
+      arg = args[pos] if positional else kwargs[name]
 
-          # Generators should still return generators
-          if isinstance(arg, (xrange, types.GeneratorType)):
-            return (func(*(argsp + [x] + argsn), **kwargs) for x in arg)
+      if isinstance(arg, Iterable):
+        if positional:
+          data = (func(*(args[:pos] + (x,) + args[pos+1:]),
+                       **kwargs)
+                  for x in arg)
+        else:
+          data = (func(*args,
+                       **dict(kwargs.items() + (name, x)))
+                  for x in arg)
 
-          # Cast to numpy array or matrix, without actually importing its
-          # package, if needed
-          try:
-            is_numpy = type(arg).__module__ == "numpy"
-          except AttributeError:
-            is_numpy = False
-          if is_numpy:
-            np_type = {"ndarray": sys.modules["numpy"].array,
-                       "matrix": sys.modules["numpy"].mat
-                      }[type(arg).__name__]
-            list_version = [func(*(argsp + [x] + argsn),
-                                 **kwargs)
-                            for x in arg] # Since numpy isn't graceful with
-            return np_type(list_version)  # generators
+        # String is an always-recursive Iterable that must be joined
+        # afterwards
+        if isinstance(arg, str):
+          return "".join(data)
 
-          # Tuple, list, set, dict, deque, etc.. all falls here
-          return type(arg)(func(*(argsp + [x] + argsn),
-                                **kwargs)
-                           for x in arg)
+        # Generators should still return generators
+        if isinstance(arg, (xrange, types.GeneratorType)):
+          return data
 
-        return func(*args, **kwargs)
-      return wrapper
+        # Cast to numpy array or matrix, if needed, without actually
+        # importing its package
+        try:
+          is_numpy = type(arg).__module__ == "numpy"
+        except AttributeError:
+          is_numpy = False
+        if is_numpy:
+          np_type = {"ndarray": sys.modules["numpy"].array,
+                     "matrix": sys.modules["numpy"].mat
+                    }[type(arg).__name__]
+          return np_type(list(data))
 
-  elif isinstance(parameter, str):
-    def elementwise_decorator(func):
-      """
-        Element-wise decorator for functions known to have 1 input and 1
-        output be applied directly on iterables. When made to work with more
-        than 1 input, all "secondary" parameters will the same in all
-        function calls (i.e., they will not even be a copy).
-      """
-      @wraps(func)
-      def wrapper(*args, **kwargs):
-        arg = kwargs[parameter]
-        if isinstance(arg, Iterable):
+        # Tuple, list, set, dict, deque, Stream, etc.. all falls here
+        return type(arg)(data)
 
-          # String is an always-recursive Iterable that must be joined
-          # afterwards
-          if isinstance(arg, str):
-            return "".join(func(*args,
-                                **dict(kwargs.items() + (parameter, x)))
-                           for x in arg)
-
-          # Generators should still return generators
-          if isinstance(arg, (xrange, types.GeneratorType)):
-            return (func(*args,
-                         **dict(kwargs.items() + (parameter, x)))
-                    for x in arg)
-
-          # Cast to numpy array or matrix, without actually importing its
-          # package, if needed
-          try:
-            is_numpy = type(arg).__module__ == "numpy"
-          except AttributeError:
-            is_numpy = False
-          if is_numpy:
-            np_type = {"ndarray": sys.modules["numpy"].array,
-                       "matrix": sys.modules["numpy"].mat
-                      }[type(arg).__name__]
-            list_version = [func(*args,
-                                 **dict(kwargs.items() + (parameter, x)))
-                            for x in arg] # Since numpy isn't graceful with
-            return np_type(list_version)  # generators
-
-          # Tuple, list, set, dict, deque, etc.. all falls here
-          return type(arg)(func(*args,
-                                **dict(kwargs.items() + (parameter, x)))
-                           for x in arg)
-
-        return func(*args, **kwargs)
-      return wrapper
-
-  else:
-    raise TypeError("Parameter should be int (positional) or str (keyword)")
+      return func(*args, **kwargs) # wrapper returned value
+    return wrapper # elementwise_decorator returned value
   return elementwise_decorator
 
 

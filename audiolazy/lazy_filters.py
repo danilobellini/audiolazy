@@ -104,12 +104,12 @@ class LTI(object):
           memory.append(next_val)
     return Stream(gen())
 
-  @elementwise(1)
+  @elementwise("freq", 1)
   def freq_response(self, freq):
     """
     Frequency response for this filter. Frequency should be given in rad/s.
     """
-    z_ = exp(-2j * pi * freq / rate)
+    z_ = exp(-1j * freq)
     num = self.numpoly(z_)
     den = self.denpoly(z_)
     return num / den
