@@ -31,15 +31,6 @@ import random
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
 
-# Tables for periodic table-lookup wave synthesis
-DEFAULT_TABLE_SIZE = 2**16
-DEFAULT_TABLES = {"sinusoid": [sin(x * 2 * pi / DEFAULT_TABLE_SIZE)
-                               for x in xrange(DEFAULT_TABLE_SIZE)],
-                  "sawtooth": [x * (1./(DEFAULT_TABLE_SIZE-1))
-                               for x in xrange(DEFAULT_TABLE_SIZE)],
-
-                 }
-
 
 @tostream
 def modulo_counter(start=0., modulo=15., step=1.):
@@ -271,6 +262,10 @@ class TableLookup(object):
       raise ValueError("Can't normalize zeros")
     return self / max_abs
 
+
 # Create the instance for each default table
-for table_name in DEFAULT_TABLES:
-  locals()[table_name] = TableLookup(DEFAULT_TABLES[table_name])
+DEFAULT_TABLE_SIZE = 2**16
+sinusoid = TableLookup([sin(x * 2 * pi / DEFAULT_TABLE_SIZE)
+                        for x in xrange(DEFAULT_TABLE_SIZE)])
+sawtooth = TableLookup([x * (1./(DEFAULT_TABLE_SIZE-1))
+                        for x in xrange(DEFAULT_TABLE_SIZE)])
