@@ -31,6 +31,8 @@ import types
 import itertools as it
 import sys
 from math import pi
+import operator
+
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -296,3 +298,17 @@ def sHz(rate):
   or assign kHz = 1e3 * Hz to use other unit, as you wish.
   """
   return float(rate), 2 * pi / rate
+
+
+def factorial(n):
+  if isinstance(n, float):
+    if n.is_integer():
+      n = int(n)
+  if not isinstance(n, (int, long)):
+    raise TypeError("non-integer input (perhaps you need Euler Gamma "
+                    "function or Gauss Pi function)")
+  if n < 0:
+    raise ValueError("input shouldn't be negative")
+  return reduce(operator.mul,
+                it.takewhile(lambda m: m <= n, it.count(2)),
+                1)

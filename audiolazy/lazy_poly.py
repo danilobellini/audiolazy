@@ -62,8 +62,8 @@ class Poly(object):
   The "terms" method allows casting to dict with dict(Poly.terms()), and give
   the terms sorted by their power value.
   """
-
   __metaclass__ = PolyMeta
+
   def __init__(self, data=None, zero=0):
     """
     Inits a polynomial from given data, which can be a list or a dict.
