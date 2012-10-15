@@ -112,7 +112,7 @@ def attack(a, d, s):
 
 
 @tostream
-def ones(self, dur):
+def ones(dur):
   """
   Creates a finite Stream that repeats "1.0" for the given time duration
   "dur", in number of samples.
@@ -123,7 +123,7 @@ def ones(self, dur):
 
 
 @tostream
-def zeros(self, dur):
+def zeros(dur):
   """
   Creates a finite Stream that repeats "0.0" during a given time duration
   "dur", in number of samples.
@@ -135,17 +135,17 @@ def zeros(self, dur):
 zeroes = zeros
 
 
-def adsr(self, dur, a, d, s, r):
+def adsr(dur, a, d, s, r):
   """
   Linear ADSR envelope for a fixed duration. The inputs are keywords
   "a", "d", "s", "r", see attack and fadeout for more information.
   The given total duration includes the release time.
   """
-  return attack(a, d, s) * Stream(ones(dur - r), self.line(r, 1., 0.))
+  return attack(a, d, s) * Stream(ones(dur - r), line(r, 1., 0.))
 
 
 @tostream
-def white_noise(self):
+def white_noise():
   """
   White noise endless stream, ranging from -1 to 1.
   """
