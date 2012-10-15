@@ -224,9 +224,10 @@ class TableLookup(object):
 
   def __call__(self, freq, phase=0.):
     """
-    Returns a wavetable lookup synthesis endless stream. Play it with the given frequency and starting
-    phase. Phase is given in rads, and frequency in rad/s. Accepts streams of
-    numbers as well as numbers as frequency and phase inputs.
+    Returns a wavetable lookup synthesis endless stream. Play it with the
+    given frequency and starting phase. Phase is given in rads, and frequency
+    in rad/s. Accepts streams of numbers, as well as numbers, for both
+    frequency and phase inputs.
     """
     total_length = len(self)
     total_len_float = float(total_length)
