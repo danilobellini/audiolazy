@@ -38,11 +38,15 @@ with open(os.path.join(path, pkgname, metadata_file), "r") as f:
       assignment = [side.strip() for side in line.split("=")]
       metadata[assignment[0].strip("_")] = eval(assignment[1])
 
-# Long description is all from README.txt, but the ending copyright message
+# Description is all from README.txt, but the ending copyright message
 with open(os.path.join(path, "README.rst"), "r") as f:
-  long_description = f.read()
-long_description = long_description.rsplit("----", 1)[0].strip()
+  readme_data = f.read()
+title, descr, ldescr = readme_data.split("\n\n", 2)
+metadata["description"] = descr
+metadata["long_description"] = "\n".join([title, ldescr]
+                                        ).rsplit("----", 1)[0].strip()
 
+# Classifiers and license
 classifiers = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
@@ -50,7 +54,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Other Audience",
   "License :: OSI Approved :: "
-    "GNU General Public License v3 or later (GPLv3+)",
+    "GNU General Public License v3 (GPLv3)",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
   "Operating System :: OS Independent",
@@ -64,16 +68,11 @@ classifiers = [
   "Topic :: Software Development",
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Software Development",
 ]
+metadata["classifiers"] = classifiers
+metadata["license"] = "GPLv3"
 
-descr = "Expressive Digital Signal Processing (DSP) package for Python"
-
-setup(name="audiolazy",
-      description=descr,
-      long_description=long_description,
-      license="GPLv3",
-      packages=[pkgname],
-      classifiers=classifiers,
-      **metadata
-     )
+# Finish
+metadata["name"] = pkgname
+metadata["packages"] = [pkgname]
+setup(**metadata)
