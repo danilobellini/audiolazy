@@ -23,16 +23,22 @@ the lazy evaluation, and aiming to be used together with Numpy, Scipy and
 Matplotlib as well as default Python structures like lists and generators,
 AudioLazy is a starting project written in pure Python proposing digital
 audio signal processing (DSP), featuring a simple synthesizer, analysis
-tools, filters, biologial auditory periphery modeling, among other
+tools, filters, biological auditory periphery modeling, among other
 functionalities.
 
 
 Status
 """"""
 
-This is the first deploy of a pre-alpha package. For now, you can use already
-the audiolazy.lazy_itertools with element-wise operators, and create your own
-filters with the lazy_filter module. Some documentation will be included soon.
+This is a pre-alpha package. For now, you can do some lazy element-wise maths
+with Stream objects; use the lazy_itertools module, a itertools decorated
+replica that have element-wise operators; create your own LTI filters using
+the filter equation directly on Z-domain with the lazy_filter.z object; use
+the lazy_synth module to do some synthesis with TableLookup objects, like FM
+synthesis calling the sinusoid twice; play your sound with a AudioIO instance,
+perhaps seem as a context manager, with its play method.
+
+Some documentation will be included soon.
 
 
 ----
