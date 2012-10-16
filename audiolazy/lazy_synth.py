@@ -137,14 +137,16 @@ zeroes = zeros
 
 def adsr(dur, a, d, s, r):
   """
-  Linear ADSR envelope for a fixed duration. The inputs are keywords
-  "a", "d", "s", "r", see attack and fadeout for more information.
-  The given total duration includes the release time.
+  Linear ADSR envelope for a fixed "dur" duration, in number of samples. The
+  remaining inputs are keywords "a", "d", "s", "r", for attack, decay, sustain
+  and release, respectively, all in samples but sustain, which is a amplitude
+  level. Peak value is 1.0, starts and finishes with 0.0. The given total
+  duration includes the release time.
   """
   return Stream(line(a),
                 line(d, 1., s),
                 s * ones(dur - a - d - r),
-                line(r, s, 0)
+                line(r, s, 0.)
                )
 
 
