@@ -141,7 +141,11 @@ def adsr(dur, a, d, s, r):
   "a", "d", "s", "r", see attack and fadeout for more information.
   The given total duration includes the release time.
   """
-  return attack(a, d, s) * Stream(ones(dur - r), line(r, 1., 0.))
+  return Stream(line(a),
+                line(d, 1., s),
+                s * ones(dur - a - d - r),
+                line(r, s, 0)
+               )
 
 
 @tostream
