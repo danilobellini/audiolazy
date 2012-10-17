@@ -23,9 +23,10 @@ Created on Wed Jul 18 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
-from math import sin, pi
+from math import sin, pi, ceil
 import collections
 import random
+import itertools as it
 
 # Audiolazy internal imports
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
@@ -33,36 +34,105 @@ from .lazy_itertools import cycle
 
 
 @tostream
-def modulo_counter(start=0., modulo=15., step=1.):
+def modulo_counter(start=0., modulo=256., step=1.):
   """
   Creates a lazy endless counter stream with the given modulo, i.e., its
   values ranges from 0. to the given "modulo", somewhat equivalent to:\n
     Stream(itertools.count(start, step)) % modulo\n
   Yet the given step can be an iterable, and doen't create unneeded big
   ints. All inputs can be float. Input order remembers slice/range inputs.
-  The start can also be a stream (or iterable). If the start or step
-  is an iterable, the end of this counter happen when there's no more
-  data in start/step to continue iteration.
+  All inputs can also be iterables. If any of them is an iterable, the end
+  of this counter happen when there's no more data in one of those inputs.
+  to continue iteration.
   """
   if isinstance(start, collections.Iterable):
-    # Updates "step" to have the iterable contents from start.
-    start_stream = Stream(start)
-    start = start_stream.take() # Now start is a number
-    given_start = Stream([start], start_stream.copy())
-    step = step + (start_stream - given_start) # Start's derivative
-  c = start % modulo # c is the internal counter value
-  if isinstance(step, collections.Iterable):
-    step = Stream(step)
-    yield c # From now, it have to be faster.
-    for s in step:
-      c += s
-      c %= modulo
-      yield c
+    lastp = 0.
+    c = 0.
+    if isinstance(step, collections.Iterable):
+      if isinstance(modulo, collections.Iterable):
+        for p, m, s in it.izip(start, modulo, step):
+          c += p - lastp
+          c %= m
+          yield c
+          c += s
+          lastp = p
+      else:
+        for p, s in it.izip(start, step):
+          c += p - lastp
+          c %= modulo
+          yield c
+          c += s
+          lastp = p
+    else:
+      if isinstance(modulo, collections.Iterable):
+        for p, m in it.izip(start, modulo):
+          c += p - lastp
+          c %= m
+          yield c
+          c += step
+          lastp = p
+      else: # Only start is iterable. This should be optimized!
+        if step == 0:
+          for p in start:
+            yield p % modulo
+        else:
+          steps = int(modulo / step)
+          if steps > 1:
+            n = 0
+            for p in start:
+              c += p - lastp
+              yield (c + n * step) % modulo
+              lastp = p
+              n += 1
+              if n == steps:
+                n = 0
+                c = (c + steps * step) % modulo
+          else:
+            for p in start:
+              c += p - lastp
+              c %= modulo
+              yield c
+              c += step
+              lastp = p
   else:
-    while True:
-      yield c # From now, it have to be faster.
-      c += step
-      c %= modulo
+    c = start
+    if isinstance(step, collections.Iterable):
+      if isinstance(modulo, collections.Iterable):
+        for m, s in it.izip(modulo, step):
+          c %= m
+          yield c
+          c += s
+      else: # Only step is iterable. This should be optimized!
+        for s in step:
+          c %= modulo
+          yield c
+          c += s
+    else:
+      if isinstance(modulo, collections.Iterable):
+        for m in modulo:
+          c %= m
+          yield c
+          c += step
+      else: # None is iterable
+        if step == 0:
+          c = start % modulo
+          while True:
+            yield c
+        else:
+          steps = int(modulo / step)
+          if steps > 1:
+            n = 0
+            while True:
+              yield (c + n * step) % modulo
+              n += 1
+              if n == steps:
+                n = 0
+                c = (c + steps * step) % modulo
+          else:
+            while True:
+              c %= modulo
+              yield c
+              c += step
 
 
 @tostream
@@ -135,6 +205,7 @@ def zeros(dur):
 zeroes = zeros
 
 
+@tostream
 def adsr(dur, a, d, s, r):
   """
   Linear ADSR envelope for a fixed "dur" duration, in number of samples. The
@@ -143,11 +214,21 @@ def adsr(dur, a, d, s, r):
   level. Peak value is 1.0, starts and finishes with 0.0. The given total
   duration includes the release time.
   """
-  return Stream(line(a),
-                line(d, 1., s),
-                s * ones(dur - a - d - r),
-                line(r, s, 0.)
-               )
+  m_a = 1. / a
+  m_d = (s - 1.) / d
+  m_r = - s * 1. / r
+  len_a = int(a + .5)
+  len_d = int(d + .5)
+  len_r = int(r + .5)
+  len_s = int(dur + .5) - len_a - len_d - len_r
+  for sample in xrange(len_a):
+    yield sample * m_a
+  for sample in xrange(len_d):
+    yield 1. + sample * m_d
+  for sample in xrange(len_s):
+    yield s
+  for sample in xrange(len_r):
+    yield s + sample * m_r
 
 
 @tostream
@@ -240,8 +321,22 @@ class TableLookup(object):
     cycle_length = total_len_float / (self.cycles * 2 * pi)
     step = cycle_length * freq
     part = cycle_length * phase
-    tbl_iter = modulo_counter(part + .5, total_len_float + .5, step)
-    return Stream(self.table[int(idx) % total_length] for idx in tbl_iter)
+    tbl_iter = modulo_counter(part, total_len_float, step)
+    tbl = self.table
+    #return Stream(tbl[int(idx)] for idx in tbl_iter)
+    return Stream(tbl[int(idx)] * (1. - (idx - int(idx))) +
+                  tbl[int(ceil(idx)) - total_length] * (idx - int(idx))
+                  for idx in tbl_iter)
+
+  def __getitem__(self, idx):
+    """
+    Get a item from the table from its index, which can possibly be a float.
+    The data is linearly interpolated.
+    """
+    total_length = len(self)
+    tbl = self.table
+    return tbl[int(idx) % total_length] * (1. - (idx - int(idx))) + \
+           tbl[int(ceil(idx)) % total_length] * (idx - int(idx))
 
   def __eq__(self, other):
     if isinstance(other, TableLookup):
@@ -274,7 +369,18 @@ class TableLookup(object):
 
 # Create the instance for each default table
 DEFAULT_TABLE_SIZE = 2**16
-sinusoid = TableLookup([sin(x * 2 * pi / DEFAULT_TABLE_SIZE)
-                        for x in xrange(DEFAULT_TABLE_SIZE)])
-sawtooth = TableLookup([x * (1./(DEFAULT_TABLE_SIZE-1))
-                        for x in xrange(DEFAULT_TABLE_SIZE)])
+sin_table = TableLookup([sin(x * 2 * pi / DEFAULT_TABLE_SIZE)
+                         for x in xrange(DEFAULT_TABLE_SIZE)])
+saw_table = TableLookup([x * (1./(DEFAULT_TABLE_SIZE-1))
+                         for x in xrange(DEFAULT_TABLE_SIZE)])
+
+
+@tostream
+def sinusoid(freq, phase=0.):
+  """
+  Sinusoid based on the optimized math.sin
+  """
+  # When at 44100 samples / sec, 5 seconds of this leads to an error of 8e-14
+  # peak to peak. That's fairly enough.
+  for n in modulo_counter(start=phase, modulo=2 * pi, step=freq):
+    yield sin(n)
