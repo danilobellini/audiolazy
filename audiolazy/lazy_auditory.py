@@ -32,7 +32,7 @@ from .lazy_misc import elementwise, factorial
 
 erb = StrategyDict()
 
-@erb.strategy("gm90", "GM90", "GlasbergMoore90", "GlasbergMoore")
+@erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
 @elementwise("freq", 0)
 def erb(freq):
   """
@@ -46,7 +46,7 @@ def erb(freq):
   """
   return 24.7 * (4.37e-3 * freq + 1.)
 
-@erb.strategy("mg83", "MG83", "MooreGlasberg83")
+@erb.strategy("mg83", "moore_glasberg_83")
 @elementwise("freq", 0)
 def erb(freq):
   """
@@ -77,7 +77,7 @@ def gammatone_erb_constants(n):
     >>> central_frequency = 1000
     >>> round(x, 3)
     1.019
-    >>> bandwidth = x * erb["MG83"](central_frequency)
+    >>> bandwidth = x * erb["moore_glasberg_83"](central_frequency)
     >>> round(bandwidth, 2)
     130.52
 
@@ -85,7 +85,7 @@ def gammatone_erb_constants(n):
 
     >>> x, y = gammatone_erb_constants(4)
     >>> central_frequency = 1000
-    >>> bandwidth3dB = x * y * erb["MG83"](central_frequency)
+    >>> bandwidth3dB = x * y * erb["moore_glasberg_83"](central_frequency)
     >>> round(bandwidth3dB, 2)
     113.55
   """
