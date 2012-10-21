@@ -31,6 +31,7 @@ from .lazy_filters import *
 from .lazy_io import *
 from .lazy_synth import *
 from .lazy_midi import *
+from .lazy_auditory import *
 
 # Metadata (see setup.py for more information about these)
 __version__ = "0.03dev"

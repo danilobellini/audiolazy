@@ -126,7 +126,9 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
 class MultiKeyDict(dict):
   """
   Multiple keys dict. Can be thought as an "inversible" dict where you can
-  ask for the one hashable value from one of the keys.
+  ask for the one hashable value from one of the keys. By default it iterates
+  through all keys, so if you need an iterator for all blocks of keys, use
+  iterkeys method instead.
   """
   def __init__(self, *args, **kwargs):
     self._keys_dict = {}
@@ -134,6 +136,8 @@ class MultiKeyDict(dict):
     super(MultiKeyDict, self).__init__(*args, **kwargs)
 
   def __getitem__(self, key):
+    if isinstance(key, tuple): # Avoid errors with IPython
+      return super(MultiKeyDict, self).__getitem__(key)
     return super(MultiKeyDict, self).__getitem__(self._keys_dict[key])
 
   def __setitem__(self, key, value):
@@ -178,6 +182,9 @@ class MultiKeyDict(dict):
       self._inv_dict[value] = new_key
       super(MultiKeyDict, self).__setitem__(new_key, value)
 
+  def __iter__(self):
+    return iter(self._inv_dict)
+
 
 class StrategyDict(MultiKeyDict):
   """
@@ -190,6 +197,8 @@ class StrategyDict(MultiKeyDict):
   The default strategy is the attribute StrategyDict.default, and might be
   anything outside the dictionary (i.e., it won't be changed if you remove
   the strategy).
+
+  It iterates through the values (i.e., for each strategy, not its name)
 
   Example
   -------
@@ -232,3 +241,6 @@ class StrategyDict(MultiKeyDict):
     if name in self._keys_dict:
       return self[name]
     raise NotImplementedError("Unknown attribute '{0}'".format(name))
+
+  def __iter__(self):
+    return self.itervalues()
