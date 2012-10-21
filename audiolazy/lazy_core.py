@@ -222,6 +222,10 @@ class StrategyDict(MultiKeyDict):
   """
   default = lambda: NotImplemented
 
+  def __init__(self, name="strategy_dict_unnamed_instance"):
+    self.__name__ = name
+    super(StrategyDict, self).__init__()
+
   def strategy(self, *names):
     def decorator(func):
       func.__name__ = names[0]

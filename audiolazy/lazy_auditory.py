@@ -32,8 +32,8 @@ from .lazy_misc import elementwise, factorial
 from .lazy_filters import z
 
 
-erb = StrategyDict()
-gammatone = StrategyDict()
+erb = StrategyDict("erb")
+gammatone = StrategyDict("gammatone")
 
 
 @erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
@@ -48,13 +48,14 @@ def erb(freq, Hz=1):
 
   Parameters
   ----------
-  freq: Frequency, in rad/s if second parameter is given, in Hz otherwise.
+  freq :
+    Frequency, in rad/s if second parameter is given, in Hz otherwise.
+  Hz :
+    Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
+    If this value is not given, both input and output will be in Hz.
 
-  Hz: Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
-  If this value is not given, both input and output will be in Hz.
-
-  Output
-  ------
+  Returns
+  -------
   Frequency range size, in rad/s if second parameter is given, in Hz otherwise.
   """
   fHz = freq / Hz
@@ -74,13 +75,14 @@ def erb(freq, Hz=1):
 
   Parameters
   ----------
-  freq: Frequency, in rad/s if second parameter is given, in Hz otherwise.
+  freq :
+    Frequency, in rad/s if second parameter is given, in Hz otherwise.
+  Hz :
+    Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
+    If this value is not given, both input and output will be in Hz.
 
-  Hz: Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
-  If this value is not given, both input and output will be in Hz.
-
-  Output
-  ------
+  Returns
+  -------
   Frequency range size, in rad/s if second parameter is given, in Hz otherwise.
   """
   fHz = freq / Hz
@@ -131,17 +133,18 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
 
   Parameters
   ----------
-  freq: Frequency, in rad/s.
+  freq :
+    Frequency, in rad/s.
+  bandwidth :
+    Frequency range size, in rad/s. See gammatone_erb_constants for
+    more information about how you can find this.
+  phase :
+    Phase, in radians. Defaults to zero (cosine).
+  eta :
+    Gammatone filter order. Defaults to 4.
 
-  bandwidth: Frequency range size, in rad/s. See gammatone_erb_constants for
-  more information about how you can find this.
-
-  phase: Phase, in radians. Defaults to zero (cosine).
-
-  eta: Gammatone filter order. Defaults to 4.
-
-  Output
-  ------
+  Returns
+  -------
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
@@ -164,13 +167,14 @@ def gammatone(freq, bandwidth):
 
   Parameters
   ----------
-  freq: Frequency, in rad/s.
+  freq :
+    Frequency, in rad/s.
+  bandwidth :
+    Frequency range size, in rad/s. See gammatone_erb_constants for
+    more information about how you can find this.
 
-  bandwidth: Frequency range size, in rad/s. See gammatone_erb_constants for
-  more information about how you can find this.
-
-  Output
-  ------
+  Returns
+  -------
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
@@ -198,13 +202,14 @@ def gammatone(freq, bandwidth):
 
   Parameters
   ----------
-  freq: Frequency, in rad/s.
+  freq :
+    Frequency, in rad/s.
+  bandwidth :
+    Frequency range size, in rad/s. See gammatone_erb_constants for
+    more information about how you can find this.
 
-  bandwidth: Frequency range size, in rad/s. See gammatone_erb_constants for
-  more information about how you can find this.
-
-  Output
-  ------
+  Returns
+  -------
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
