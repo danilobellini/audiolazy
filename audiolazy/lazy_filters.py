@@ -127,8 +127,7 @@ class LTI(object):
     return num / den
 
   def is_causal(self):
-    return all(delay >= 0 for delay, value in self.numpoly.terms()) and \
-           all(delay >= 0 for delay, value in self.denpoly.terms())
+    return all(delay >= 0 for delay, value in self.numpoly.terms())
 
 
 class LTIFreqMeta(AbstractOperatorOverloaderMeta):
