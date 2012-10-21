@@ -107,7 +107,19 @@ class LTI(object):
   @elementwise("freq", 1)
   def freq_response(self, freq):
     """
-    Frequency response for this filter. Frequency should be given in rad/s.
+    Frequency response for this filter.
+
+    Parameters
+    ----------
+    freq :
+      Frequency, in rad/sample. Can be an iterable with frequencies.
+
+    Returns
+    -------
+    Complex number with the frequency response of the filter. You can use
+    ``20 * log10(abs(result))`` to get its power magnitude in dB, and
+    Numpy ``angle(result)`` or built-in ``phase(result)`` to get its phase.
+
     """
     z_ = exp(-1j * freq)
     num = self.numpoly(z_)

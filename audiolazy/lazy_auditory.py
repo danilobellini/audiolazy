@@ -49,14 +49,16 @@ def erb(freq, Hz=1):
   Parameters
   ----------
   freq :
-    Frequency, in rad/s if second parameter is given, in Hz otherwise.
+    Frequency, in rad/sample if second parameter is given, in Hz otherwise.
   Hz :
     Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
     If this value is not given, both input and output will be in Hz.
 
   Returns
   -------
-  Frequency range size, in rad/s if second parameter is given, in Hz otherwise.
+  Frequency range size, in rad/sample if second parameter is given, in Hz
+  otherwise.
+
   """
   fHz = freq / Hz
   result = 24.7 * (4.37e-3 * fHz + 1.)
@@ -76,14 +78,16 @@ def erb(freq, Hz=1):
   Parameters
   ----------
   freq :
-    Frequency, in rad/s if second parameter is given, in Hz otherwise.
+    Frequency, in rad/sample if second parameter is given, in Hz otherwise.
   Hz :
     Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
     If this value is not given, both input and output will be in Hz.
 
   Returns
   -------
-  Frequency range size, in rad/s if second parameter is given, in Hz otherwise.
+  Frequency range size, in rad/sample if second parameter is given, in Hz
+  otherwise.
+
   """
   fHz = freq / Hz
   result = 6.23e-6 * fHz ** 2 + 93.39e-3 * fHz + 28.52
@@ -117,6 +121,7 @@ def gammatone_erb_constants(n):
     >>> bandwidth3dB = x * y * erb["moore_glasberg_83"](central_frequency)
     >>> round(bandwidth3dB, 2)
     113.55
+
   """
   tnt = 2 * n - 2
   return (factorial(n - 1) ** 2 / (pi * factorial(tnt) * 2 ** -tnt),
@@ -134,9 +139,9 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
   Parameters
   ----------
   freq :
-    Frequency, in rad/s.
+    Frequency, in rad/sample.
   bandwidth :
-    Frequency range size, in rad/s. See gammatone_erb_constants for
+    Frequency range size, in rad/sample. See gammatone_erb_constants for
     more information about how you can find this.
   phase :
     Phase, in radians. Defaults to zero (cosine).
@@ -148,6 +153,7 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
+
   """
   A = exp(-bandwidth)
   numerator = cos(phase) - A * cos(freq - phase) * z ** -1
@@ -168,9 +174,9 @@ def gammatone(freq, bandwidth):
   Parameters
   ----------
   freq :
-    Frequency, in rad/s.
+    Frequency, in rad/sample.
   bandwidth :
-    Frequency range size, in rad/s. See gammatone_erb_constants for
+    Frequency range size, in rad/sample. See gammatone_erb_constants for
     more information about how you can find this.
 
   Returns
@@ -178,6 +184,7 @@ def gammatone(freq, bandwidth):
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
+
   """
   A = exp(-bandwidth)
   cosw = cos(freq)
@@ -203,9 +210,9 @@ def gammatone(freq, bandwidth):
   Parameters
   ----------
   freq :
-    Frequency, in rad/s.
+    Frequency, in rad/sample.
   bandwidth :
-    Frequency range size, in rad/s. See gammatone_erb_constants for
+    Frequency range size, in rad/sample. See gammatone_erb_constants for
     more information about how you can find this.
 
   Returns
@@ -213,6 +220,7 @@ def gammatone(freq, bandwidth):
   A LTIFreq filter object, that can be seem as an IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The number of poles is twice the value of eta (conjugated pairs).
+
   """
   A = exp(-bandwidth)
   cosw = cos(freq)
