@@ -121,3 +121,114 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     """
     return NotImplemented
   __unary__ = __binary__ = __rbinary__ = _not_implemented
+
+
+class MultiKeyDict(dict):
+  """
+  Multiple keys dict. Can be thought as an "inversible" dict where you can
+  ask for the one hashable value from one of the keys.
+  """
+  def __init__(self, *args, **kwargs):
+    self._keys_dict = {}
+    self._inv_dict = {}
+    super(MultiKeyDict, self).__init__(*args, **kwargs)
+
+  def __getitem__(self, key):
+    return super(MultiKeyDict, self).__getitem__(self._keys_dict[key])
+
+  def __setitem__(self, key, value):
+    # We want only tuples
+    if not isinstance(key, tuple):
+      key = (key,)
+
+    # First remove the overwritten data
+    for k in key:
+      if k in self._keys_dict:
+        del self[k]
+    if value in self._inv_dict:
+      key = self._inv_dict[value] + key
+
+    # Remove duplicated keys
+    key_list = []
+    for k in key:
+      if k not in key_list:
+        key_list.append(k)
+    key = tuple(key_list)
+
+    # Do the assignment
+    for k in key:
+      self._keys_dict[k] = key
+    self._inv_dict[value] = key
+    super(MultiKeyDict, self).__setitem__(key, value)
+
+  def __delitem__(self, key):
+    key_tuple = self._keys_dict[key]
+    value = self[key]
+    new_key = tuple(k for k in key_tuple if k != key)
+
+    # Remove the old data
+    del self._keys_dict[key]
+    del self._inv_dict[value]
+    super(MultiKeyDict, self).__delitem__(key_tuple)
+
+    # Do the assignment (when it makes sense)
+    if len(new_key) > 0:
+      for k in new_key:
+        self._keys_dict[k] = new_key
+      self._inv_dict[value] = new_key
+      super(MultiKeyDict, self).__setitem__(new_key, value)
+
+
+class StrategyDict(MultiKeyDict):
+  """
+  Strategy dictionary manager with default, mainly done for callables and
+  multiple implementation algorithms / models.
+
+  Each strategy might have multiple names. The names can be any hashable.
+  The "strategy" method creates a decorator for the given strategy names.
+  Default is the first strategy you insert, but can be changed afterwards.
+  The default strategy is the attribute StrategyDict.default, and might be
+  anything outside the dictionary (i.e., it won't be changed if you remove
+  the strategy).
+
+  Example
+  -------
+
+  >>> sd = StrategyDict()
+  >>> @sd.strategy("sum") # First strategy is default
+  ... def sd(a, b, c):
+  ...     return a + b + c
+  >>> @sd.strategy("min", "m") # Multiple names
+  ... def sd(a, b, c):
+  ...     return min(a, b, c)
+  >>> sd(2, 5, 0)
+  7
+  >>> sd["min"](2, 5, 0)
+  0
+  >>> sd["m"](7, -5, -2)
+  -5
+  >>> sd.default = sd["min"]
+  >>> sd(-19, 1e18, 0)
+  -19
+  """
+  default = lambda: NotImplemented
+
+  def strategy(self, *names):
+    def decorator(func):
+      func.__name__ = names[0]
+      self[names] = func
+      return self
+    return decorator
+
+  def __setitem__(self, key, value):
+    if "default" not in self.__dict__:
+      self.default = value
+    super(StrategyDict, self).__setitem__(key, value)
+
+  def __call__(self, *args, **kwargs):
+    return self.default(*args, **kwargs)
+
+  def __getattr__(self, name):
+    if name in self._keys_dict:
+      return self[name]
+    raise NotImplementedError("Unknown attribute '{0}'".format(name))
