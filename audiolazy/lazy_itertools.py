@@ -27,5 +27,8 @@ import itertools as it
 from .lazy_stream import tostream
 
 # All functions from itertools
+__all__ = []
 for func in filter(callable, [getattr(it, name) for name in dir(it)]):
-  locals()[func.__name__] = tostream(func)
+  name = func.__name__
+  __all__.append(name)
+  locals()[name] = tostream(func)

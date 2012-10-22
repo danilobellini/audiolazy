@@ -44,6 +44,8 @@ import threading
 # Audiolazy internal imports
 from .lazy_misc import chunks, DEFAULT_CHUNK_SIZE, DEFAULT_SAMPLE_RATE
 
+__all__ = ["AudioIO", "AudioThread"]
+
 
 class AudioIO(object):
   """

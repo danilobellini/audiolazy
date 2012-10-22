@@ -33,6 +33,8 @@ from .lazy_misc import (elementwise, blocks, zero_pad,
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta
 
+__all__ = ["LTI", "LTIFreqMeta", "LTIFreq", "z"]
+
 
 class LTI(object):
   """

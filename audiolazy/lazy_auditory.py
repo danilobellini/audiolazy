@@ -31,6 +31,8 @@ from .lazy_core import StrategyDict
 from .lazy_misc import elementwise, factorial
 from .lazy_filters import z
 
+__all__ = ["erb", "gammatone", "gammatone_erb_constants"]
+
 
 erb = StrategyDict("erb")
 gammatone = StrategyDict("gammatone")

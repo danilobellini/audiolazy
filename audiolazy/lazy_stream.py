@@ -31,6 +31,8 @@ from functools import wraps
 from .lazy_misc import blocks
 from .lazy_core import AbstractOperatorOverloaderMeta
 
+__all__ = ["StreamMeta", "Stream", "tostream", "ControlStream"]
+
 
 class StreamMeta(AbstractOperatorOverloaderMeta):
   """

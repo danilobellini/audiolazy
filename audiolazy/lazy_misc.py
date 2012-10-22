@@ -33,6 +33,10 @@ import sys
 from math import pi
 import operator
 
+__all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "blocks", "chunks",
+           "array_chunks", "zero_pad", "elementwise", "almost_eq_diff",
+           "almost_eq", "multiplication_formatter",
+           "pair_strings_sum_formatter", "sHz", "factorial"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)

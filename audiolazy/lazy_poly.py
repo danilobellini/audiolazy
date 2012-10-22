@@ -30,6 +30,8 @@ from .lazy_stream import AbstractOperatorOverloaderMeta
 from .lazy_misc import (almost_eq, multiplication_formatter,
                         pair_strings_sum_formatter)
 
+__all__ = ["PolyMeta", "Poly"]
+
 
 class PolyMeta(AbstractOperatorOverloaderMeta):
   """

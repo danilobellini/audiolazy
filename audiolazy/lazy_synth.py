@@ -32,6 +32,11 @@ import itertools as it
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
 
+__all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
+           "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
+           "TableLookup", "DEFAULT_TABLE_SIZE", "sin_table", "saw_table",
+           "sinusoid"]
+
 
 @tostream
 def modulo_counter(start=0., modulo=256., step=1.):

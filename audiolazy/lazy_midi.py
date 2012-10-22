@@ -23,6 +23,8 @@ Created on Wed Jul 18 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
+__all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "midi2freq"]
+
 # Useful constants
 MIDI_A4 = 69   # MIDI Pitch number
 FREQ_A4 = 440. # Hz
