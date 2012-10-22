@@ -144,15 +144,35 @@ def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
     yield chunk.tostring()
 
 
-def zero_pad(seq, left=0, right=0, zero_data=0.):
+def zero_pad(seq, left=0, right=0, zero=0.):
   """
-    Zero padding sample generator.
-    Pads the given -seq- with -zero_data- samples before (-left- times) and
-    after (-right- times) it, as a generator.
+    Zero padding sample generator (not a Stream!).
+
+    Parameters
+    ----------
+    seq :
+      Sequence to be padded.
+    left :
+      Integer with the number of elements to be padded at left (before).
+      Defaults to zero.
+    right :
+      Integer with the number of elements to be padded at right (after).
+      Defaults to zero.
+    zero :
+      Element to be padded. Defaults to a float zero (0.0).
+
+    Returns
+    -------
+    A generator that pads the given ``seq`` with samples equals to ``zero``,
+    ``left`` times before and ``right`` times after it.
+
   """
-  for _ in xrange(left): yield zero_data
-  for item in seq: yield item
-  for _ in xrange(right): yield zero_data
+  for unused in xrange(left):
+    yield zero
+  for item in seq:
+    yield item
+  for unused in xrange(right):
+    yield zero
 
 
 def elementwise(name="", pos=None):

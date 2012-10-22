@@ -36,9 +36,9 @@ from .lazy_core import AbstractOperatorOverloaderMeta
 
 class LTI(object):
   """
-  Base class for Linear Time Invariant Filters.
+  Base class for Linear Time Invariant filters.
   """
-  def __init__(self, numerator=None, denominator={0: 1.}):
+  def __init__(self, numerator=None, denominator={0: 1}):
     self.numpoly = Poly(numerator)
     self.denpoly = Poly(denominator)
 
@@ -62,41 +62,58 @@ class LTI(object):
       raise ValueError("Non-causal filter")
     return list(self.denpoly.values())
 
-  def __call__(self, sequence, memory=None):
+  def __call__(self, seq, memory=None, zero=0.):
     """
     IIR and FIR linear filtering.
-    Returns a Stream that have the data from the input sequence filtered.
+
+    Parameters
+    ----------
+    seq :
+      Any iterable to be seem as the input stream for the filter.
+    memory :
+      A sequence with length, such as a list or a Numpy 1D array. If it has
+      more items from needed by the filter, it must implement slices. Less
+      items than needed is completed with zeros. If ``None`` (default),
+      memory is initialized with zeros.
+    zero :
+      Value to fill the memory, when needed, and to be seem as previous
+      input when there's a delay. Defaults to ``0.0``.
+
+    Returns
+    -------
+    A Stream that have the data from the input sequence filtered.
+
     """
-    if isinstance(sequence, Stream):
-      sequence = sequence.data
+    if isinstance(seq, Stream):
+      seq = seq.data
     b, a = self.numerator, self.denominator # Just for type check
     rb, ra = list(reversed(b)), list(reversed(a[1:]))
 
-    if b == []:
-      b = [0.]
+    if b == []: # No numerator: input is fully neglect
+      b = [zero]
 
     la, lb = len(a), len(b)
     gain = a[0]
 
     if la == 1: # No memory needed
       def gen(): # Filter loop
-        for blk in blocks(zero_pad(sequence, left=lb - 1), lb, 1):
+        for blk in blocks(zero_pad(seq, left=lb - 1), lb, 1):
           numerator = sum(it.imap(operator.mul, blk, rb))
           yield numerator / gain
     else:
       # Convert memory input to a deque with size exactly equals to len(a) - 1
       if memory is None:
-        memory = [0. for _ in xrange(la - 1)]
+        memory = [zero for unused in xrange(la - 1)]
       else:
         lm = len(memory)
         if lm > la - 1:
           memory = memory[:la - 1]
         elif memory < la - 1:
-          memory = list(zero_pad(memory, la - 1 - lm))
+          memory = list(zero_pad(memory, la - 1 - lm, zero=zero))
       memory = deque(memory, maxlen=la - 1)
 
       def gen(): # Filter loop
-        for blk in blocks(zero_pad(sequence, left=lb - 1), lb, 1):
+        for blk in blocks(zero_pad(seq, left=lb - 1, zero=zero), lb, 1):
           numerator = sum(it.imap(operator.mul, blk, rb))
           denominator = sum(it.imap(operator.mul, memory, ra))
           next_val = (numerator - denominator) / gain
@@ -127,6 +144,14 @@ class LTI(object):
     return num / den
 
   def is_causal(self):
+    """
+    Causality test for this filter.
+
+    Returns
+    -------
+    Boolean returning True if this filter is causal, False otherwise.
+
+    """
     return all(delay >= 0 for delay, value in self.numpoly.terms())
 
 
@@ -150,6 +175,40 @@ class LTIFreqMeta(AbstractOperatorOverloaderMeta):
 
 
 class LTIFreq(LTI):
+  """
+  Linear Time Invariant filters based on Z-transform frequency domain
+  equations.
+
+  Examples
+  --------
+
+  Using the ``z`` object (float output because default filter memory has
+  float zeros, and the delay in the numerator creates another float zero as
+  "pre-input"):
+
+  >>> filt = (1 + z ** -1) / (1 - z ** -1)
+  >>> data = [1, 5, -4, -7, 9]
+  >>> stream_result = filt(data) # Lazy iterable
+  >>> list(stream_result) # Freeze
+  [1.0, 7.0, 8.0, -3.0, -1.0]
+
+  Same example with the same filter, but with a memory input, and using
+  lists for filter numerator and denominator instead of the ``z`` object:
+
+  >>> b = [1, 1]
+  >>> a = [1, -1] # Each index ``i`` has the coefficient for z ** -i
+  >>> filt = LTIFreq(b, a)
+  >>> data = [1, 5, -4, -7, 9]
+  >>> stream_result = filt(data, memory=[3], zero=0) # Lazy iterable
+  >>> result = list(stream_result) # Freeze
+  >>> result
+  [4, 10, 11, 0, 2]
+  >>> filt2 = filt * z ** -1 # You can add a delay afterwards easily
+  >>> final_result = filt2(result, zero=0)
+  >>> list(final_result)
+  [0, 4, 18, 39, 50]
+
+  """
   __metaclass__ = LTIFreqMeta
 
   def __add__(self, other):
