@@ -139,6 +139,8 @@ class Poly(object):
     """
     Apply value to the Poly, where value can be other Poly.
     """
+    if not self.data:
+      return 0.
     data_generator = (v * value ** k for k, v in self.terms())
     if isinstance(value, Poly):
       return sum(data_generator)
