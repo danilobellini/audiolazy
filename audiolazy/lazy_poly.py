@@ -138,14 +138,26 @@ class Poly(object):
   def __call__(self, value):
     """
     Apply value to the Poly, where value can be other Poly.
+    When value is a number, a Horner-like scheme is done.
     """
-    if not self.data:
-      return 0.
-    data_generator = (v * value ** k for k, v in self.terms())
     if isinstance(value, Poly):
-      return sum(data_generator)
-    return sum(sorted(data_generator,
-                      key=lambda v: -abs(v)))
+     return Poly(sum(coeff * value ** power
+                      for power, coeff in self.data.iteritems()))
+    if not self.data:
+      return 0
+
+    last_power = 0
+    res = 0
+    for power, coeff in sorted(self.data.items(), reverse=True):
+      res = coeff + res * value ** (last_power - power)
+      last_power = power
+    return res * value ** last_power
+
+  def __getitem__(self, item):
+    if item in self.data:
+      return self.data[item]
+    else:
+      return 0
 
   # ---------------------
   # Elementwise operators
