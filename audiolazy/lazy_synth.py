@@ -394,9 +394,8 @@ def sinusoid(freq, phase=0.):
 @tostream
 def impulse(dur=None):
   """
-    Stream that repeats "0.0" during a given time duration (if any) or
-    endlessly, but starts with one (and only one) "1.0".
-    If rate isn't given, duration is given in number of samples.
+  Stream that repeats "0.0" during a given time duration (if any) or
+  endlessly, but starts with one (and only one) "1.0".
   """
   if dur is None:
     yield 1.
