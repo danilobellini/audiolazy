@@ -24,12 +24,11 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 from math import pi, exp, cos, sin, sqrt
-import operator
 
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_misc import elementwise, factorial
-from .lazy_filters import z
+from .lazy_filters import z, CascadeFilter, LTIFreq
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 
@@ -157,11 +156,19 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
   The number of poles is twice the value of eta (conjugated pairs).
 
   """
+  assert eta >= 1
+
   A = exp(-bandwidth)
   numerator = cos(phase) - A * cos(freq - phase) * z ** -1
   denominator = 1 - 2 * A * cos(freq) * z ** -1 + A ** 2 * z ** -2
   filt = (numerator / denominator).diff(n=eta-1, mul_after=-z)
-  return filt / abs(filt.freq_response(freq)) # Max gain == 1.0 (0 dB)
+
+  # Filter is done, but the denominator might have some numeric loss
+  f0 = LTIFreq(filt.numpoly) / denominator
+  f0 /= abs(f0.freq_response(freq)) # Max gain == 1.0 (0 dB)
+  fn = 1 / denominator
+  fn /= abs(fn.freq_response(freq))
+  return CascadeFilter([f0] + [fn] * (eta - 1))
 
 
 @gammatone.strategy("slaney")
@@ -195,8 +202,9 @@ def gammatone(freq, bandwidth):
   coeff = [cosw + s1 * (sqrt(2) + s2) * sinw for s1 in sig for s2 in sig]
   numerator = [1 - A * c * z ** -1 for c in coeff]
   denominator = 1 - 2 * A * cosw * z ** -1 + A ** 2 * z ** -2
-  filt = reduce(operator.mul, (num / denominator for num in numerator))
-  return filt / abs(filt.freq_response(freq)) # Max gain == 1.0 (0 dB)
+
+  filt = CascadeFilter(num / denominator for num in numerator)
+  return CascadeFilter(f / abs(f.freq_response(freq)) for f in filt)
 
 
 @gammatone.strategy("klapuri")
@@ -238,4 +246,4 @@ def gammatone(freq, bandwidth):
   H2 = ro2                 / (1 - 2 * A * costheta2 * z ** -1
                                 + Asqr * z ** -2)
 
-  return (H1 * H2) ** 2
+  return CascadeFilter(H1, H2, H1, H2)

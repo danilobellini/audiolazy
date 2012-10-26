@@ -23,7 +23,7 @@ danilo [dot] bellini [at] gmail [dot] com
 
 import operator
 from cmath import exp
-from collections import deque
+from collections import deque, Iterable
 import itertools as it
 
 # Audiolazy internal imports
@@ -33,7 +33,33 @@ from .lazy_misc import (elementwise, blocks, zero_pad,
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta
 
-__all__ = ["LTI", "LTIFreqMeta", "LTIFreq", "z"]
+__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z"]
+
+
+class CascadeFilter(list):
+
+  def __init__(self, *filters):
+    if len(filters) == 1 and isinstance(filters[0], Iterable):
+      self.extend(filters[0])
+    else:
+      self.extend(filters)
+
+  def __call__(self, seq):
+    return reduce(lambda data, filt: filt(data), self, seq)
+
+  @property
+  def numerator(self):
+    return list(reduce(operator.mul,
+                       (filt.numpoly for filt in self)).values())
+
+  @property
+  def denominator(self):
+    return list(reduce(operator.mul,
+                       (filt.denpoly for filt in self)).values())
+
+  @elementwise("freq", 1)
+  def freq_response(self, freq):
+    return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
 
 
 class LTI(object):
