@@ -23,11 +23,13 @@ Created on Tue Jul 31 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
-#import pytest
+import pytest
+p = pytest.mark.parametrize
+
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_synth import modulo_counter, line
+from ..lazy_synth import modulo_counter, line, impulse, zeros
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, sHz
 
@@ -90,3 +92,22 @@ class TestModuloCounter(object):
     should_start = [3, 3, 2, 3, 3, 2, 3, 3, 2, 3, 3, 2, 3, 3, 2, 3]
     should_mc = [a+b for a,b in it.izip(should_start, should_step)]
     assert mc.take(len(should_mc)) == should_mc
+
+
+class TestImpulse(object):
+
+  def test_no_input(self):
+    delta = impulse()
+    assert isinstance(delta, Stream)
+    assert delta.take(25) == [1] + list(zeros(24))
+
+  @p("dur", [-1, 0, .4, .5, 1, 2, 10])
+  def test_finite_duration(self, dur):
+    delta = impulse(dur)
+    assert isinstance(delta, Stream)
+    dur_int = max(int(round(dur)), 0)
+    if dur_int == 0:
+      assert list(delta) == []
+    else:
+      assert list(delta) == [1] + [0] * (dur_int - 1)
+

@@ -35,7 +35,7 @@ from .lazy_itertools import cycle
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
            "TableLookup", "DEFAULT_TABLE_SIZE", "sin_table", "saw_table",
-           "sinusoid"]
+           "sinusoid", "impulse"]
 
 
 @tostream
@@ -389,3 +389,21 @@ def sinusoid(freq, phase=0.):
   # peak to peak. That's fairly enough.
   for n in modulo_counter(start=phase, modulo=2 * pi, step=freq):
     yield sin(n)
+
+
+@tostream
+def impulse(dur=None):
+  """
+    Stream that repeats "0.0" during a given time duration (if any) or
+    endlessly, but starts with one (and only one) "1.0".
+    If rate isn't given, duration is given in number of samples.
+  """
+  if dur is None:
+    yield 1.
+    while True:
+      yield 0.
+  elif dur >= .5:
+    num_samples = int(dur - .5)
+    yield 1.
+    for x in xrange(num_samples):
+      yield 0.
