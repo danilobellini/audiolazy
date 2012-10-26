@@ -39,7 +39,7 @@ gammatone = StrategyDict("gammatone")
 
 @erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
 @elementwise("freq", 0)
-def erb(freq, Hz=1):
+def erb(freq, Hz=None):
   """
   ERB model from:
 
@@ -61,6 +61,10 @@ def erb(freq, Hz=1):
   otherwise.
 
   """
+  if Hz is None:
+    if freq < 7: # Perhaps user tried something up to 2 * pi
+      raise ValueError("Frequency out of range.")
+    Hz = 1
   fHz = freq / Hz
   result = 24.7 * (4.37e-3 * fHz + 1.)
   return result * Hz
@@ -68,7 +72,7 @@ def erb(freq, Hz=1):
 
 @erb.strategy("mg83", "moore_glasberg_83")
 @elementwise("freq", 0)
-def erb(freq, Hz=1):
+def erb(freq, Hz=None):
   """
   ERB model from:
 
@@ -90,6 +94,10 @@ def erb(freq, Hz=1):
   otherwise.
 
   """
+  if Hz is None:
+    if freq < 7: # Perhaps user tried something up to 2 * pi
+      raise ValueError("Frequency out of range.")
+    Hz = 1
   fHz = freq / Hz
   result = 6.23e-6 * fHz ** 2 + 93.39e-3 * fHz + 28.52
   return result * Hz
