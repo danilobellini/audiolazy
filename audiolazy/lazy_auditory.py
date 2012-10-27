@@ -143,7 +143,7 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
   """
   Gammatone filter based on a sampled impulse response.
 
-    ``t ** (eta - 1) * exp(-bandwidth) * cos(freq * t + phase)``
+    ``n ** (eta - 1) * exp(-bandwidth * n) * cos(freq * n + phase)``
 
   Parameters
   ----------
@@ -159,9 +159,11 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
 
   Returns
   -------
-  A LTIFreq filter object, that can be seem as an IIR filter model.
+  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
-  The number of poles is twice the value of eta (conjugated pairs).
+  The total number of poles is twice the value of eta (conjugated pairs), one
+  pair for each LTIFreq.
 
   """
   assert eta >= 1
@@ -198,9 +200,11 @@ def gammatone(freq, bandwidth):
 
   Returns
   -------
-  A LTIFreq filter object, that can be seem as an IIR filter model.
+  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
-  The number of poles is twice the value of eta (conjugated pairs).
+  The total number of poles is twice the value of eta (conjugated pairs), one
+  pair for each LTIFreq.
 
   """
   A = exp(-bandwidth)
@@ -235,9 +239,11 @@ def gammatone(freq, bandwidth):
 
   Returns
   -------
-  A LTIFreq filter object, that can be seem as an IIR filter model.
+  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
-  The number of poles is twice the value of eta (conjugated pairs).
+  The total number of poles is twice the value of eta (conjugated pairs), one
+  pair for each LTIFreq.
 
   """
   A = exp(-bandwidth)
