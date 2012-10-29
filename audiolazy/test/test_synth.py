@@ -33,6 +33,7 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, TableLookup)
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, sHz
+from ..lazy_itertools import count
 
 
 class TestLine(object):
@@ -83,8 +84,13 @@ class TestModuloCounter(object):
   def test_streamed_start(self):
     mc = modulo_counter(modulo_counter(2, 5, 3), 7, 1)
        # start = [2,0,3,1,4,  2,0,3,1,4,  ...]
-    should_mc = (Stream(2, 0, 3, 1, 4) + Stream(it.count())) % 7
+    should_mc = (Stream(2, 0, 3, 1, 4) + count()) % 7
     assert mc.take(29) == should_mc.take(29)
+
+  @p("step", [0, 17, -17])
+  def test_streamed_start_ignorable_step(self, step):
+    mc = modulo_counter(it.count(), 17, step)
+    assert mc.take(30) == (range(17) * 2)[:30]
 
   def test_streamed_start_and_step(self):
     mc = modulo_counter(Stream(3, 3, 2), 17, it.count())
@@ -98,6 +104,19 @@ class TestModuloCounter(object):
     mc = modulo_counter(12, Stream(7, 5), 8)
     assert mc.take(30) == [5, 3, 4, 2, 3, 1, 2, 0, 1, 4] * 3
 
+  def test_streamed_start_and_modulo(self):
+    mc = modulo_counter(it.count(), 3 + count(), 1)
+    expected = [0, 2, 4, 0, 2, 4, 6, 8, 10, 0, 2, 4, 6, 8, 10, 12,
+                14, 16, 18, 20, 22, 0, 2, 4, 6, 8, 10, 12, 14, 16]
+    assert mc.take(len(expected)) == expected
+
+  def test_all_inputs_streamed(self):
+    mc1 = modulo_counter(it.count(), 3 + count(), Stream(0, 1))
+    mc2 = modulo_counter(0, 3 + count(), 1 + Stream(0, 1))
+    expected = [0, 1, 3, 4, 6, 7, 0, 1, 3, 4, 6, 7, 9, 10, 12, 13,
+                15, 16, 18, 19, 21, 22, 24, 25, 0, 1, 3, 4, 6, 7]
+    assert mc1.take(len(expected)) == mc2.take(len(expected)) == expected
+    
 
 @p(("func", "data"),
    [(ones, 1.0),
