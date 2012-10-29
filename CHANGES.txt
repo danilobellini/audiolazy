@@ -3,14 +3,12 @@ Development...
 - MultiKeyDict: "inversible" dict that may have several keys for each value
 - StrategyDict: callable dict to store multiple function implementations in
 - CascadeFilter: list of filters that behave as a filter
-- Impulse function, useful for finding impulse response from filters
 - Three gammatone filter implementations: sampled, Slaney, Klapuri
 - Two ERB (Equivalent Rectangular Bandwidth) models (Glasberg and Moore)
 - Function to find gammatone bandwidth from ERB for any gammatone order
 - Gammatone frequency and impulse response plots example
 - ADSR envelope
-- Finite ones and zeros/zeroes Stream generator
-- White noise endless Stream generator
+- Impulse, ones, zeros/zeroes and white noise Stream generator
 - FM synthesis example for benchmarking between CPython and PyPy
 - LTIFreq.__call__ now has the "zero" optional argument (allows non-float)
 - Methods/attributes from Stream elements can be used directly (elementwise)
