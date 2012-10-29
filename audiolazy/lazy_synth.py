@@ -161,15 +161,32 @@ def line(dur, begin=0., end=1., finish=False):
 
 def fadein(dur):
   """
-  Linear fading in from zero to one.
+  Linear fading in.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples.
+
+  Returns
+  -------
+  Stream instance yielding a line from zero to one.
   """
   return line(dur)
 
 
 def fadeout(dur):
   """
-  Linear fading out. Multiply by this one to finish and avoid clicks.
-  The starting amplitude is is 1.0.
+  Linear fading out. Multiply by this one at end to finish and avoid clicks.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples.
+
+  Returns
+  -------
+  Stream instance yielding the line. The starting amplitude is is 1.0.
   """
   return line(dur, 1., 0.)
 

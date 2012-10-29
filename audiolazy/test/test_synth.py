@@ -30,13 +30,13 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
-                          white_noise, TableLookup)
+                          white_noise, TableLookup, fadein, fadeout)
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, sHz
 from ..lazy_itertools import count
 
 
-class TestLine(object):
+class TestLineFadeInFadeOut(object):
 
   def test_line(self):
     s, Hz = sHz(rate=2)
@@ -55,6 +55,16 @@ class TestLine(object):
     env = env.map(int)
     env_should = L1_should + L2_should + L3_should
     assert list(env) == env_should
+
+  def test_fade_in(self):
+    s, Hz = sHz(rate=4)
+    L = fadein(2.5 * s)
+    assert almost_eq(L, (.1 * x for x in xrange(10)))
+
+  def test_fade_out(self):
+    s, Hz = sHz(rate=5)
+    L = fadeout(2 * s)
+    assert almost_eq(L, (.1 * x for x in xrange(10, 0, -1)))
 
 
 class TestModuloCounter(object):
