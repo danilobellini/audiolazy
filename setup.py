@@ -47,7 +47,8 @@ metadata["long_description"] = "\n".join([title, ldescr]
                                         ).rsplit("----", 1)[0].strip()
 
 # Classifiers and license
-classifiers = [
+metadata["license"] = "GPLv3"
+metadata["classifiers"] = [
   "Development Status :: 2 - Pre-Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
@@ -69,8 +70,6 @@ classifiers = [
   "Topic :: Software Development :: Libraries",
   "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-metadata["classifiers"] = classifiers
-metadata["license"] = "GPLv3"
 
 # Finish
 metadata["name"] = pkgname

@@ -5,7 +5,7 @@ Expressive Digital Signal Processing (DSP) package for Python.
 
 
 Lazyness
-""""""""
+--------
 
 There are several tools and packages that let the Python use and
 expressiveness look like languages such as MatLab and Octave. However, the
@@ -16,7 +16,7 @@ indexes and vectors.
 
 
 Goal
-""""
+----
 
 Prioritizing code expressiveness, clarity and simplicity, without precluding
 the lazy evaluation, and aiming to be used together with Numpy, Scipy and
@@ -28,7 +28,7 @@ functionalities.
 
 
 Status
-""""""
+------
 
 This is a pre-alpha package. For now, you can do some lazy element-wise maths
 with Stream objects; use the lazy_itertools module, a itertools decorated

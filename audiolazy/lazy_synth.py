@@ -318,7 +318,7 @@ class TableLookup(object):
     """
     Returns a wavetable lookup synthesis endless stream. Play it with the
     given frequency and starting phase. Phase is given in rads, and frequency
-    in rad/s. Accepts streams of numbers, as well as numbers, for both
+    in rad/sample. Accepts streams of numbers, as well as numbers, for both
     frequency and phase inputs.
     """
     total_length = len(self)
