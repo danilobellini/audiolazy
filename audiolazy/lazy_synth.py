@@ -176,14 +176,49 @@ def fadeout(dur):
 
 def attack(a, d, s):
   """
-  Linear ADS fading attack endless stream, useful to be multiplied
-  with a given stream. Parameters:\n
-    a = "Attack" time, in samples
-    d = "Decay" time, in samples
-    s = "Sustain" amplitude level (should be based on attack amplitude)\n
-  The attack amplitude is is 1.0. The sustain can be a Stream, if desired.
+  Linear ADS fading attack stream generator, useful to be multiplied with a
+  given stream.
+
+  Parameters
+  ----------
+  a :
+    "Attack" time, in samples
+  d :
+    "Decay" time, in samples
+  s :
+    "Sustain" amplitude level (should be based on attack amplitude).
+    The sustain can be a Stream, if desired.
+
+  Returns
+  -------
+  Stream instance yielding an endless envelope, or a finite envelope if the
+  sustain input is a finite Stream. The attack amplitude is is 1.0.
+
   """
-  return line(a).append(line(d, 1.0, s)).append(s)
+  # Configure sustain possibilities
+  if isinstance(s, collections.Iterable):
+    it_s = iter(s)
+    s = it_s.next()
+  else:
+    it_s = None
+
+  # Attack and decay lines
+  m_a = 1. / a
+  m_d = (s - 1.) / d
+  len_a = int(a + .5)
+  len_d = int(d + .5)
+  for sample in xrange(len_a):
+    yield sample * m_a
+  for sample in xrange(len_d):
+    yield 1. + sample * m_d
+
+  # Sustain!
+  if it_s is None:
+    while True:
+      yield s
+  else:
+    for s in it_s:
+      yield s
 
 
 @tostream
