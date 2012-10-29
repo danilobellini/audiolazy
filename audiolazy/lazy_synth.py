@@ -182,9 +182,9 @@ def attack(a, d, s):
   Parameters
   ----------
   a :
-    "Attack" time, in samples
+    "Attack" time, in number of samples.
   d :
-    "Decay" time, in samples
+    "Decay" time, in number of samples.
   s :
     "Sustain" amplitude level (should be based on attack amplitude).
     The sustain can be a Stream, if desired.
@@ -274,11 +274,26 @@ zeroes = zeros
 @tostream
 def adsr(dur, a, d, s, r):
   """
-  Linear ADSR envelope for a fixed "dur" duration, in number of samples. The
-  remaining inputs are keywords "a", "d", "s", "r", for attack, decay, sustain
-  and release, respectively, all in samples but sustain, which is a amplitude
-  level. Peak value is 1.0, starts and finishes with 0.0. The given total
-  duration includes the release time.
+  Linear ADSR envelope.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples, including the release time.
+  a :
+    "Attack" time, in number of samples.
+  d :
+    "Decay" time, in number of samples.
+  s :
+    "Sustain" amplitude level (should be based on attack amplitude).
+  r :
+    "Release" time, in number of samples.
+
+  Returns
+  -------
+  Stream instance yielding a finite ADSR envelope, starting and finishing with
+  0.0, having peak value of 1.0.
+
   """
   m_a = 1. / a
   m_d = (s - 1.) / d
