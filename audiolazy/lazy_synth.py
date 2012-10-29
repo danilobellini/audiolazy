@@ -187,23 +187,49 @@ def attack(a, d, s):
 
 
 @tostream
-def ones(dur):
+def ones(dur=None):
   """
-  Creates a finite Stream that repeats "1.0" for the given time duration
-  "dur", in number of samples.
+  Ones stream generator.
   You may multiply your endless stream by this to enforce an end to it.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples; endless if not given.
+
+  Returns
+  -------
+  Stream that repeats "1.0" during a given time duration (if any) or
+  endlessly.
+
   """
+  if dur is None:
+    while True:
+      yield 1.0
   for x in xrange(int(.5 + dur)):
     yield 1.0
 
 
 @tostream
-def zeros(dur):
+def zeros(dur=None):
   """
-  Creates a finite Stream that repeats "0.0" during a given time duration
-  "dur", in number of samples.
-  You may multiply your endless stream by this to enforce an end to it.
+  Zeros/zeroes stream generator.
+  You may sum your endless stream by this to enforce an end to it.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples; endless if not given.
+
+  Returns
+  -------
+  Stream that repeats "0.0" during a given time duration (if any) or
+  endlessly.
+
   """
+  if dur is None:
+    while True:
+      yield 0.0
   for x in xrange(int(.5 + dur)):
     yield 0.0
 
@@ -237,11 +263,24 @@ def adsr(dur, a, d, s, r):
 
 
 @tostream
-def white_noise():
+def white_noise(dur=None):
   """
-  White noise endless stream, ranging from -1 to 1.
+  White noise stream generator.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples; endless if not given.
+
+  Returns
+  -------
+  Stream yielding random numbers between -1 and 1.
+
   """
-  while True:
+  if dur is None:
+    while True:
+      yield random.uniform(-1.,1.)
+  for x in xrange(int(.5 + dur)):
     yield random.uniform(-1.,1.)
 
 
@@ -394,8 +433,18 @@ def sinusoid(freq, phase=0.):
 @tostream
 def impulse(dur=None):
   """
+  Impulse stream generator.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples; endless if not given.
+
+  Returns
+  -------
   Stream that repeats "0.0" during a given time duration (if any) or
   endlessly, but starts with one (and only one) "1.0".
+
   """
   if dur is None:
     yield 1.

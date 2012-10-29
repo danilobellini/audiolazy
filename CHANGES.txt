@@ -1,0 +1,50 @@
+Development...
+- New lazy_auditory module
+- MultiKeyDict: "inversible" dict that may have several keys for each value
+- StrategyDict: callable dict to store multiple function implementations in
+- CascadeFilter: list of filters that behave as a filter
+- Impulse function, useful for finding impulse response from filters
+- Three gammatone filter implementations: sampled, Slaney, Klapuri
+- Two ERB (Equivalent Rectangular Bandwidth) models (Glasberg and Moore)
+- Function to find gammatone bandwidth from ERB for any gammatone order
+- Gammatone frequency and impulse response plots example
+- ADSR envelope
+- Finite ones and zeros/zeroes Stream generator
+- White noise endless Stream generator
+- FM synthesis example for benchmarking between CPython and PyPy
+- LTIFreq.__call__ now has the "zero" optional argument (allows non-float)
+- Methods/attributes from Stream elements can be used directly (elementwise)
+- Elementwise decorator now based on both argument keyword and position
+- Namespace cleanup with __all__
+- Horner-like scheme for Poly.__call__ evaluation
+- Lots of optimization and refactoring, also on tests and setup.py
+- Better docstrings and README.rst
+- Doctests (with pytest) and code coverage (needs pytest-cov)
+- Now with 4865+ tests and 68% code coverage
+
+0.02
+- New lazy_synth and lazy_midi modules
+- Interactive processing with ControlStream instances
+- sHz function for explicit time (s) and frequency (Hz) units conversion
+- MIDI to frequency (Hz) conversor
+- Line, fade in, fade out, ADS attack with endless sustain
+- Table lookup class, with sinusoid and sawtooth instances
+- Endless counter with modulo, allowing Stream inputs, mainly for table lookup
+- Stream class now allows inheritance
+- 10 new tests
+
+0.01
+- First (pre-alpha) version!
+- Stream: each instance is basically a generator with elementwise operators
+- Decorator "tostream" so generator functions can return Stream objects
+- Poly: polynomials based on dictionaries, with list interface and operators
+- LTI filters, callable objects w/ operators and derivative, returning streams
+- Explicit filter formulas with the "z" object, e.g. filt = 1 / (.5 + z ** -1)
+- Multi-thread audio playing (PyAudio), with context manager interface
+- Stream-based version of all itertools
+- Block-based processing, given size and (optionally) hop
+- Simple zero padding generator
+- Elementwise decorator for functions
+- AbstractOperatorOverloaderMeta class to help massive operator overloading
+- Bit-based and diff-based "almost equal" for floats and iterables with floats
+- 4786 tests (including parametrized tests), based on pytest
