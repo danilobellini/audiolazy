@@ -31,11 +31,12 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
+from .lazy_filters import comb
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
            "TableLookup", "DEFAULT_TABLE_SIZE", "sin_table", "saw_table",
-           "sinusoid", "impulse"]
+           "sinusoid", "impulse", "karplus_strong"]
 
 
 @tostream
@@ -522,3 +523,9 @@ def impulse(dur=None):
     yield 1.
     for x in xrange(num_samples):
       yield 0.
+
+
+def karplus_strong(freq, alpha=.99):
+  delay = int(round(2 * pi / freq))
+  filt = comb(delay, alpha)
+  return filt(zeros(), memory=list(white_noise(delay)))

@@ -33,7 +33,7 @@ from .lazy_misc import (elementwise, blocks, zero_pad,
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta
 
-__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z"]
+__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb"]
 
 
 class CascadeFilter(list):
@@ -344,3 +344,7 @@ class LTIFreq(LTI):
                    self.denpoly ** (n + 1))
 
 z = LTIFreq({-1: 1})
+
+
+def comb(delay, alpha=1):
+  return 1 / (1 - alpha * z ** -delay)
