@@ -3,7 +3,6 @@ AudioLazy
 
 Expressive Digital Signal Processing (DSP) package for Python.
 
-
 Lazyness
 --------
 
@@ -13,7 +12,6 @@ eager evaluation done by most of these tools make it difficult, perhaps
 impossible, to use them for real time audio processing. Another difficulty
 concerns expressive code creation for audio processing in blocks through
 indexes and vectors.
-
 
 Goal
 ----
@@ -25,7 +23,6 @@ AudioLazy is a starting project written in pure Python proposing digital
 audio signal processing (DSP), featuring a simple synthesizer, analysis
 tools, filters, biological auditory periphery modeling, among other
 functionalities.
-
 
 Status
 ------
@@ -39,7 +36,6 @@ synthesis calling the sinusoid twice; play your sound with a AudioIO instance,
 perhaps seem as a context manager, with its play method.
 
 Some documentation will be included soon.
-
 
 ----
 
