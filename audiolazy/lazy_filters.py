@@ -186,6 +186,42 @@ class LTI(object):
     """
     return all(delay >= 0 for delay, value in self.numpoly.terms())
 
+  def linearize(self):
+    """
+    Linear interpolation of fractional delay values.
+
+    Returns
+    -------
+    A new LTI filter, with the linearized delay values.
+
+    Example
+    -------
+
+    >>> filt = z ** -4.3
+    >>> filt.linearize()
+    0.7 * z^-4 + 0.3 * z^-5
+
+    """
+    data = []
+    for poly in [self.numpoly, self.denpoly]:
+      data.append({})
+      new_poly = data[-1]
+      for k, v in poly.terms():
+        if isinstance(k, int) or (isinstance(k, float) and k.is_integer()):
+          pairs = [(int(k), v)]
+        else:
+          left = int(k)
+          right = left + 1
+          weight_right = k - left
+          weight_left = 1. - weight_right
+          pairs = [(left, v * weight_left), (right, v * weight_right)]
+        for key, value in pairs:
+          if key in new_poly:
+            new_poly[key] += value
+          else:
+            new_poly[key] = value
+    return self.__class__(*data)
+
 
 class LTIFreqMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
@@ -282,7 +318,7 @@ class LTIFreq(LTI):
   def __pow__(self, other):
     if (other < 0) and (len(self.numpoly) >= 2 or len(self.denpoly) >= 2):
       return LTIFreq(self.denpoly, self.numpoly) ** -other
-    if isinstance(other, int):
+    if isinstance(other, (int, float)):
       return LTIFreq(self.numpoly ** other, self.denpoly ** other)
     raise ValueError("Z-transform powers only valid with integers")
 

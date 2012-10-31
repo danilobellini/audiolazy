@@ -526,5 +526,4 @@ def impulse(dur=None):
 
 
 def karplus_strong(freq, alpha=.99, memory=white_noise):
-  delay = int(round(2 * pi / freq))
-  return comb(delay, alpha)(zeros(), memory=memory)
+  return comb(2 * pi / freq, alpha).linearize()(zeros(), memory=memory)
