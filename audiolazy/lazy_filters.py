@@ -99,10 +99,11 @@ class LTI(object):
     seq :
       Any iterable to be seem as the input stream for the filter.
     memory :
-      A sequence with length, such as a list or a Numpy 1D array. If it has
-      more items from needed by the filter, it must implement slices. Less
-      items than needed is completed with zeros. If ``None`` (default),
-      memory is initialized with zeros.
+      Might be an iterable or a callable. Generally, as a iterable, the first
+      needed elements from this input will be used directly as the memory
+      (not the last ones!), and as a callable, it will be called with the
+      size as the only positional argument, and should return an iterable.
+      If ``None`` (default), memory is initialized with zeros.
     zero :
       Value to fill the memory, when needed, and to be seem as previous
       input when there's a delay. Defaults to ``0.0``.
@@ -132,11 +133,14 @@ class LTI(object):
       # Convert memory input to a deque with size exactly equals to len(a) - 1
       if memory is None:
         memory = [zero for unused in xrange(la - 1)]
-      else:
+      else: # Get data from iterable
+        if not isinstance(memory, Iterable): # Function with 1 parameter: size
+          memory = memory(len(a) - 1)
+        tw = it.takewhile(lambda (idx, data): idx < len(a) - 1,
+                          enumerate(memory))
+        memory = [data for idx, data in tw]
         lm = len(memory)
-        if lm > la - 1:
-          memory = memory[:la - 1]
-        elif memory < la - 1:
+        if lm < la - 1:
           memory = list(zero_pad(memory, la - 1 - lm, zero=zero))
       memory = deque(memory, maxlen=la - 1)
 
