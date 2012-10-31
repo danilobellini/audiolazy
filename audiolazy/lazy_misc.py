@@ -203,7 +203,7 @@ def elementwise(name="", pos=None):
       positional = (pos is not None) and (pos < len(args))
       arg = args[pos] if positional else kwargs[name]
 
-      if isinstance(arg, Iterable):
+      if isinstance(arg, Iterable) and not isinstance(arg, (str, unicode)):
         if positional:
           data = (func(*(args[:pos] + (x,) + args[pos+1:]),
                        **kwargs)
@@ -212,11 +212,6 @@ def elementwise(name="", pos=None):
           data = (func(*args,
                        **dict(kwargs.items() + (name, x)))
                   for x in arg)
-
-        # String is an always-recursive Iterable that must be joined
-        # afterwards
-        if isinstance(arg, str):
-          return "".join(data)
 
         # Generators should still return generators
         if isinstance(arg, (xrange, types.GeneratorType)):
