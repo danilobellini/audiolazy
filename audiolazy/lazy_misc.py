@@ -30,13 +30,13 @@ from functools import wraps
 import types
 import itertools as it
 import sys
-from math import pi
+from math import pi, log10
 import operator
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "blocks", "chunks",
            "array_chunks", "zero_pad", "elementwise", "almost_eq_diff",
            "almost_eq", "multiplication_formatter",
-           "pair_strings_sum_formatter", "sHz", "factorial"]
+           "pair_strings_sum_formatter", "sHz", "factorial", "dB10", "dB20"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -45,15 +45,15 @@ DEFAULT_CHUNK_SIZE = 2048 # Samples
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
   """
-    Generator that gets -size- elements from -seq-, and outputs them in a
-    collections.deque (mutable circular queue) sequence container. Next output
-    starts -hop- elements after the first element in last output block. Last
-    block may be appended with -padval-, if needed to get the desired size.\n
-    Note: when the hop is less than size, changing the returned contents
-          will keep the new changed value in the next yielded container.
-    Seq can have hybrid / hetherogeneous data, it just need to be an iterable.
-    You can use other type content as padval (e.g. None) to help segregate the
-    padding at the end, if desired.\n
+  Generator that gets -size- elements from -seq-, and outputs them in a
+  collections.deque (mutable circular queue) sequence container. Next output
+  starts -hop- elements after the first element in last output block. Last
+  block may be appended with -padval-, if needed to get the desired size.\n
+  Note: when the hop is less than size, changing the returned contents
+        will keep the new changed value in the next yielded container.
+  Seq can have hybrid / hetherogeneous data, it just need to be an iterable.
+  You can use other type content as padval (e.g. None) to help segregate the
+  padding at the end, if desired.\n
   """
   # Initialization
   res = deque(maxlen=size) # Circular queue
@@ -97,20 +97,20 @@ def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
 def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
            padval=0.):
   """
-    Chunk generator to write any iterable directly in a file.
-    The dfmt should be one char, chosen from the ones in link:
-      http://docs.python.org/library/struct.html#format-characters
-    Useful examples (integer are signed, use upper case for unsigned ones):
-      "b" for 8 bits (1 byte) integer
-      "h" for 16 bits (2 bytes) integer
-      "i" for 32 bits (4 bytes) integer
-      "f" for 32 bits (4 bytes) float (default)
-      "d" for 64 bits (8 bytes) float (double)
-    Byte order follows native system defaults. Other options are in the site:
-      http://docs.python.org/library/struct.html#struct-alignment
-    They are:
-      "<" means little-endian
-      ">" means big-endian
+  Chunk generator to write any iterable directly in a file.
+  The dfmt should be one char, chosen from the ones in link:
+    http://docs.python.org/library/struct.html#format-characters
+  Useful examples (integer are signed, use upper case for unsigned ones):
+    "b" for 8 bits (1 byte) integer
+    "h" for 16 bits (2 bytes) integer
+    "i" for 32 bits (4 bytes) integer
+    "f" for 32 bits (4 bytes) float (default)
+    "d" for 64 bits (8 bytes) float (double)
+  Byte order follows native system defaults. Other options are in the site:
+    http://docs.python.org/library/struct.html#struct-alignment
+  They are:
+    "<" means little-endian
+    ">" means big-endian
   """
   dfmt = str(size) + dfmt
   if byte_order is None:
@@ -125,11 +125,11 @@ def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
 def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
                  padval=0.):
   """
-    Generator: Another Repetitive Replacement Again Yielding chunks, this is
-    an audiolazy.chunks(...) clone using array.array (random access by
-    indexing management) instead of struct.Struct and blocks/deque (circular
-    queue appending). Try before to find the faster one for your machine.
-    Be careful: dfmt symbols for arrays might differ from structs' defaults.
+  Generator: Another Repetitive Replacement Again Yielding chunks, this is
+  an audiolazy.chunks(...) clone using array.array (random access by
+  indexing management) instead of struct.Struct and blocks/deque (circular
+  queue appending). Try before to find the faster one for your machine.
+  Be careful: dfmt symbols for arrays might differ from structs' defaults.
   """
   counter = range(size)
   chunk = array.array(dfmt, counter)
@@ -150,25 +150,25 @@ def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
 
 def zero_pad(seq, left=0, right=0, zero=0.):
   """
-    Zero padding sample generator (not a Stream!).
+  Zero padding sample generator (not a Stream!).
 
-    Parameters
-    ----------
-    seq :
-      Sequence to be padded.
-    left :
-      Integer with the number of elements to be padded at left (before).
-      Defaults to zero.
-    right :
-      Integer with the number of elements to be padded at right (after).
-      Defaults to zero.
-    zero :
-      Element to be padded. Defaults to a float zero (0.0).
+  Parameters
+  ----------
+  seq :
+    Sequence to be padded.
+  left :
+    Integer with the number of elements to be padded at left (before).
+    Defaults to zero.
+  right :
+    Integer with the number of elements to be padded at right (after).
+    Defaults to zero.
+  zero :
+    Element to be padded. Defaults to a float zero (0.0).
 
-    Returns
-    -------
-    A generator that pads the given ``seq`` with samples equals to ``zero``,
-    ``left`` times before and ``right`` times after it.
+  Returns
+  -------
+  A generator that pads the given ``seq`` with samples equals to ``zero``,
+  ``left`` times before and ``right`` times after it.
 
   """
   for unused in xrange(left):
@@ -181,20 +181,20 @@ def zero_pad(seq, left=0, right=0, zero=0.):
 
 def elementwise(name="", pos=None):
   """
-    Creates an elementwise decorator for one input parameter. To create such,
-    it should know the name (for use as a keyword argument and the position
-    "pos" (input as a positional argument). Without a name, only the
-    positional argument will be used. Without both name and position, the
-    first positional argument will be used.
+  Creates an elementwise decorator for one input parameter. To create such,
+  it should know the name (for use as a keyword argument and the position
+  "pos" (input as a positional argument). Without a name, only the
+  positional argument will be used. Without both name and position, the
+  first positional argument will be used.
   """
   if (name == "") and (pos is None):
     pos = 0
   def elementwise_decorator(func):
     """
-      Element-wise decorator for functions known to have 1 input and 1
-      output be applied directly on iterables. When made to work with more
-      than 1 input, all "secondary" parameters will the same in all
-      function calls (i.e., they will not even be a copy).
+    Element-wise decorator for functions known to have 1 input and 1
+    output be applied directly on iterables. When made to work with more
+    than 1 input, all "secondary" parameters will the same in all
+    function calls (i.e., they will not even be a copy).
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -320,6 +320,9 @@ def sHz(rate):
 
 
 def factorial(n):
+  """
+  Factorial function that works with really big numbers.
+  """
   if isinstance(n, float):
     if n.is_integer():
       n = int(n)
@@ -331,3 +334,19 @@ def factorial(n):
   return reduce(operator.mul,
                 it.takewhile(lambda m: m <= n, it.count(2)),
                 1)
+
+
+@elementwise("data", 0)
+def dB10(data):
+  """
+  Linear magnitude gain in dB.
+  """
+  return 10 * log10(abs(data))
+
+
+@elementwise("data", 0)
+def dB20(data):
+  """
+  Power magnitude gain in dB.
+  """
+  return 20 * log10(abs(data))

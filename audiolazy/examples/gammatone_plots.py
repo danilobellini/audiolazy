@@ -24,13 +24,10 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 from __future__ import division
-from audiolazy import erb, gammatone, gammatone_erb_constants, sHz, impulse
-from numpy import log10, abs, linspace, ceil
+from audiolazy import (erb, gammatone, gammatone_erb_constants, sHz, impulse,
+                       dB20)
+from numpy import linspace, ceil
 from matplotlib import pylab as plt
-
-# Numpy array amplitude to dB magnitude (power)
-def db_mag(data):
-  return 20 * log10(abs(data))
 
 # Initialization info
 rate = 44100
@@ -72,7 +69,7 @@ for idx, (fc, endtime) in enumerate(sorted(plot_freq_time.iteritems()), 1):
     filt = gt(fc * Hz, bw)
 
     plt.figure(1)
-    plt.plot(freq, db_mag(filt.freq_response(freq * Hz)), config,
+    plt.plot(freq, dB20(filt.freq_response(freq * Hz)), config,
              label=gt.__name__)
 
     plt.figure(2)
