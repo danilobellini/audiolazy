@@ -22,18 +22,21 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import operator
-from cmath import exp
+from cmath import exp as complex_exp
+from math import exp as real_exp
+from math import sin, cos, pi, sqrt
 from collections import deque, Iterable
 import itertools as it
 
 # Audiolazy internal imports
 from .lazy_stream import Stream
-from .lazy_misc import (elementwise, blocks, zero_pad,
+from .lazy_misc import (elementwise, blocks, zero_pad, dB20,
                         multiplication_formatter, pair_strings_sum_formatter)
 from .lazy_poly import Poly
-from .lazy_core import AbstractOperatorOverloaderMeta
+from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 
-__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb"]
+__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb",
+           "resonator"]
 
 
 class CascadeFilter(list):
@@ -170,7 +173,7 @@ class LTI(object):
     Numpy ``angle(result)`` or built-in ``phase(result)`` to get its phase.
 
     """
-    z_ = exp(-1j * freq)
+    z_ = complex_exp(-1j * freq)
     num = self.numpoly(z_)
     den = self.denpoly(z_)
     return num / den
@@ -388,3 +391,130 @@ z = LTIFreq({-1: 1})
 
 def comb(delay, alpha=1):
   return 1 / (1 - alpha * z ** -delay)
+
+
+resonator = StrategyDict("resonator")
+
+
+@resonator.strategy("poles_exp")
+def resonator(freq, bandwidth):
+  """
+  Resonator filter with 2-poles (conjugated pair) and no zeros (constant
+  numerator), with exponential approximation for bandwidth calculation.
+
+  Parameters
+  ----------
+  freq :
+    Resonant frequency in rad/sample (max gain).
+  bandwidth :
+    Bandwidth frequency range in rad/sample following the equation
+    
+      ``R = exp(-bandwidth / 2)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A LTI filter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude).
+
+  """
+  R = real_exp(-bandwidth * .5)
+  cost = cos(freq) * (2 * R) / (1 + R ** 2)
+  gain = (1 - R ** 2) * sqrt(1 - cost ** 2)
+  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
+  return gain / denominator
+
+
+@resonator.strategy("freq_poles_exp")
+def resonator(freq, bandwidth):
+  """
+  Resonator filter with 2-poles (conjugated pair) and no zeros (constant
+  numerator), with exponential approximation for bandwidth calculation.
+  Given frequency is the denominator frequency, not the resonant frequency.
+
+  Parameters
+  ----------
+  freq :
+    Denominator frequency in rad/sample (not the one with max gain).
+  bandwidth :
+    Bandwidth frequency range in rad/sample following the equation
+    
+      ``R = exp(-bandwidth / 2)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A LTI filter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude).
+
+  """
+  R = real_exp(-bandwidth * .5)
+  gain = (1 - R ** 2) * sin(freq)
+  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
+  return gain / denominator
+
+
+@resonator.strategy("z_exp")
+def resonator(freq, bandwidth):
+  """
+  Resonator filter with 2-zeros and 2-poles (conjugated pair). The zeros are
+  at the `1` and `-1` (both at the real axis, i.e., at the DC and the Nyquist
+  rate), with exponential approximation for bandwidth calculation.
+
+  Parameters
+  ----------
+  freq :
+    Resonant frequency in rad/sample (max gain).
+  bandwidth :
+    Bandwidth frequency range in rad/sample following the equation
+    
+      ``R = exp(-bandwidth / 2)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A LTI filter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude).
+
+  """
+  R = real_exp(-bandwidth * .5)
+  cost = cos(freq) * (1 + R ** 2) / (2 * R)
+  gain = (1 - R ** 2) * .5 
+  numerator = 1 - z ** -2
+  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
+  return gain * numerator / denominator
+
+
+@resonator.strategy("freq_z_exp")
+def resonator(freq, bandwidth):
+  """
+  Resonator filter with 2-zeros and 2-poles (conjugated pair). The zeros are
+  at the `1` and `-1` (both at the real axis, i.e., at the DC and the Nyquist
+  rate), with exponential approximation for bandwidth calculation.
+  Given frequency is the denominator frequency, not the resonant frequency.
+
+  Parameters
+  ----------
+  freq :
+    Denominator frequency in rad/sample (not the one with max gain).
+  bandwidth :
+    Bandwidth frequency range in rad/sample following the equation
+    
+      ``R = exp(-bandwidth / 2)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A LTI filter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude).
+
+  """
+  R = real_exp(-bandwidth * .5)
+  gain = (1 - R ** 2) * .5 
+  numerator = 1 - z ** -2
+  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
+  return gain * numerator / denominator

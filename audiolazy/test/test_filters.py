@@ -28,10 +28,11 @@ p = pytest.mark.parametrize
 
 import operator
 import itertools as it
+from math import pi
 
 # Audiolazy internal imports
-from ..lazy_filters import LTIFreq, z
-from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_filters import LTIFreq, z, resonator
+from ..lazy_misc import almost_eq, almost_eq_diff, dB20
 
 
 class TestLTIFreq(object):
@@ -285,3 +286,36 @@ class TestLTIFreq(object):
                             max_diff=1e-10)
       assert almost_eq_diff(filt_to_testma.denominator, filtd2ma.denominator,
                             max_diff=1e-10)
+
+
+class TestResonator(object):
+
+  @p("func", resonator)
+  def test_zeros_and_number_of_poles(self, func):
+    names = set(resonator.__name__.split("_"))
+    filt = func(pi / 2, pi / 18) # Values in rad / sample
+    assert isinstance(filt, LTIFreq)
+    assert len(filt.denominator) == 3
+    num = filt.numerator
+    if "z" in names:
+      assert len(num) == 3
+      assert num[1] == 0
+      assert num[0] == -num[2]
+    if "poles" in names:
+      assert len(filt.numerator) == 1 # Just a constant
+
+  @p("func", resonator)
+  @p("freq", [pi / 2, pi / 3, 2 * pi / 3])
+  @p("bw", [pi * k / 15 for k in xrange(1, 5)])
+  def test_radius_range(self, func, freq, bw):
+    filt = func(freq, bw)
+    R_squared = filt.denominator[2]
+    assert 0 < R_squared < 1
+
+  @p("func", [r for r in resonator if "freq" not in r.__name__.split("_")])
+  @p("freq", [pi * k / 7 for k in xrange(1, 7)])
+  @p("bw", [pi / 25, pi / 30])
+  def test_gain_0dB_at_given_freq(self, func, freq, bw):
+    filt = func(freq, bw)
+    gain = dB20(filt.freq_response(freq))
+    assert almost_eq_diff(gain, 0., max_diff=5e-14)

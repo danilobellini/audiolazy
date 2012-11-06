@@ -26,17 +26,53 @@ danilo [dot] bellini [at] gmail [dot] com
 import pytest
 p = pytest.mark.parametrize
 
-from scipy import signal as ss
+from scipy.signal import lfilter
+from scipy.optimize import fminbound
+from math import cos, pi, sqrt
 
 # Audiolazy internal imports
-from ..lazy_filters import LTIFreq
-from ..lazy_misc import almost_eq
+from ..lazy_filters import LTIFreq, resonator
+from ..lazy_misc import almost_eq, almost_eq_diff, dB20
 
 
-@p("a", [[1.], [3.], [1., 3.], [15., -17.2], [-18., 9.8, 0., 14.3]])
-@p("b", [[1.], [-1.], [1., 0., -1.], [1., 3.]])
-@p("data", [range(5), range(5, 0, -1), [7, 22, -5], [8., 3., 15.]])
-def test_lfilter(a, b, data):
-  filt = LTIFreq(b, a)
-  expected = ss.lfilter(b, a, data).tolist()
-  assert almost_eq(filt(data), expected)
+class TestLTIFreqScipy(object):
+
+  @p("a", [[1.], [3.], [1., 3.], [15., -17.2], [-18., 9.8, 0., 14.3]])
+  @p("b", [[1.], [-1.], [1., 0., -1.], [1., 3.]])
+  @p("data", [range(5), range(5, 0, -1), [7, 22, -5], [8., 3., 15.]])
+  def test_lfilter(self, a, b, data):
+    filt = LTIFreq(b, a)
+    expected = lfilter(b, a, data).tolist()
+    assert almost_eq(filt(data), expected)
+
+
+class TestResonatorScipy(object):
+
+  @p("func", resonator)
+  @p("freq", [pi * k / 9 for k in xrange(1, 9)])
+  @p("bw", [pi / 23, pi / 31])
+  def test_max_gain_is_at_resonance(self, func, freq, bw):
+    names = func.__name__.split("_")
+    filt = func(freq, bw)
+    resonance_freq = fminbound(lambda x: -dB20(filt.freq_response(x)),
+                               0, pi, xtol=1e-10)
+    resonance_gain = dB20(filt.freq_response(resonance_freq))
+    assert almost_eq_diff(resonance_gain, 0., max_diff=1e-12)
+
+    if "freq" in names: # Given frequency is at the denominator
+      R = sqrt(filt.denominator[2])
+      assert 0 < R < 1
+      cosf = cos(freq)
+      cost = -filt.denominator[1] / (2 * R)
+      assert almost_eq(cosf, cost)
+
+      if "z" in names:
+        cosw = cosf * (2 * R) / (1 + R ** 2)
+
+      elif "poles" in names:
+        cosw = cosf * (1 + R ** 2) / (2 * R)
+
+      assert almost_eq(cosw, cos(resonance_freq))
+
+    else: # Given frequency is the resonance frequency
+      assert almost_eq(freq, resonance_freq)
