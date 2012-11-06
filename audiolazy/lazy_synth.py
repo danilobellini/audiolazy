@@ -468,7 +468,7 @@ class TableLookup(object):
                for partial, amplitude in harmonics_dict.iteritems())
     return TableLookup(data.take(len(self)), cycles=self.cycles)
 
-  def normalized(self):
+  def normalize(self):
     """
     Return a new table with values ranging from -1 to 1, reaching at least
     one of these, unless there's no data.
