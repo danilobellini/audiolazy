@@ -27,8 +27,7 @@ import operator
 
 # Audiolazy internal imports
 from .lazy_stream import AbstractOperatorOverloaderMeta
-from .lazy_misc import (almost_eq, multiplication_formatter,
-                        pair_strings_sum_formatter)
+from .lazy_misc import multiplication_formatter, pair_strings_sum_formatter
 
 __all__ = ["PolyMeta", "Poly"]
 
@@ -41,7 +40,7 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("add radd sub rsub " # elementwise
                    "mul rmul " # cross
                    "pow div truediv " # to mul, only when other is not Poly
-                   "eq ne " # almost_eq comparison of Poly.terms
+                   "eq ne " # comparison of Poly terms
                    "pos neg " # simple unary elementwise
                   )
 
@@ -77,9 +76,14 @@ class Poly(object):
     """
     self.zero = zero
     if isinstance(data, list):
-      self.data = {power: value for power, value in enumerate(data)}
+      if len(data) == 0:
+        self.data = {}
+      elif isinstance(data[0], list): # Pairs, behaviour like dict constructor
+        self.data = dict(data)
+      else: # Behaviour like list constructor
+        self.data = {power: value for power, value in enumerate(data)}
     elif isinstance(data, dict):
-      self.data = data.copy()
+      self.data = dict(data)
     elif isinstance(data, Poly):
       self.data = data.data.copy()
     elif data is None:
@@ -95,10 +99,10 @@ class Poly(object):
 
   def values(self):
     """
-    Array values generator for powers from zero to upper power. Useful
-    to cast as list/tuple and for numpy/scipy integration (be careful:
-    numpy and scipy use the reversed from the output of this function used
-    as input to a list or a tuple constructor)
+    Array values generator for powers from zero to upper power. Useful to cast
+    as list/tuple and for numpy/scipy integration (be careful: numpy use the
+    reversed from the output of this function used as input to a list or a
+    tuple constructor)
     """
     max_key = max(key for key in self.data) if self.data else -1
     return (self.data[key] if key in self.data else self.zero
@@ -114,7 +118,7 @@ class Poly(object):
 
   def __len__(self):
     """
-    Number of polynomial terms, not values (be careful).
+    Number of terms, not values (be careful).
     """
     return len(self.data)
 
@@ -142,7 +146,7 @@ class Poly(object):
     """
     if isinstance(value, Poly):
      return Poly(sum(coeff * value ** power
-                      for power, coeff in self.data.iteritems()))
+                     for power, coeff in self.data.iteritems()))
     if not self.data:
       return 0
 
@@ -187,15 +191,13 @@ class Poly(object):
           new_data[k1 + k2] = v1 * v2
     return Poly(new_data)
 
-  # -----------------------
-  # Comparison (not strict)
-  # -----------------------
+  # ----------
+  # Comparison
+  # ----------
   def __eq__(self, other):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
-    return almost_eq(sorted(self.data.iteritems()),
-                     sorted(other.data.iteritems())
-                    )
+    return sorted(self.data.items()) == sorted(other.data.items())
 
   def __ne__(self, other):
     return not(self == other)

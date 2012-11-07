@@ -121,8 +121,8 @@ class TestLTIFreq(object):
     idx_corr = max(idx_num2, idx_num2 + idx_den1)
     num_filter = fa * fd * (z ** -idx_corr)
     den_filter = fb * fc * (z ** -idx_corr)
-    assert my_filter.numpoly == num_filter.numpoly
-    assert my_filter.denpoly == den_filter.numpoly
+    assert almost_eq(my_filter.numpoly.terms(), num_filter.numpoly.terms())
+    assert almost_eq(my_filter.denpoly.terms(), den_filter.numpoly.terms())
 
   @p("filt", [1 / z / 1,
               (1 / z) ** 1,
@@ -252,22 +252,22 @@ class TestLTIFreq(object):
     numd = A * (1 - a) * z ** -2
     dend = A * z ** -2 - 2 * A ** 2 * z ** -3
     muld = mul.diff() if isinstance(mul, LTIFreq) else 0
-    assert num.diff() == numd
-    assert den.diff() == dend
-    assert num.diff(mul_after=mul) == numd * mul
-    assert den.diff(mul_after=mul) == dend * mul
+    assert almost_eq(num.diff(), numd)
+    assert almost_eq(den.diff(), dend)
+    assert almost_eq(num.diff(mul_after=mul), numd * mul)
+    assert almost_eq(den.diff(mul_after=mul), dend * mul)
     filtd_num = numd * den - dend * num
     filtd = filtd_num / den ** 2
-    assert filt.diff() == filtd
-    assert filt.diff(mul_after=mul) == filtd * mul
+    assert almost_eq(filt.diff(), filtd)
+    assert almost_eq(filt.diff(mul_after=mul), filtd * mul)
     numd2 = -2 * A * (1 - a) * z ** -3
     numd2ma = (numd2 * mul + muld * numd) * mul
     dend2 = -2 * A * z ** -3 + 6 * A ** 2 * z ** -4
     dend2ma = (dend2 * mul + muld * dend) * mul
-    assert num.diff(2) == numd2
-    assert den.diff(2) == dend2
-    assert num.diff(n=2, mul_after=mul) == numd2ma
-    assert den.diff(n=2, mul_after=mul) == dend2ma
+    assert almost_eq(num.diff(2), numd2)
+    assert almost_eq(den.diff(2), dend2)
+    assert almost_eq(num.diff(n=2, mul_after=mul), numd2ma)
+    assert almost_eq(den.diff(n=2, mul_after=mul), dend2ma)
 
     filtd2 = ((numd2 * den - num * dend2) * den - 2 * filtd_num * dend
              ) / den ** 3

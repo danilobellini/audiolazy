@@ -25,7 +25,7 @@ import operator
 from cmath import exp as complex_exp
 from math import exp as real_exp
 from math import sin, cos, pi, sqrt
-from collections import deque, Iterable
+from collections import deque, Iterable, OrderedDict
 import itertools as it
 
 # Audiolazy internal imports
@@ -81,17 +81,19 @@ class LTI(object):
       self.numpoly *= poly_delta
       self.denpoly *= poly_delta
 
-  @property
-  def numerator(self):
+  def numlist(self):
     if any(key < 0 for key, value in self.numpoly.terms()):
       raise ValueError("Non-causal filter")
     return list(self.numpoly.values())
+  numerator = property(numlist)
+  numlist = property(numlist)
 
-  @property
-  def denominator(self):
+  def denlist(self):
     if any(key < 0 for key, value in self.denpoly.terms()):
       raise ValueError("Non-causal filter")
     return list(self.denpoly.values())
+  denominator = property(denlist)
+  denlist = property(denlist)
 
   def __call__(self, seq, memory=None, zero=0.):
     """
@@ -118,7 +120,10 @@ class LTI(object):
     """
     if isinstance(seq, Stream):
       seq = seq.data
-    b, a = self.numerator, self.denominator # Just for type check
+    if any(key < 0 for key, value in it.chain(self.numpoly.terms(),
+                                              self.denpoly.terms())):
+      raise ValueError("Non-causal filter")
+    b, a = self.numerator, self.denominator
     rb, ra = list(reversed(b)), list(reversed(a[1:]))
 
     if b == []: # No numerator: input is fully neglect
@@ -224,6 +229,18 @@ class LTI(object):
           else:
             new_poly[key] = value
     return self.__class__(*data)
+
+  @property
+  def numdict(self):
+    return OrderedDict(self.numpoly.terms())
+
+  @property
+  def dendict(self):
+    return OrderedDict(self.denpoly.terms())
+
+  def __iter__(self):
+    yield self.numdict
+    yield self.dendict
 
 
 class LTIFreqMeta(AbstractOperatorOverloaderMeta):
@@ -386,6 +403,7 @@ class LTIFreq(LTI):
                           self.numpoly(inv_sign))(inv_sign),
                    self.denpoly ** (n + 1))
 
+
 z = LTIFreq({-1: 1})
 
 
@@ -408,7 +426,7 @@ def resonator(freq, bandwidth):
     Resonant frequency in rad/sample (max gain).
   bandwidth :
     Bandwidth frequency range in rad/sample following the equation
-    
+
       ``R = exp(-bandwidth / 2)``
 
     where R is the pole amplitude (radius).
@@ -439,7 +457,7 @@ def resonator(freq, bandwidth):
     Denominator frequency in rad/sample (not the one with max gain).
   bandwidth :
     Bandwidth frequency range in rad/sample following the equation
-    
+
       ``R = exp(-bandwidth / 2)``
 
     where R is the pole amplitude (radius).
@@ -469,7 +487,7 @@ def resonator(freq, bandwidth):
     Resonant frequency in rad/sample (max gain).
   bandwidth :
     Bandwidth frequency range in rad/sample following the equation
-    
+
       ``R = exp(-bandwidth / 2)``
 
     where R is the pole amplitude (radius).
@@ -482,7 +500,7 @@ def resonator(freq, bandwidth):
   """
   R = real_exp(-bandwidth * .5)
   cost = cos(freq) * (1 + R ** 2) / (2 * R)
-  gain = (1 - R ** 2) * .5 
+  gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
   denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
   return gain * numerator / denominator
@@ -502,7 +520,7 @@ def resonator(freq, bandwidth):
     Denominator frequency in rad/sample (not the one with max gain).
   bandwidth :
     Bandwidth frequency range in rad/sample following the equation
-    
+
       ``R = exp(-bandwidth / 2)``
 
     where R is the pole amplitude (radius).
@@ -514,7 +532,7 @@ def resonator(freq, bandwidth):
 
   """
   R = real_exp(-bandwidth * .5)
-  gain = (1 - R ** 2) * .5 
+  gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
   denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
   return gain * numerator / denominator

@@ -28,6 +28,7 @@ p = pytest.mark.parametrize
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly
+from ..lazy_misc import almost_eq
 
 
 class TestPoly(object):
@@ -66,4 +67,6 @@ class TestPoly(object):
     assert Poly([2, 3, 4]) + Poly([0, 5, -4, -1]) == Poly([2, 8, 0, -1])
 
   def test_float_sub(self):
-    assert Poly([.3, 4]) - Poly() - Poly([0, 4, -4]) + Poly([.7, 0, -4]) == 1
+    poly_obj = Poly([.3, 4]) - Poly() - Poly([0, 4, -4]) + Poly([.7, 0, -4])
+    assert len(poly_obj) == 1
+    assert almost_eq(poly_obj[0], 1)
