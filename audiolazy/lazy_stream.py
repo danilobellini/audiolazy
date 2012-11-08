@@ -31,7 +31,8 @@ from functools import wraps
 from .lazy_misc import blocks
 from .lazy_core import AbstractOperatorOverloaderMeta
 
-__all__ = ["StreamMeta", "Stream", "tostream", "ControlStream"]
+__all__ = ["StreamMeta", "Stream", "avoid_stream", "tostream",
+           "ControlStream"]
 
 
 class StreamMeta(AbstractOperatorOverloaderMeta):
@@ -48,6 +49,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
 
   def __binary__(cls, op_func):
     def dunder(self, other):
+      if isinstance(other, cls.__ignored_classes__):
+        return NotImplemented
       if isinstance(other, Stream):
         return Stream(it.imap(op_func, self.data, other.data))
       if isinstance(other, collections.Iterable):
@@ -57,6 +60,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
 
   def __rbinary__(cls, op_func):
     def dunder(self, other):
+      if isinstance(other, cls.__ignored_classes__):
+        return NotImplemented
       if isinstance(other, collections.Iterable):
         return Stream(it.imap(op_func, other, self.data))
       return Stream(it.imap(lambda a: op_func(other, a), self.data))
@@ -99,6 +104,7 @@ class Stream(collections.Iterable):
     to use x again otherwhere.
   """
   __metaclass__ = StreamMeta
+  __ignored_classes__ = tuple()
 
   def __init__(self, *dargs):
     """
@@ -157,7 +163,7 @@ class Stream(collections.Iterable):
     """
     raise TypeError("Streams can't be used as booleans.\n"
                     "If you need a boolean stream, try using bitwise "
-                    "operators & and | instead of 'and' & 'or'. If using "
+                    "operators & and | instead of 'and' and 'or'. If using "
                     "'not', you can use the inversion operator ~, casting "
                     "its returned int back to bool.\n"
                     "If you're using it in a 'if' comparison (e.g. for unit "
@@ -240,6 +246,19 @@ class Stream(collections.Iterable):
     """
     self.data = it.ifilter(func, self.data)
     return self
+
+  @classmethod
+  def register_ignored_class(cls, ignore):
+    cls.__ignored_classes__ += (ignore,)
+
+
+def avoid_stream(cls):
+  """
+  Decorator to a class that should avoid casting to a Stream when used with
+  operators applied to it.
+  """
+  Stream.register_ignored_class(cls)
+  return cls
 
 
 def tostream(func):

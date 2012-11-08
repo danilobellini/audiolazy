@@ -26,8 +26,9 @@ danilo [dot] bellini [at] gmail [dot] com
 import operator
 
 # Audiolazy internal imports
-from .lazy_stream import AbstractOperatorOverloaderMeta
+from .lazy_core import AbstractOperatorOverloaderMeta
 from .lazy_misc import multiplication_formatter, pair_strings_sum_formatter
+from .lazy_stream import Stream
 
 __all__ = ["PolyMeta", "Poly"]
 
@@ -93,9 +94,10 @@ class Poly(object):
     self._compact_zeros()
 
   def _compact_zeros(self):
-    keys = [key for key, value in self.data.iteritems() if value == 0.]
-    for key in keys:
-      del self.data[key]
+    for key, value in self.data.items():
+      if not isinstance(value, Stream):
+        if value == 0.:
+          del self.data[key]
 
   def values(self):
     """

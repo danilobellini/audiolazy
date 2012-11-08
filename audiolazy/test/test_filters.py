@@ -32,12 +32,15 @@ from math import pi
 
 # Audiolazy internal imports
 from ..lazy_filters import LTIFreq, z, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff, dB20
+from ..lazy_misc import almost_eq, almost_eq_diff, dB20, zero_pad
+from ..lazy_itertools import cycle
+from ..lazy_stream import Stream
 
 
 class TestLTIFreq(object):
   data = [-7, 3] + range(10) + [-50, 0] + range(70, -70, -11) # Arbitrary ints
   alpha = [-.5, -.2, -.1, 0, .1, .2, .5] # Attenuation Value for filters
+  delays = range(1, 5)
 
   def test_z_identity(self):
     my_filter = z ** 0
@@ -79,7 +82,6 @@ class TestLTIFreq(object):
                                                 [0.] + self.data[:-1]))
     assert almost_eq(my_filter(self.data), expected)
 
-  delays = range(1, 5)
   amp_list = [1, -15, 45, 0, .81, 17]
   @p(("num_delays", "amp_factor"),
      [(delay, amp) for delay in delays
@@ -286,6 +288,19 @@ class TestLTIFreq(object):
                             max_diff=1e-10)
       assert almost_eq_diff(filt_to_testma.denominator, filtd2ma.denominator,
                             max_diff=1e-10)
+
+  @p("delay", delays)
+  def test_one_delay_variable_gain(self, delay):
+    gain = cycle(self.alpha)
+    filt = gain * z ** -delay
+    length = 50
+    assert isinstance(filt, LTIFreq)
+    data_stream = cycle(self.alpha) * zero_pad(cycle(self.data), left=delay)
+    expected = data_stream.take(length)
+    result_stream = filt(cycle(self.data))
+    assert isinstance(result_stream, Stream)
+    result = result_stream.take(length)
+    assert almost_eq(result, expected)
 
 
 class TestResonator(object):

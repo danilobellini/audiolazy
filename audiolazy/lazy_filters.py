@@ -24,14 +24,14 @@ danilo [dot] bellini [at] gmail [dot] com
 import operator
 from cmath import exp as complex_exp
 from math import exp as real_exp
-from math import sin, cos, pi, sqrt
-from collections import deque, Iterable, OrderedDict
+from math import sin, cos, sqrt
+from collections import Iterable, OrderedDict
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_stream import Stream
-from .lazy_misc import (elementwise, blocks, zero_pad, dB20,
-                        multiplication_formatter, pair_strings_sum_formatter)
+from .lazy_stream import Stream, avoid_stream
+from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
+                        pair_strings_sum_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 
@@ -39,6 +39,7 @@ __all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb",
            "resonator"]
 
 
+@avoid_stream
 class CascadeFilter(list):
 
   def __init__(self, *filters):
@@ -65,6 +66,7 @@ class CascadeFilter(list):
     return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
 
 
+@avoid_stream
 class LTI(object):
   """
   Base class for Linear Time Invariant filters.
@@ -95,6 +97,18 @@ class LTI(object):
   denominator = property(denlist)
   denlist = property(denlist)
 
+  @property
+  def numdict(self):
+    return OrderedDict(self.numpoly.terms())
+
+  @property
+  def dendict(self):
+    return OrderedDict(self.denpoly.terms())
+
+  def __iter__(self):
+    yield self.numdict
+    yield self.dendict
+
   def __call__(self, seq, memory=None, zero=0.):
     """
     IIR and FIR linear filtering.
@@ -118,48 +132,96 @@ class LTI(object):
     A Stream that have the data from the input sequence filtered.
 
     """
-    if isinstance(seq, Stream):
-      seq = seq.data
+    # Causality test
     if any(key < 0 for key, value in it.chain(self.numpoly.terms(),
                                               self.denpoly.terms())):
       raise ValueError("Non-causal filter")
-    b, a = self.numerator, self.denominator
-    rb, ra = list(reversed(b)), list(reversed(a[1:]))
+    if self.denpoly[0] == 0:
+      raise ZeroDivisionError("Invalid filter gain")
 
-    if b == []: # No numerator: input is fully neglect
-      b = [zero]
+    # Lengths
+    la, lb = len(self.denominator), len(self.numerator)
+    lm = la - 1 # Memory size
 
-    la, lb = len(a), len(b)
-    gain = a[0]
+    # Convert memory input to a list with size exactly equals to lm
+    if memory is None:
+      memory = [zero for unused in xrange(lm)]
+    else: # Get data from iterable
+      if not isinstance(memory, Iterable): # Function with 1 parameter: size
+        memory = memory(lm)
+      tw = it.takewhile(lambda (idx, data): idx < lm,
+                        enumerate(memory))
+      memory = [data for idx, data in tw]
+      actual_len = len(memory)
+      if actual_len < lm:
+        memory = list(zero_pad(memory, lm - actual_len, zero=zero))
 
-    if la == 1: # No memory needed
-      def gen(): # Filter loop
-        for blk in blocks(zero_pad(seq, left=lb - 1), lb, 1):
-          numerator = sum(it.imap(operator.mul, blk, rb))
-          yield numerator / gain
+    # Creates the expression in a string
+    data_sum = []
+
+    num_iterables = []
+    for delay, coeff in self.numdict.iteritems():
+      if isinstance(coeff, Iterable):
+        num_iterables.append(delay)
+        data_sum.append("d{idx} * b{idx}.next()".format(idx=delay))
+      elif coeff == 1:
+        data_sum.append("d{idx}".format(idx=delay))
+      elif coeff == -1:
+        data_sum.append("-d{idx}".format(idx=delay))
+      elif coeff != 0:
+        data_sum.append("d{idx} * {value}".format(idx=delay, value=coeff))
+
+    den_iterables = []
+    for delay, coeff in self.dendict.iteritems():
+      if isinstance(coeff, Iterable):
+        den_iterables.append(delay)
+        data_sum.append("-m{idx} * a{idx}.next()".format(idx=delay))
+      elif delay == 0:
+        gain = coeff
+      elif coeff == -1:
+        data_sum.append("m{idx}".format(idx=delay))
+      elif coeff == 1:
+        data_sum.append("-m{idx}".format(idx=delay))
+      elif coeff != 0:
+        data_sum.append("-m{idx} * {value}".format(idx=delay, value=coeff))
+
+    # Creates the generator function for this call
+    if len(data_sum) == 0:
+      gen_func =  ["def gen(seq):",
+                   "  for unused in seq:",
+                   "    yield {zero}".format(zero=zero)
+                  ]
     else:
-      # Convert memory input to a deque with size exactly equals to len(a) - 1
-      if memory is None:
-        memory = [zero for unused in xrange(la - 1)]
-      else: # Get data from iterable
-        if not isinstance(memory, Iterable): # Function with 1 parameter: size
-          memory = memory(len(a) - 1)
-        tw = it.takewhile(lambda (idx, data): idx < len(a) - 1,
-                          enumerate(memory))
-        memory = [data for idx, data in tw]
-        lm = len(memory)
-        if lm < la - 1:
-          memory = list(zero_pad(memory, la - 1 - lm, zero=zero))
-      memory = deque(memory, maxlen=la - 1)
+      expr = " + ".join(data_sum)
+      if gain == -1:
+        expr = "-({expr})".format(expr=expr)
+      elif gain != 1:
+        expr = "({expr}) / {gain}".format(expr=expr, gain=gain)
 
-      def gen(): # Filter loop
-        for blk in blocks(zero_pad(seq, left=lb - 1, zero=zero), lb, 1):
-          numerator = sum(it.imap(operator.mul, blk, rb))
-          denominator = sum(it.imap(operator.mul, memory, ra))
-          next_val = (numerator - denominator) / gain
-          yield next_val
-          memory.append(next_val)
-    return Stream(gen())
+      arg_names = ["seq"]
+      arg_names.extend("b{idx}".format(idx=idx) for idx in num_iterables)
+      arg_names.extend("a{idx}".format(idx=idx) for idx in den_iterables)
+      gen_func =  ["def gen({args}):".format(args=", ".join(arg_names))]
+      gen_func += ["  m{idx} = {value}".format(idx=idx, value=value)
+                   for idx, value in enumerate(memory, 1)]
+      gen_func += ["  d{idx} = {value}".format(idx=idx, value=zero)
+                   for idx in xrange(1, lb)]
+      gen_func += ["  for d0 in seq:",
+                   "    m0 = {expr}".format(expr=expr),
+                   "    yield m0"]
+      gen_func += ["    m{idx} = m{idxold}".format(idx=idx, idxold=idx - 1)
+                   for idx in xrange(lm, 0, -1)]
+      gen_func += ["    d{idx} = d{idxold}".format(idx=idx, idxold=idx - 1)
+                   for idx in xrange(lb - 1, 0, -1)]
+
+    # Uses the generator function to return the desired values
+    ns = {}
+    exec "\n".join(gen_func) in ns
+    arguments = [iter(seq)]
+    arguments.extend(iter(self.numpoly[idx]) for idx in num_iterables)
+    arguments.extend(iter(self.denpoly[idx]) for idx in den_iterables)
+    return Stream(ns["gen"](*arguments))
+
 
   @elementwise("freq", 1)
   def freq_response(self, freq):
@@ -230,18 +292,6 @@ class LTI(object):
             new_poly[key] = value
     return self.__class__(*data)
 
-  @property
-  def numdict(self):
-    return OrderedDict(self.numpoly.terms())
-
-  @property
-  def dendict(self):
-    return OrderedDict(self.denpoly.terms())
-
-  def __iter__(self):
-    yield self.numdict
-    yield self.dendict
-
 
 class LTIFreqMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
@@ -262,6 +312,7 @@ class LTIFreqMeta(AbstractOperatorOverloaderMeta):
     return dunder
 
 
+@avoid_stream
 class LTIFreq(LTI):
   """
   Linear Time Invariant filters based on Z-transform frequency domain
