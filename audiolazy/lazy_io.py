@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Audio recording input and playing output module
@@ -40,8 +39,10 @@ except:
   pass
 
 import threading
+import struct
 
 # Audiolazy internal imports
+from .lazy_stream import tostream
 from .lazy_misc import chunks, DEFAULT_CHUNK_SIZE, DEFAULT_SAMPLE_RATE
 
 __all__ = ["AudioIO", "AudioThread"]
@@ -49,16 +50,16 @@ __all__ = ["AudioIO", "AudioThread"]
 
 class AudioIO(object):
   """
-    Multi-thread stream manager wrapper for PyAudio.
+  Multi-thread stream manager wrapper for PyAudio.
   """
 
   def __init__(self, wait=False):
     """
-      Constructor to PyAudio Multi-thread manager audio IO interface.
-      The "wait" input is a boolean about the behaviour on closing the
-      instance, if it should or not wait for the streaming audio to finish.
-      Defaults to False. Only works if the close method is explicitly
-      called.
+    Constructor to PyAudio Multi-thread manager audio IO interface.
+    The "wait" input is a boolean about the behaviour on closing the
+    instance, if it should or not wait for the streaming audio to finish.
+    Defaults to False. Only works if the close method is explicitly
+    called.
     """
     self._pa = pyaudio.PyAudio()
     self._threads = []
@@ -71,27 +72,27 @@ class AudioIO(object):
 
   def __del__(self):
     """
-      Default destructor. Use close method instead, or use the class
-      instance as the expression of a with block.
+    Default destructor. Use close method instead, or use the class
+    instance as the expression of a with block.
     """
     self.close()
 
   def __exit__(self, etype, evalue, etraceback):
     """
-      Closing destructor for use internally in a with-expression.
+    Closing destructor for use internally in a with-expression.
     """
     self.close()
 
   def __enter__(self):
     """
-      To be used only internally, in the with-expression protocol.
+    To be used only internally, in the with-expression protocol.
     """
     return self
 
   def close(self):
     """
-      Destructor for this audio interface. Waits the threads to finish their
-      streams, if desired.
+    Destructor for this audio interface. Waits the threads to finish their
+    streams, if desired.
     """
     with self.halting: # Avoid simultaneous "close" threads
 
@@ -114,17 +115,17 @@ class AudioIO(object):
 
   def terminate(self):
     """
-      Same as "close".
+    Same as "close".
     """
     self.close() # Avoids direct calls to inherited "terminate"
 
   def play(self, audio, **kwargs):
     """
-      Start another thread playing the given audio sample iterable (e.g. a
-      list, a generator, a NumPy np.ndarray with samples), and play it.
-      The arguments are used to customize behaviour of the new thread, as
-      parameters directly sent to PyAudio's new stream opening method, see
-      AudioThread.__init__ for more.
+    Start another thread playing the given audio sample iterable (e.g. a
+    list, a generator, a NumPy np.ndarray with samples), and play it.
+    The arguments are used to customize behaviour of the new thread, as
+    parameters directly sent to PyAudio's new stream opening method, see
+    AudioThread.__init__ for more.
     """
     with self.lock:
       if self.finished:
@@ -137,18 +138,54 @@ class AudioIO(object):
 
   def thread_finished(self, thread):
     """
-      Updates internal status about open threads. Should be called only by
-      the internal closing mechanism of children threads.
+    Updates internal status about open threads. Should be called only by
+    the internal closing mechanism of children threads.
     """
     with self.lock:
       self._threads.remove(thread)
 
+  @tostream
+  def record(self, chunk_size = DEFAULT_CHUNK_SIZE,
+                   dfmt = "f",
+                   nchannels = 1,
+                   rate = DEFAULT_SAMPLE_RATE
+            ):
+    """
+    Records audio from device into a Stream.
+
+    Parameters
+    ----------
+    chunk_size :
+      Number of samples per chunk (block sent to device).
+    dfmt :
+      Format, as in chunks(). Default is "f" (Float32).
+    num_channels :
+      Channels in audio stream (serialized).
+    rate :
+      Sample rate (same input used in sHz).
+
+    Returns
+    -------
+    Endless Stream instance that gather data from the audio input device.
+
+    """
+    # Open a new audio input stream
+    s = struct.Struct("{0}{1}".format(chunk_size, dfmt))
+    input_stream = self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
+                                 channels=nchannels,
+                                 rate=rate,
+                                 frames_per_buffer=chunk_size,
+                                 input=True)
+    while True:
+      for k in s.unpack(input_stream.read(chunk_size)):
+        yield k
+
 
 class AudioThread(threading.Thread):
   """
-    This class is a wrapper to ease the use of PyAudio using iterables of
-    numbers (lists, tuples, NumPy 1D arrays or, better, generators) as audio
-    data streams.
+  This class is a wrapper to ease the use of PyAudio using iterables of
+  numbers (lists, tuples, NumPy 1D arrays or, better, generators) as audio
+  data streams.
   """
   def __init__(self, device_manager, audio,
                      chunk_size = DEFAULT_CHUNK_SIZE,
@@ -158,13 +195,21 @@ class AudioThread(threading.Thread):
                      daemon = True # This shouldn't survive after crashes
               ):
     """
-      Sets a new thread to play the given audio.
-      Possible keyword arguments:
-        chunk_size   - Number of samples per chunk (block sent to device).
-        dfmt         - Format, as in chunks(). Default is "f" (Float32).
-        num_channels - Channels in audio stream (serialized).
-        rate         - Sample rate.
-        daemon       - Thread should be daemon.
+    Sets a new thread to play the given audio.
+
+    Parameters
+    ----------
+    chunk_size :
+      Number of samples per chunk (block sent to device).
+    dfmt :
+      Format, as in chunks(). Default is "f" (Float32).
+    num_channels :
+      Channels in audio stream (serialized).
+    rate :
+      Sample rate (same input used in sHz).
+    daemon :
+      Boolean telling if thread should be daemon. Default is True.
+
     """
     super(AudioThread, self).__init__()
     self.daemon = daemon # threading.Thread property, couldn't be assigned
@@ -192,12 +237,14 @@ class AudioThread(threading.Thread):
 
   def run(self):
     """
-      Plays the audio. This method plays the audio, and shouldn't be called
-      explicitly, let the constructor do so.
+    Plays the audio. This method plays the audio, and shouldn't be called
+    explicitly, let the constructor do so.
     """
     # From now on, it's multi-thread. Let the force be with them.
     st = self.stream._stream
-    for chunk in chunks(self.audio, size=self.chunk_size*self.nchannels, dfmt=self.dfmt):
+    for chunk in chunks(self.audio,
+                        size=self.chunk_size*self.nchannels,
+                        dfmt=self.dfmt):
       #Below is a faster way to call:
       #  self.stream.write(chunk, self.chunk_size)
       _portaudio.write_stream(st, chunk, self.chunk_size, False)

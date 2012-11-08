@@ -1,6 +1,7 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Itertools module "decorated" replica, where all outputs are Stream instances
+Simple I/O wire example, connecting the input directly to the output
 
 Copyright (C) 2012 Danilo de Jesus da Silva Bellini
 
@@ -18,18 +19,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-Created on Sat Oct 06 2012
+Created on Wed Nov 07 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
-import itertools as it
+from audiolazy import AudioIO
 
-# Audiolazy internal imports
-from .lazy_stream import tostream
-
-# All functions from itertools
-__all__ = []
-for func in filter(callable, [getattr(it, name) for name in dir(it)]):
-  name = func.__name__
-  __all__.append(name)
-  locals()[name] = tostream(func)
+with AudioIO(True) as player_recorder:
+  input_data = player_recorder.record()
+  player_recorder.play(input_data)

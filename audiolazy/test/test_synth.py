@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Testing module for the lazy_synth module
@@ -126,7 +125,7 @@ class TestModuloCounter(object):
     expected = [0, 1, 3, 4, 6, 7, 0, 1, 3, 4, 6, 7, 9, 10, 12, 13,
                 15, 16, 18, 19, 21, 22, 24, 25, 0, 1, 3, 4, 6, 7]
     assert mc1.take(len(expected)) == mc2.take(len(expected)) == expected
-    
+
 
 @p(("func", "data"),
    [(ones, 1.0),

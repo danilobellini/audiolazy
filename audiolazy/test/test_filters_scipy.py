@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 Testing module for the lazy_filters module by using scipy as an oracle
@@ -68,7 +67,6 @@ class TestResonatorScipy(object):
 
       if "z" in names:
         cosw = cosf * (2 * R) / (1 + R ** 2)
-
       elif "poles" in names:
         cosw = cosf * (1 + R ** 2) / (2 * R)
 
