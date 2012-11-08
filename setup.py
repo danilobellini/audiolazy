@@ -38,14 +38,21 @@ with open(os.path.join(path, pkgname, metadata_file), "r") as f:
       assignment = [side.strip() for side in line.split("=")]
       metadata[assignment[0].strip("_")] = eval(assignment[1])
 
-# Description is all from README.txt, but the ending copyright message
-with open(os.path.join(path, "README.rst"), "r") as f:
-  readme_data = f.read()
+# Description is all from README.rst, but the ending copyright message
+with open(os.path.join(path, "README.rst"), "r") as fr:
+  readme_data = fr.read()
 readme_data = readme_data.replace("\r\n", "\n")
 title, descr, ldescr = readme_data.split("\n\n", 2)
 metadata["description"] = descr
-metadata["long_description"] = "\n".join([title, ldescr]
-                                        ).rsplit("----", 1)[0].strip()
+metadata["long_description"] = "\n\n".join([title, ldescr]
+                                          ).rsplit("----", 1)[0].strip()
+
+# Append long description with the change log from CHANGES.rst
+with open(os.path.join(path, "CHANGES.rst"), "r") as fc:
+  changes_data = fc.read()
+changes_data = changes_data.replace("\r\n", "\n")
+metadata["long_description"] = "\n".join(["", metadata["long_description"],
+                                          "", changes_data])
 
 # Classifiers and license
 metadata["license"] = "GPLv3"
