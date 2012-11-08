@@ -404,14 +404,21 @@ class LTIFreq(LTI):
     return False
 
   def __str__(self):
-    num_term_strings = [multiplication_formatter(-power, value, "z")
-                        for power, value in self.numpoly.terms()
-                        if value != 0.]
+    num_term_strings = []
+    for power, value in self.numpoly.terms():
+      if isinstance(value, Iterable):
+        value = "b{0}".format(power)
+      if value != 0.:
+        num_term_strings.append(multiplication_formatter(-power, value, "z"))
     num = "0" if len(num_term_strings) == 0 else \
           reduce(pair_strings_sum_formatter, num_term_strings)
-    den_term_strings = [multiplication_formatter(-power, value, "z")
-                        for power, value in self.denpoly.terms()
-                        if value != 0.]
+
+    den_term_strings = []
+    for power, value in self.denpoly.terms():
+      if isinstance(value, Iterable):
+        value = "a{0}".format(power)
+      if value != 0.:
+        den_term_strings.append(multiplication_formatter(-power, value, "z"))
     den = reduce(pair_strings_sum_formatter, den_term_strings)
 
     if den == "1": # No feedback

@@ -23,6 +23,7 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import operator
+from collections import Iterable
 
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta
@@ -243,8 +244,12 @@ class Poly(object):
   # String representation
   # ---------------------
   def __str__(self):
-    term_strings = [multiplication_formatter(power, value, "x")
-                    for power, value in self.terms() if value != 0.]
+    term_strings = []
+    for power, value in self.terms():
+      if isinstance(value, Iterable):
+        value = "a{0}".format(power)
+      if value != 0.:
+        term_strings.append(multiplication_formatter(power, value, "x"))
     return "0" if len(term_strings) == 0 else \
            reduce(pair_strings_sum_formatter, term_strings)
 
