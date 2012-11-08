@@ -26,5 +26,5 @@ danilo [dot] bellini [at] gmail [dot] com
 from audiolazy import AudioIO
 
 with AudioIO(True) as player_recorder:
-  input_data = player_recorder.record()
-  player_recorder.play(input_data)
+  input_data = player_recorder.record(chunk_size=16)
+  player_recorder.play(input_data, chunk_size=16)
