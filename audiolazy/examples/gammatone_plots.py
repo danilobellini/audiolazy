@@ -54,7 +54,7 @@ for idx, (fc, endtime) in enumerate(sorted(plot_freq_time.iteritems()), 1):
   # Subplot configuration
   plt.figure(1)
   plt.subplot(2, ceil(len(plot_freq_time) / 2), idx)
-  plt.title("Freq response method - {0} Hz".format(fc))
+  plt.title("Frequency response - {0} Hz".format(fc))
   plt.xlabel("Frequency (Hz)")
   plt.ylabel("Gain (dB)")
 

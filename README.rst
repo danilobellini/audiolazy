@@ -24,19 +24,6 @@ audio signal processing (DSP), featuring a simple synthesizer, analysis
 tools, filters, biological auditory periphery modeling, among other
 functionalities.
 
-Status
-------
-
-This is a pre-alpha package. For now, you can do some lazy element-wise maths
-with Stream objects; use the lazy_itertools module, a itertools decorated
-replica that have element-wise operators; create your own LTI filters using
-the filter equation directly on Z-domain with the lazy_filter.z object; use
-the lazy_synth module to do some synthesis with TableLookup objects, like FM
-synthesis calling the sinusoid twice; play your sound with a AudioIO instance,
-perhaps seem as a context manager, with its play method.
-
-Some documentation will be included soon.
-
 ----
 
 Copyright (C) 2012 Danilo de Jesus da Silva Bellini

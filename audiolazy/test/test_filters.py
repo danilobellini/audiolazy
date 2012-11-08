@@ -30,14 +30,14 @@ import itertools as it
 from math import pi
 
 # Audiolazy internal imports
-from ..lazy_filters import LTIFreq, z, resonator
+from ..lazy_filters import ZFilter, z, resonator
 from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
 from ..lazy_math import dB20
 
 
-class TestLTIFreq(object):
+class TestZFilter(object):
   data = [-7, 3] + range(10) + [-50, 0] + range(70, -70, -11) # Arbitrary ints
   alpha = [-.5, -.2, -.1, 0, .1, .2, .5] # Attenuation Value for filters
   delays = range(1, 5)
@@ -217,7 +217,7 @@ class TestLTIFreq(object):
 
   @p("a", alpha)
   def test_one_pole_numerator_denominator_constructor(self, a):
-    my_filter = LTIFreq(numerator=[1.], denominator=[1., -a])
+    my_filter = ZFilter(numerator=[1.], denominator=[1., -a])
     expected = [x for x in self.data]
     for idx in xrange(1,len(expected)):
       expected[idx] += a * expected[idx-1]
@@ -253,7 +253,7 @@ class TestLTIFreq(object):
     filt = num / den
     numd = A * (1 - a) * z ** -2
     dend = A * z ** -2 - 2 * A ** 2 * z ** -3
-    muld = mul.diff() if isinstance(mul, LTIFreq) else 0
+    muld = mul.diff() if isinstance(mul, ZFilter) else 0
     assert almost_eq(num.diff(), numd)
     assert almost_eq(den.diff(), dend)
     assert almost_eq(num.diff(mul_after=mul), numd * mul)
@@ -294,7 +294,7 @@ class TestLTIFreq(object):
     gain = cycle(self.alpha)
     filt = gain * z ** -delay
     length = 50
-    assert isinstance(filt, LTIFreq)
+    assert isinstance(filt, ZFilter)
     data_stream = cycle(self.alpha) * zero_pad(cycle(self.data), left=delay)
     expected = data_stream.take(length)
     result_stream = filt(cycle(self.data))
@@ -309,7 +309,7 @@ class TestResonator(object):
   def test_zeros_and_number_of_poles(self, func):
     names = set(resonator.__name__.split("_"))
     filt = func(pi / 2, pi / 18) # Values in rad / sample
-    assert isinstance(filt, LTIFreq)
+    assert isinstance(filt, ZFilter)
     assert len(filt.denominator) == 3
     num = filt.numerator
     if "z" in names:

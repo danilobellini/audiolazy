@@ -25,8 +25,9 @@ danilo [dot] bellini [at] gmail [dot] com
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_misc import elementwise
-from .lazy_filters import z, CascadeFilter, LTIFreq, resonator
+from .lazy_filters import z, CascadeFilter, ZFilter, resonator
 from .lazy_math import pi, exp, cos, sin, sqrt, factorial
+from .lazy_itertools import tee
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 
@@ -157,11 +158,11 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
 
   Returns
   -------
-  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
   IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The total number of poles is twice the value of eta (conjugated pairs), one
-  pair for each LTIFreq.
+  pair for each ZFilter.
 
   """
   assert eta >= 1
@@ -172,7 +173,7 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
   filt = (numerator / denominator).diff(n=eta-1, mul_after=-z)
 
   # Filter is done, but the denominator might have some numeric loss
-  f0 = LTIFreq(filt.numpoly) / denominator
+  f0 = ZFilter(filt.numpoly) / denominator
   f0 /= abs(f0.freq_response(freq)) # Max gain == 1.0 (0 dB)
   fn = 1 / denominator
   fn /= abs(fn.freq_response(freq))
@@ -198,11 +199,11 @@ def gammatone(freq, bandwidth):
 
   Returns
   -------
-  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
   IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The total number of poles is twice the value of eta (conjugated pairs), one
-  pair for each LTIFreq.
+  pair for each ZFilter.
 
   """
   A = exp(-bandwidth)
@@ -237,14 +238,15 @@ def gammatone(freq, bandwidth):
 
   Returns
   -------
-  A CascadeFilter object with LTIFreq filters, each of them a pole-conjugated
+  A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
   IIR filter model.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The total number of poles is twice the value of eta (conjugated pairs), one
-  pair for each LTIFreq.
+  pair for each ZFilter.
 
   """
-  rbw = bandwidth * 2
-  H1 = resonator.z_exp(freq, rbw)
-  H2 = resonator.poles_exp(freq, rbw)
-  return CascadeFilter(H1, H2, H1, H2)
+  bws = tee(bandwidth * 2, 4)
+  freqs = tee(freq, 4)
+  resons = [resonator.z_exp, resonator.poles_exp] * 2
+  return CascadeFilter(reson(f, bw)
+                       for reson, f, bw in zip(bws, freqs, resons))

@@ -34,14 +34,17 @@ from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt
+from .lazy_itertools import tee
 
-__all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb",
-           "resonator"]
+__all__ = ["CascadeFilter", "LinearFilter", "ZFilterMeta", "ZFilter", "z",
+           "comb", "resonator"]
 
 
 @avoid_stream
 class CascadeFilter(list):
-
+  """
+  Filter cascade b
+  """
   def __init__(self, *filters):
     if len(filters) == 1 and isinstance(filters[0], Iterable):
       self.extend(filters[0])
@@ -67,9 +70,9 @@ class CascadeFilter(list):
 
 
 @avoid_stream
-class LTI(object):
+class LinearFilter(object):
   """
-  Base class for Linear Time Invariant filters.
+  Base class for Linear filters, time invariant or not.
   """
   def __init__(self, numerator=None, denominator={0: 1}):
     self.numpoly = Poly(numerator)
@@ -245,6 +248,19 @@ class LTI(object):
     den = self.denpoly(z_)
     return num / den
 
+  def is_lti(self):
+    """
+    Test if this filter is LTI (Linear Time Invariant).
+
+    Returns
+    -------
+    Boolean returning True if this filter is LTI, False otherwise.
+
+    """
+    return not any(isinstance(value, Iterable)
+                   for delay, value in it.chain(self.numpoly.terms(),
+                                                self.denpoly.terms()))
+
   def is_causal(self):
     """
     Causality test for this filter.
@@ -262,7 +278,7 @@ class LTI(object):
 
     Returns
     -------
-    A new LTI filter, with the linearized delay values.
+    A new linear filter, with the linearized delay values.
 
     Example
     -------
@@ -293,7 +309,7 @@ class LTI(object):
     return self.__class__(*data)
 
 
-class LTIFreqMeta(AbstractOperatorOverloaderMeta):
+class ZFilterMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
                    "truediv rtruediv pow "
                    "eq ne " # almost_eq comparison of Poly terms
@@ -301,7 +317,7 @@ class LTIFreqMeta(AbstractOperatorOverloaderMeta):
 
   def __rbinary__(cls, op_func):
     def dunder(self, other):
-      if isinstance(other, LTI):
+      if isinstance(other, LinearFilter):
         raise ValueError("Filter equations have different domains")
       return op_func(cls([other]), self) # The "other" is probably a number
     return dunder
@@ -313,10 +329,9 @@ class LTIFreqMeta(AbstractOperatorOverloaderMeta):
 
 
 @avoid_stream
-class LTIFreq(LTI):
+class ZFilter(LinearFilter):
   """
-  Linear Time Invariant filters based on Z-transform frequency domain
-  equations.
+  Linear filters based on Z-transform frequency domain equations.
 
   Examples
   --------
@@ -336,7 +351,7 @@ class LTIFreq(LTI):
 
   >>> b = [1, 1]
   >>> a = [1, -1] # Each index ``i`` has the coefficient for z ** -i
-  >>> filt = LTIFreq(b, a)
+  >>> filt = ZFilter(b, a)
   >>> data = [1, 5, -4, -7, 9]
   >>> stream_result = filt(data, memory=[3], zero=0) # Lazy iterable
   >>> result = list(stream_result) # Freeze
@@ -348,58 +363,58 @@ class LTIFreq(LTI):
   [0, 4, 18, 39, 50]
 
   """
-  __metaclass__ = LTIFreqMeta
+  __metaclass__ = ZFilterMeta
 
   def __add__(self, other):
-    if isinstance(other, LTIFreq):
-      return LTIFreq(self.numpoly * other.denpoly +
+    if isinstance(other, ZFilter):
+      return ZFilter(self.numpoly * other.denpoly +
                      other.numpoly * self.denpoly,
                      self.denpoly * other.denpoly)
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       raise ValueError("Filter equations have different domains")
-    return self + LTIFreq([other]) # Other is probably a number
+    return self + ZFilter([other]) # Other is probably a number
 
   def __sub__(self, other):
     return self + (-other)
 
   def __mul__(self, other):
-    if isinstance(other, LTIFreq):
-      return LTIFreq(self.numpoly * other.numpoly,
+    if isinstance(other, ZFilter):
+      return ZFilter(self.numpoly * other.numpoly,
                      self.denpoly * other.denpoly)
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       raise ValueError("Filter equations have different domains")
-    return LTIFreq(self.numpoly * other, self.denpoly)
+    return ZFilter(self.numpoly * other, self.denpoly)
 
   def __div__(self, other):
-    if isinstance(other, LTIFreq):
-      return LTIFreq(self.numpoly * other.denpoly,
+    if isinstance(other, ZFilter):
+      return ZFilter(self.numpoly * other.denpoly,
                      self.denpoly * other.numpoly)
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       raise ValueError("Filter equations have different domains")
     return self * operator.div(1, other)
 
   def __truediv__(self, other):
-    if isinstance(other, LTIFreq):
-      return LTIFreq(self.numpoly * other.denpoly,
+    if isinstance(other, ZFilter):
+      return ZFilter(self.numpoly * other.denpoly,
                      self.denpoly * other.numpoly)
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       raise ValueError("Filter equations have different domains")
     return self * operator.truediv(1, other)
 
   def __pow__(self, other):
     if (other < 0) and (len(self.numpoly) >= 2 or len(self.denpoly) >= 2):
-      return LTIFreq(self.denpoly, self.numpoly) ** -other
+      return ZFilter(self.denpoly, self.numpoly) ** -other
     if isinstance(other, (int, float)):
-      return LTIFreq(self.numpoly ** other, self.denpoly ** other)
+      return ZFilter(self.numpoly ** other, self.denpoly ** other)
     raise ValueError("Z-transform powers only valid with integers")
 
   def __eq__(self, other):
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       return self.numpoly == other.numpoly and self.denpoly == other.denpoly
     return False
 
   def __ne__(self, other):
-    if isinstance(other, LTI):
+    if isinstance(other, LinearFilter):
       return self.numpoly != other.numpoly and self.denpoly != other.denpoly
     return False
 
@@ -445,24 +460,24 @@ class LTIFreq(LTI):
     Takes n-th derivative, multiplying each m-th derivative filter by
     mul_after before taking next (m+1)-th derivative or returning.
     """
-    if isinstance(mul_after, LTIFreq):
-      den = LTIFreq(self.denpoly)
+    if isinstance(mul_after, ZFilter):
+      den = ZFilter(self.denpoly)
       return reduce(lambda num, order: mul_after *
                       (num.diff() * den - order * num * den.diff()),
                     xrange(1, n + 1),
-                    LTIFreq(self.numpoly)
+                    ZFilter(self.numpoly)
                    ) / den ** (n + 1)
 
     inv_sign = Poly({-1: 1}) # Since poly variable is z ** -1
     den = self.denpoly(inv_sign)
-    return LTIFreq(reduce(lambda num, order: mul_after *
+    return ZFilter(reduce(lambda num, order: mul_after *
                             (num.diff() * den - order * num * den.diff()),
                           xrange(1, n + 1),
                           self.numpoly(inv_sign))(inv_sign),
                    self.denpoly ** (n + 1))
 
 
-z = LTIFreq({-1: 1})
+z = ZFilter({-1: 1})
 
 
 def comb(delay, alpha=1):
@@ -491,14 +506,14 @@ def resonator(freq, bandwidth):
 
   Returns
   -------
-  A LTI filter object.
+  A ZFilter object.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = exp(-bandwidth * .5)
-  cost = cos(freq) * (2 * R) / (1 + R ** 2)
-  gain = (1 - R ** 2) * sqrt(1 - cost ** 2)
-  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
+  R = tee(exp(-bandwidth * .5), 5)
+  cost = tee(cos(freq) * (2 * R[3]) / (1 + R[4] ** 2))
+  gain = (1 - R[0] ** 2) * sqrt(1 - cost[0] ** 2)
+  denominator = 1 - 2 * R[1] * cost[1] * z ** -1 + R[2] ** 2 * z ** -2
   return gain / denominator
 
 
@@ -522,13 +537,14 @@ def resonator(freq, bandwidth):
 
   Returns
   -------
-  A LTI filter object.
+  A ZFilter object.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = exp(-bandwidth * .5)
-  gain = (1 - R ** 2) * sin(freq)
-  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
+  R = tee(exp(-bandwidth * .5), 3)
+  freq = tee(freq)
+  gain = (1 - R[0] ** 2) * sin(freq[0])
+  denominator = 1 - 2 * R[1] * cos(freq[1]) * z ** -1 + R[2] ** 2 * z ** -2
   return gain / denominator
 
 
@@ -552,15 +568,15 @@ def resonator(freq, bandwidth):
 
   Returns
   -------
-  A LTI filter object.
+  A ZFilter object.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = exp(-bandwidth * .5)
-  cost = cos(freq) * (1 + R ** 2) / (2 * R)
-  gain = (1 - R ** 2) * .5
+  R = tee(exp(-bandwidth * .5), 5)
+  cost = cos(freq) * (1 + R[3] ** 2) / (2 * R[4])
+  gain = (1 - R[0] ** 2) * .5
   numerator = 1 - z ** -2
-  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
+  denominator = 1 - 2 * R[1] * cost * z ** -1 + R[2] ** 2 * z ** -2
   return gain * numerator / denominator
 
 
@@ -585,12 +601,12 @@ def resonator(freq, bandwidth):
 
   Returns
   -------
-  A LTI filter object.
+  A ZFilter object.
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = exp(-bandwidth * .5)
-  gain = (1 - R ** 2) * .5
+  R = tee(exp(-bandwidth * .5), 3)
+  gain = (1 - R[0] ** 2) * .5
   numerator = 1 - z ** -2
-  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
+  denominator = 1 - 2 * R[1] * cos(freq) * z ** -1 + R[2] ** 2 * z ** -2
   return gain * numerator / denominator
