@@ -7,6 +7,7 @@ AudioLazy changes history
     - Gammatone frequency and impulse response plots example
     - FM synthesis example for benchmarking between CPython and PyPy
     - Simple I/O wire example, connecting the input directly to the output
+    - Modulo Counter graphics w/ FM synthesis audio in a wxPython application
 - general:
     - Namespace cleanup with __all__
     - Lots of optimization and refactoring, also on tests and setup.py

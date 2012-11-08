@@ -27,7 +27,7 @@ from math import pi, exp, cos, sin, sqrt
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_misc import elementwise, factorial
-from .lazy_filters import z, CascadeFilter, LTIFreq
+from .lazy_filters import z, CascadeFilter, LTIFreq, resonator
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 
@@ -245,18 +245,7 @@ def gammatone(freq, bandwidth):
   pair for each LTIFreq.
 
   """
-  A = exp(-bandwidth)
-  cosw = cos(freq)
-
-  Asqr = A ** 2
-  costheta1 = cosw * (1 + Asqr) / (2 * A)
-  costheta2 = cosw * (2 * A) / (1 + Asqr)
-  ro1 = .5 * (1 - Asqr)
-  ro2 = (1 - Asqr) * (1 - costheta2 ** 2) ** .5
-
-  H1 = ro1 * (1 - z ** -2) / (1 - 2 * A * costheta1 * z ** -1
-                                + Asqr * z ** -2)
-  H2 = ro2                 / (1 - 2 * A * costheta2 * z ** -1
-                                + Asqr * z ** -2)
-
+  rbw = bandwidth * 2
+  H1 = resonator.z_exp(freq, rbw)
+  H2 = resonator.poles_exp(freq, rbw)
   return CascadeFilter(H1, H2, H1, H2)
