@@ -24,8 +24,6 @@ danilo [dot] bellini [at] gmail [dot] com
 
 import operator
 from cmath import exp as complex_exp
-from math import exp as real_exp
-from math import sin, cos, sqrt
 from collections import Iterable, OrderedDict
 import itertools as it
 
@@ -35,6 +33,7 @@ from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
+from .lazy_math import exp, sin, cos, sqrt
 
 __all__ = ["CascadeFilter", "LTI", "LTIFreqMeta", "LTIFreq", "z", "comb",
            "resonator"]
@@ -489,7 +488,7 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = real_exp(-bandwidth * .5)
+  R = exp(-bandwidth * .5)
   cost = cos(freq) * (2 * R) / (1 + R ** 2)
   gain = (1 - R ** 2) * sqrt(1 - cost ** 2)
   denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
@@ -520,7 +519,7 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = real_exp(-bandwidth * .5)
+  R = exp(-bandwidth * .5)
   gain = (1 - R ** 2) * sin(freq)
   denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
   return gain / denominator
@@ -550,7 +549,7 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = real_exp(-bandwidth * .5)
+  R = exp(-bandwidth * .5)
   cost = cos(freq) * (1 + R ** 2) / (2 * R)
   gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
@@ -583,7 +582,7 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = real_exp(-bandwidth * .5)
+  R = exp(-bandwidth * .5)
   gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
   denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2

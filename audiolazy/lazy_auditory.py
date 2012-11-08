@@ -22,12 +22,11 @@ Created on Fri Sep 21 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
-from math import pi, exp, cos, sin, sqrt
-
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
-from .lazy_misc import elementwise, factorial
+from .lazy_misc import elementwise
 from .lazy_filters import z, CascadeFilter, LTIFreq, resonator
+from .lazy_math import pi, exp, cos, sin, sqrt, factorial
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 

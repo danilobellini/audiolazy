@@ -24,6 +24,7 @@ danilo [dot] bellini [at] gmail [dot] com
 
 from .lazy_misc import *
 from .lazy_core import *
+from .lazy_math import *
 from .lazy_stream import *
 from .lazy_itertools import *
 from .lazy_poly import *
@@ -32,6 +33,7 @@ from .lazy_io import *
 from .lazy_synth import *
 from .lazy_midi import *
 from .lazy_auditory import *
+from .lazy_math import *
 
 # Metadata (see setup.py for more information about these)
 __version__ = "0.03dev"

@@ -29,13 +29,12 @@ from functools import wraps
 import types
 import itertools as it
 import sys
-from math import pi, log10
-import operator
+from math import pi
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "blocks", "chunks",
            "array_chunks", "zero_pad", "elementwise", "almost_eq_diff",
            "almost_eq", "multiplication_formatter",
-           "pair_strings_sum_formatter", "sHz", "factorial", "dB10", "dB20"]
+           "pair_strings_sum_formatter", "sHz"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -316,36 +315,3 @@ def sHz(rate):
   or assign kHz = 1e3 * Hz to use other unit, as you wish.
   """
   return float(rate), 2 * pi / rate
-
-
-def factorial(n):
-  """
-  Factorial function that works with really big numbers.
-  """
-  if isinstance(n, float):
-    if n.is_integer():
-      n = int(n)
-  if not isinstance(n, (int, long)):
-    raise TypeError("non-integer input (perhaps you need Euler Gamma "
-                    "function or Gauss Pi function)")
-  if n < 0:
-    raise ValueError("input shouldn't be negative")
-  return reduce(operator.mul,
-                it.takewhile(lambda m: m <= n, it.count(2)),
-                1)
-
-
-@elementwise("data", 0)
-def dB10(data):
-  """
-  Linear magnitude gain in dB.
-  """
-  return 10 * log10(abs(data))
-
-
-@elementwise("data", 0)
-def dB20(data):
-  """
-  Power magnitude gain in dB.
-  """
-  return 20 * log10(abs(data))

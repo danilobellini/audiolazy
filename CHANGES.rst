@@ -25,8 +25,9 @@ AudioLazy changes history
       in. Inherits from MultiKeyDict, so the same strategy may have multiple
       names. It is also an iterable on its values (functions)
 - lazy_filters:
-    - LTI filters now can have Streams as coefficients
-    - LTI filters are now iterable, allowing:
+    - LTI filters now can have Streams as coefficients (not "Time Invariant"
+      anymore)
+    - LTI filters are now iterables, allowing
         - Comparison with almost_eq like ``assert almost_eq(filt1, filt2)``
         - Expression like ``numerator_data, denominator_data = filt``, where
           each data is a list of pairs that can be used as input for Poly
@@ -41,12 +42,17 @@ AudioLazy changes history
     - 4 resonator filter models with 2-poles based on exponential bandwidth
 - lazy_io:
     - AudioIO.record method, creating audio Stream instances from device data
+- lazy_math (*new!*):
+    - dB10, dB20 functions for converting amplitude (squared or linear,
+      respectively) to logarithmic dB (power) values from complex-numbers
+      (like the ones returned by LTIFreq.freq_response)
+    - Most functions from math module, but working decorated with elementwise
+      (`sin`, `cos`, `sqrt`, etc.), and the constants `e` and `pi`
+    - Other functions: `factorial`, `ln` (the `log` from math), `log2`, `cexp`
+      (the `exp` from cmath)
 - lazy_midi:
     - MIDI pitch numbers and Hz frequency converters from strings like "C#4"
 - lazy_misc:
-    - dB10, dB20 functions for converting amplitude (squared or linear,
-      respectively) to logarithmic dB (power) values. Complex-numbers (like
-      the ones returned by LTIFreq.freq_response)
     - Elementwise decorator now based on both argument keyword and position
 - lazy_poly:
     - Horner-like scheme for Poly.__call__ evaluation

@@ -31,9 +31,10 @@ from math import pi
 
 # Audiolazy internal imports
 from ..lazy_filters import LTIFreq, z, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff, dB20, zero_pad
+from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
+from ..lazy_math import dB20
 
 
 class TestLTIFreq(object):

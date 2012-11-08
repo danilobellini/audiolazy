@@ -31,7 +31,8 @@ from math import cos, pi, sqrt
 
 # Audiolazy internal imports
 from ..lazy_filters import LTIFreq, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff, dB20
+from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_math import dB20
 
 
 class TestLTIFreqScipy(object):
