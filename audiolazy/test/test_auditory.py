@@ -26,8 +26,12 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_auditory import erb, gammatone_erb_constants
+from ..lazy_auditory import erb, gammatone_erb_constants, gammatone
 from ..lazy_misc import almost_eq_diff
+from ..lazy_math import pi
+from ..lazy_filters import CascadeFilter
+from ..lazy_stream import Stream
+
 
 class TestERB(object):
 
@@ -58,3 +62,19 @@ class TestGammatoneERBConstants(object):
     assert almost_eq_diff(y, cn, max_diff=5e-4)
     assert almost_eq_diff(1./x, an, max_diff=5e-4)
     assert almost_eq_diff(1./y, cninv, max_diff=5e-4)
+
+
+class TestGammatone(object):
+
+  some_data = [pi / 7, Stream(0, 1, 2, 1), [pi/3, pi/4, pi/5, pi/6]]
+
+  @p(("filt_func", "freq", "bw"),
+     [(gf, pi / 5, pi / 19) for gf in gammatone] +
+     [(gammatone.klapuri, freq, bw) for freq in some_data for bw in some_data]
+    )
+  def test_number_of_poles_order(self, filt_func, freq, bw):
+    cfilt = filt_func(freq=pi / 5, bandwidth=pi / 19)
+    assert isinstance(cfilt, CascadeFilter)
+    assert len(cfilt) == 4
+    for filt in cfilt:
+      assert len(filt.denominator) == 3

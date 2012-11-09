@@ -249,4 +249,4 @@ def gammatone(freq, bandwidth):
   freqs = tee(freq, 4)
   resons = [resonator.z_exp, resonator.poles_exp] * 2
   return CascadeFilter(reson(f, bw)
-                       for reson, f, bw in zip(bws, freqs, resons))
+                       for reson, f, bw in zip(resons, freqs, bws))
