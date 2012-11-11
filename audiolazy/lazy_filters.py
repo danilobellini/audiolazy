@@ -33,7 +33,7 @@ from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import exp, sin, cos, sqrt
+from .lazy_math import exp, sin, cos, sqrt, pi
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator"]
@@ -527,7 +527,7 @@ def resonator(freq, bandwidth):
   freq :
     Resonant frequency in rad/sample (max gain).
   bandwidth :
-    Bandwidth frequency range in rad/sample following the equation
+    Bandwidth frequency range in rad/sample following the equation:
 
       ``R = exp(-bandwidth / 2)``
 
@@ -561,7 +561,7 @@ def resonator(freq, bandwidth):
   freq :
     Denominator frequency in rad/sample (not the one with max gain).
   bandwidth :
-    Bandwidth frequency range in rad/sample following the equation
+    Bandwidth frequency range in rad/sample following the equation:
 
       ``R = exp(-bandwidth / 2)``
 
@@ -594,7 +594,7 @@ def resonator(freq, bandwidth):
   freq :
     Resonant frequency in rad/sample (max gain).
   bandwidth :
-    Bandwidth frequency range in rad/sample following the equation
+    Bandwidth frequency range in rad/sample following the equation:
 
       ``R = exp(-bandwidth / 2)``
 
@@ -629,7 +629,7 @@ def resonator(freq, bandwidth):
   freq :
     Denominator frequency in rad/sample (not the one with max gain).
   bandwidth :
-    Bandwidth frequency range in rad/sample following the equation
+    Bandwidth frequency range in rad/sample following the equation:
 
       ``R = exp(-bandwidth / 2)``
 
@@ -648,3 +648,65 @@ def resonator(freq, bandwidth):
   numerator = 1 - z ** -2
   denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
   return gain * numerator / denominator
+
+
+lowpass = StrategyDict("lowpass")
+
+@lowpass.strategy("pole")
+def lowpass(cutoff):
+  """
+  Low-pass filter with 1-pole and no zeros (constant numerator), with
+  high-precision cut-off frequency calculation.
+
+  Parameters
+  ----------
+  cutoff :
+    Cut-off frequency in rad/sample. It defines the filter frequency in which
+    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
+    power gain is about `3.0103 dB`).
+    Should be a value between 0 and pi.
+
+  Returns
+  -------
+  A ZFilter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
+  frequency (zero rad/sample).
+
+  """
+  cutoff = thub(cutoff, 1)
+  x = 2 - cos(cutoff)
+  x = thub(x,2)
+  R = x - sqrt(x ** 2 - 1)
+  R = thub(R, 2)
+  return (1 - R) / (1 - R * z ** -1)
+
+
+highpass = StrategyDict("highpass")
+
+@highpass.strategy("pole")
+def highpass(cutoff):
+  """
+  High-pass filter with 1-pole and no zeros (constant numerator), with
+  high-precision cut-off frequency calculation.
+
+  Parameters
+  ----------
+  cutoff :
+    Cut-off frequency in rad/sample. It defines the filter frequency in which
+    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
+    power gain is about `3.0103 dB`).
+    Should be a value between 0 and pi.
+
+  Returns
+  -------
+  A ZFilter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the Nyquist
+  frequency (pi rad/sample).
+
+  """
+  rev_cutoff = thub(pi - cutoff, 1)
+  x = 2 - cos(rev_cutoff)
+  x = thub(x,2)
+  R = x - sqrt(x ** 2 - 1)
+  R = thub(R, 2)
+  return (1 - R) / (1 + R * z ** -1)
