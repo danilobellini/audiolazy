@@ -23,7 +23,7 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import itertools as it
-import collections
+from collections import Iterable, Iterator
 from functools import wraps
 from warnings import warn
 
@@ -51,7 +51,7 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
     def dunder(self, other):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
-      if isinstance(other, collections.Iterable):
+      if isinstance(other, Iterable):
         return Stream(it.imap(op_func, iter(self), iter(other)))
       return Stream(it.imap(lambda a: op_func(a, other), iter(self)))
     return dunder
@@ -60,7 +60,7 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
     def dunder(self, other):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
-      if isinstance(other, collections.Iterable):
+      if isinstance(other, Iterable):
         return Stream(it.imap(op_func, iter(other), iter(self)))
       return Stream(it.imap(lambda a: op_func(other, a), iter(self)))
     return dunder
@@ -71,7 +71,7 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
     return dunder
 
 
-class Stream(collections.Iterable):
+class Stream(Iterable):
   """
   Stream class. Stream instances are iterables that can be seem as generators
   with elementwise operators.
@@ -157,17 +157,17 @@ class Stream(collections.Iterable):
       raise TypeError("Missing argument(s)")
 
     elif len(dargs) == 1:
-      if isinstance(dargs[0], collections.Iterator):
+      if isinstance(dargs[0], Iterator):
         self._data = dargs[0]
-      elif isinstance(dargs[0], collections.Iterable):
+      elif isinstance(dargs[0], Iterable):
         self._data = iter(dargs[0])
       else:
         self._data = it.repeat(dargs[0])
 
     else:
-      if all(isinstance(arg, collections.Iterable) for arg in dargs):
+      if all(isinstance(arg, Iterable) for arg in dargs):
         self._data = it.chain(*dargs)
-      elif not any(isinstance(arg, collections.Iterable) for arg in dargs):
+      elif not any(isinstance(arg, Iterable) for arg in dargs):
         self._data = it.cycle(dargs)
       else:
         raise TypeError("Input with both iterables and non-iterables")
@@ -332,7 +332,6 @@ class StreamTeeHub(Stream):
     super(StreamTeeHub, self).__init__(data)
     iter_self = super(StreamTeeHub, self).__iter__()
     self._iterables = list(it.tee(iter_self, n))
-    del self._data # Just to avoid using it otherwhere
 
   def __iter__(self):
     return self._iterables.pop()
@@ -400,7 +399,4 @@ def thub(data, n):
   [500, 500, 500, 500, 500]
 
   """
-  if isinstance(data, collections.Iterable):
-    return StreamTeeHub(data, n)
-  else:
-    return data
+  return StreamTeeHub(data, n) if isinstance(data, Iterable) else data

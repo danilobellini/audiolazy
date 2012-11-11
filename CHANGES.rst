@@ -16,7 +16,7 @@ AudioLazy changes history
   - Lots of optimization and refactoring, also on tests and setup.py
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
-  - Now with 5000+ tests and 75% code coverage
+  - Now with 5000+ tests and 76% code coverage
 
 + lazy_auditory (*new!*):
 
@@ -94,6 +94,9 @@ AudioLazy changes history
   - Methods and attributes from Stream elements can be used directly,
     elementwise, like ``my_stream.imag`` and ``my_stream.conjugate()`` in a
     stream with complex numbers
+  - New thub() function and StreamTeeHub class: tee (or "T") hub auto-copier
+    to help working with Stream instances *almost* the same way as you do with
+    numbers
 
 + lazy_synth:
 
