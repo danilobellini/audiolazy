@@ -50,11 +50,9 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
     def dunder(self, other):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
-      if isinstance(other, Stream):
-        return Stream(it.imap(op_func, self.data, other.data))
       if isinstance(other, collections.Iterable):
-        return Stream(it.imap(op_func, self.data, other))
-      return Stream(it.imap(lambda a: op_func(a, other), self.data))
+        return Stream(it.imap(op_func, iter(self), iter(other)))
+      return Stream(it.imap(lambda a: op_func(a, other), iter(self)))
     return dunder
 
   def __rbinary__(cls, op_func):
@@ -62,13 +60,13 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
       if isinstance(other, collections.Iterable):
-        return Stream(it.imap(op_func, other, self.data))
-      return Stream(it.imap(lambda a: op_func(other, a), self.data))
+        return Stream(it.imap(op_func, iter(other), iter(self)))
+      return Stream(it.imap(lambda a: op_func(other, a), iter(self)))
     return dunder
 
   def __unary__(cls, op_func):
     def dunder(self):
-      return Stream(it.imap(op_func, self.data))
+      return Stream(it.imap(op_func, iter(self)))
     return dunder
 
 
@@ -133,17 +131,17 @@ class Stream(collections.Iterable):
 
     elif len(dargs) == 1:
       if isinstance(dargs[0], collections.Iterator):
-        self.data = dargs[0]
+        self._data = dargs[0]
       elif isinstance(dargs[0], collections.Iterable):
-        self.data = iter(dargs[0])
+        self._data = iter(dargs[0])
       else:
-        self.data = it.repeat(dargs[0])
+        self._data = it.repeat(dargs[0])
 
     else:
       if all(isinstance(arg, collections.Iterable) for arg in dargs):
-        self.data = it.chain(*dargs)
+        self._data = it.chain(*dargs)
       elif not any(isinstance(arg, collections.Iterable) for arg in dargs):
-        self.data = it.cycle(dargs)
+        self._data = it.cycle(dargs)
       else:
         raise TypeError("Input with both iterables and non-iterables")
 
@@ -151,7 +149,7 @@ class Stream(collections.Iterable):
     """
     Returns the generator object.
     """
-    return self.data
+    return self._data
 
   def __nonzero__(self):
     """
@@ -183,23 +181,23 @@ class Stream(collections.Iterable):
     parameter, it will be in a list instead.
     You should avoid using take() as if this would be an iterator. Streams
     are iterables that can be easily part of a "for" loop, and their
-    iterators (the ones automatically used in for loops) are
-    slightly faster generators. Use iter() builtin if you need that
-    instead.
+    iterators (the ones automatically used in for loops) are slightly faster.
+    Use iter() builtin if you need that, instead, or perhaps the blocks
+    method.
     If there are less than n samples in the stream, raises StopIteration,
-    and the at most n-1 last samples are lost.
+    and at most n-1 last samples can be lost.
     """
     if n is None:
-      return next(self.data)
-    return constructor(next(self.data) for _ in xrange(n))
+      return next(self._data)
+    return constructor(next(self._data) for _ in xrange(n))
 
   def tee(self):
     """
     Returns a "T" (tee) copy of the given stream, allowing the calling
     stream to continue being used.
     """
-    a, b = it.tee(self.data) # 2 generators, not thread-safe
-    self.data = a
+    a, b = it.tee(self._data) # 2 generators, not thread-safe
+    self._data = a
     return Stream(b)
 
   # Copy is just another useful common name for "tee"
@@ -211,31 +209,39 @@ class Stream(collections.Iterable):
     """
     if name == "next":
       raise NotImplementedError("Streams are iterable, not iterators")
-    return Stream(getattr(a, name) for a in self.data)
+    return Stream(getattr(a, name) for a in self._data)
 
   def __call__(self, *args, **kwargs):
     """
     Returns the results from calling elementwise (where each element is
     assumed to be callable), with the same arguments.
     """
-    return Stream(a(*args, **kwargs) for a in self.data)
+    return Stream(a(*args, **kwargs) for a in self._data)
 
   def append(self, *other):
     """
-    Append self with other stream(s). Chaining this way has the behaviour:\n
-      self = Stream(self, *others)\n
+    Append self with other stream(s). Chaining this way has the behaviour:
+
+      ``self = Stream(self, *others)``
+
     """
-    self.data = it.chain(self.data, Stream(*other).data)
+    self._data = it.chain(self._data, Stream(*other)._data)
     return self
 
   def map(self, func):
     """
     A lazy way to apply the given function to each element in the stream.
-    Useful for type casting, like:\n
-      Stream(itertools.count()).map(float)\n
-    that returns a float counter.
+    Useful for type casting, like:
+
+    >>> from audiolazy import count
+    >>> count().take(5)
+    [0, 1, 2, 3, 4]
+    >>> my_stream = count().map(float)
+    >>> my_stream.take(5) # A float counter
+    [0.0, 1.0, 2.0, 3.0, 4.0]
+
     """
-    self.data = it.imap(func, self.data)
+    self._data = it.imap(func, self._data)
     return self
 
   def filter(self, func):
@@ -243,7 +249,7 @@ class Stream(collections.Iterable):
     A lazy way to skip elements in the stream that gives False for the given
     function.
     """
-    self.data = it.ifilter(func, self.data)
+    self._data = it.ifilter(func, self._data)
     return self
 
   @classmethod
@@ -253,8 +259,8 @@ class Stream(collections.Iterable):
 
 def avoid_stream(cls):
   """
-  Decorator to a class that should avoid casting to a Stream when used with
-  operators applied to it.
+  Decorator to a class whose instances should avoid casting to a Stream when
+  used with operators applied to them.
   """
   Stream.register_ignored_class(cls)
   return cls
@@ -284,4 +290,4 @@ class ControlStream(Stream):
       while True:
         yield self.value
 
-    self.data = data_generator()
+    super(ControlStream, self).__init__(data_generator())

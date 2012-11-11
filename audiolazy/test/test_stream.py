@@ -109,8 +109,8 @@ class TestStream(object):
     assert type(b) == type(d)
     assert id(a) != id(c)
     assert id(b) != id(d)
-    assert a.data != c.data
-    assert b.data != d.data
+    assert iter(a) != iter(c)
+    assert iter(b) != iter(d)
     assert list(a) == [1,2,3]
     assert list(c) == [1,2,3]
     assert b.take() == 8
