@@ -28,13 +28,12 @@ from collections import Iterable, OrderedDict
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_stream import Stream, avoid_stream
+from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt
-from .lazy_itertools import tee
 
 __all__ = ["CascadeFilter", "LinearFilter", "ZFilterMeta", "ZFilter", "z",
            "comb", "resonator"]
@@ -46,7 +45,8 @@ class CascadeFilter(list):
   Filter cascade b
   """
   def __init__(self, *filters):
-    if len(filters) == 1 and isinstance(filters[0], Iterable):
+    if len(filters) == 1 and isinstance(filters[0], Iterable) \
+                         and not isinstance(filters[0], LinearFilter):
       self.extend(filters[0])
     else:
       self.extend(filters)
@@ -280,8 +280,8 @@ class LinearFilter(object):
     -------
     A new linear filter, with the linearized delay values.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> filt = z ** -4.3
     >>> filt.linearize()
@@ -510,10 +510,13 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = tee(exp(-bandwidth * .5), 5)
-  cost = tee(cos(freq) * (2 * R[3]) / (1 + R[4] ** 2))
-  gain = (1 - R[0] ** 2) * sqrt(1 - cost[0] ** 2)
-  denominator = 1 - 2 * R[1] * cost[1] * z ** -1 + R[2] ** 2 * z ** -2
+  bandwidth = thub(bandwidth, 1)
+  R = exp(-bandwidth * .5)
+  R = thub(R, 5)
+  cost = cos(freq) * (2 * R) / (1 + R ** 2)
+  cost = thub(cost, 2)
+  gain = (1 - R ** 2) * sqrt(1 - cost ** 2)
+  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
   return gain / denominator
 
 
@@ -541,10 +544,12 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = tee(exp(-bandwidth * .5), 3)
-  freq = tee(freq)
-  gain = (1 - R[0] ** 2) * sin(freq[0])
-  denominator = 1 - 2 * R[1] * cos(freq[1]) * z ** -1 + R[2] ** 2 * z ** -2
+  bandwidth = thub(bandwidth, 1)
+  R = exp(-bandwidth * .5)
+  R = thub(R, 3)
+  freq = thub(freq, 2)
+  gain = (1 - R ** 2) * sin(freq)
+  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
   return gain / denominator
 
 
@@ -572,11 +577,13 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = tee(exp(-bandwidth * .5), 5)
-  cost = cos(freq) * (1 + R[3] ** 2) / (2 * R[4])
-  gain = (1 - R[0] ** 2) * .5
+  bandwidth = thub(bandwidth, 1)
+  R = exp(-bandwidth * .5)
+  R = thub(R, 5)
+  cost = cos(freq) * (1 + R ** 2) / (2 * R)
+  gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
-  denominator = 1 - 2 * R[1] * cost * z ** -1 + R[2] ** 2 * z ** -2
+  denominator = 1 - 2 * R * cost * z ** -1 + R ** 2 * z ** -2
   return gain * numerator / denominator
 
 
@@ -605,8 +612,10 @@ def resonator(freq, bandwidth):
   Gain is normalized to have peak with 0 dB (1.0 amplitude).
 
   """
-  R = tee(exp(-bandwidth * .5), 3)
-  gain = (1 - R[0] ** 2) * .5
+  bandwidth = thub(bandwidth, 1)
+  R = exp(-bandwidth * .5)
+  R = thub(R, 3)
+  gain = (1 - R ** 2) * .5
   numerator = 1 - z ** -2
-  denominator = 1 - 2 * R[1] * cos(freq) * z ** -1 + R[2] ** 2 * z ** -2
+  denominator = 1 - 2 * R * cos(freq) * z ** -1 + R ** 2 * z ** -2
   return gain * numerator / denominator

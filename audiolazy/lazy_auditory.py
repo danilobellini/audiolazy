@@ -27,7 +27,7 @@ from .lazy_core import StrategyDict
 from .lazy_misc import elementwise
 from .lazy_filters import z, CascadeFilter, ZFilter, resonator
 from .lazy_math import pi, exp, cos, sin, sqrt, factorial
-from .lazy_itertools import tee
+from .lazy_stream import thub
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 
@@ -245,8 +245,8 @@ def gammatone(freq, bandwidth):
   pair for each ZFilter.
 
   """
-  bws = tee(bandwidth * 2, 4)
-  freqs = tee(freq, 4)
+  bw = thub(bandwidth, 1)
+  bw2 = thub(bw * 2, 4)
+  freq = thub(freq, 4)
   resons = [resonator.z_exp, resonator.poles_exp] * 2
-  return CascadeFilter(reson(f, bw)
-                       for reson, f, bw in zip(resons, freqs, bws))
+  return CascadeFilter(reson(freq, bw2) for reson in resons)

@@ -217,18 +217,24 @@ def elementwise(name="", pos=None):
 
         # Cast to numpy array or matrix, if needed, without actually
         # importing its package
+        type_arg = type(arg)
         try:
-          is_numpy = type(arg).__module__ == "numpy"
+          is_numpy = type_arg.__module__ == "numpy"
         except AttributeError:
           is_numpy = False
         if is_numpy:
           np_type = {"ndarray": sys.modules["numpy"].array,
                      "matrix": sys.modules["numpy"].mat
-                    }[type(arg).__name__]
+                    }[type_arg.__name__]
           return np_type(list(data))
 
-        # Tuple, list, set, dict, deque, Stream, etc.. all falls here
-        return type(arg)(data)
+        # If it's a Stream, let's use the Stream constructor
+        from .lazy_stream import Stream
+        if issubclass(type_arg, Stream):
+          return Stream(data)
+
+        # Tuple, list, set, dict, deque, etc.. all falls here
+        return type_arg(data)
 
       return func(*args, **kwargs) # wrapper returned value
     return wrapper # elementwise_decorator returned value

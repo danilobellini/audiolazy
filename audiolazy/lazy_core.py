@@ -201,8 +201,8 @@ class StrategyDict(MultiKeyDict):
 
   It iterates through the values (i.e., for each strategy, not its name)
 
-  Example
-  -------
+  Examples
+  --------
 
   >>> sd = StrategyDict()
   >>> @sd.strategy("sum") # First strategy is default

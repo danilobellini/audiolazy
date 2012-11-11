@@ -53,6 +53,11 @@ def tee(data, n=2):
   -------
   Tuple of n independent Stream instances, if the input is a Stream or an
   iterator, otherwise a tuple with n times the same object.
+
+  See Also
+  --------
+  thub : use Stream instances *almost* like constants in your equations.
+
   """
   if isinstance(data, (Stream, Iterator)):
     return tuple(Stream(cp) for cp in it.tee(data, n))

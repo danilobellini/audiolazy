@@ -25,13 +25,14 @@ danilo [dot] bellini [at] gmail [dot] com
 import itertools as it
 import collections
 from functools import wraps
+from warnings import warn
 
 # Audiolazy internal imports
 from .lazy_misc import blocks
 from .lazy_core import AbstractOperatorOverloaderMeta
 
 __all__ = ["StreamMeta", "Stream", "avoid_stream", "tostream",
-           "ControlStream"]
+           "ControlStream", "MemoryLeakWarning", "StreamTeeHub", "thub"]
 
 
 class StreamMeta(AbstractOperatorOverloaderMeta):
@@ -291,3 +292,87 @@ class ControlStream(Stream):
         yield self.value
 
     super(ControlStream, self).__init__(data_generator())
+
+
+class MemoryLeakWarning(Warning):
+  """ A warning to be used when a memory leak was detected. """
+
+
+class StreamTeeHub(Stream):
+
+  def __init__(self, data, n):
+    super(StreamTeeHub, self).__init__(data)
+    iter_self = super(StreamTeeHub, self).__iter__()
+    self._iterables = list(it.tee(iter_self, n))
+    del self._data # Just to avoid using it otherwhere
+
+  def __iter__(self):
+    return self._iterables.pop()
+
+#  def __del__(self):
+#    if len(self._iterables) > 0:
+#      warn("StreamTeeHub requesting more copies than needed",
+#           MemoryLeakWarning)
+
+
+def thub(data, n):
+  """
+  Tee or "T" hub auto-copier to help working with Stream instances as well as
+  with numbers.
+
+  Parameters
+  ----------
+  data :
+    Input to be copied. Can be anything.
+  n :
+    Number of copies.
+
+  Returns
+  -------
+  A StreamTeeHub instance, if input data is iterable.
+  The data itself, otherwise.
+
+  Examples
+  --------
+
+  >>> def sub_sum(x, y):
+  ...     x = thub(x, 2) # Casts to StreamTeeHub, when needed
+  ...     y = thub(y, 2)
+  ...     return (x - y) / (x + y) # Return type might be number or Stream
+
+  With numbers:
+
+  >>> sub_sum(1, 1)
+  0
+
+  Combining number with iterable:
+
+  >>> sub_sum(3., [1, 2, 3])
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> list(sub_sum(3., [1, 2, 3]))
+  [0.5, 0.2, 0.0]
+
+  Both iterables (the Stream input behaves like an endless [6, 1, 6, 1, ...]):
+
+  >>> list(sub_sum([4., 3., 2., 1.], [1, 2, 3]))
+  [0.6, 0.2, -0.2]
+  >>> list(sub_sum([4., 3., 2., 1.], Stream(6, 1)))
+  [-0.2, 0.5, -0.5, 0.0]
+
+  This function can also be used as a an alternative to the Stream
+  constructor when your function has only one parameter, to avoid casting
+  when that's not needed:
+
+  >>> func = lambda x: 250 * thub(x, 1)
+  >>> func(1)
+  250
+  >>> func([2] * 10)
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> func([2] * 10).take(5)
+  [500, 500, 500, 500, 500]
+
+  """
+  if isinstance(data, collections.Iterable):
+    return StreamTeeHub(data, n)
+  else:
+    return data
