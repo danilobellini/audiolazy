@@ -73,33 +73,59 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
 
 class Stream(collections.Iterable):
   """
-  Streams generalize generators to allow perform common operations over
-  its contents. If you want something like:
+  Stream class. Stream instances are iterables that can be seem as generators
+  with elementwise operators.
 
-    import itertools
+  Examples
+  --------
+  If you want something like:
 
-    x = itertools.count()
-    y = itertools.repeat(3)
-    z = 2*x + y
+  >>> import itertools
+  >>> x = itertools.count()
+  >>> y = itertools.repeat(3)
+  >>> z = 2*x + y
+  Traceback (most recent call last):
+      ...
+  TypeError: unsupported operand type(s) for *: 'int' and 'itertools.count'
 
-  That's an error: __add__ isn't supported by those types. With this class
-  you could call instead:
+  That won't work with itertools. That's an error, and not only __mul__ but
+  __add__ isn't supported by those types too. However, with this Stream class,
+  you can do:
 
-    x = Stream(itertools.count()) # Iterable
-    y = Stream(3) # Non-iterable repeats endlessly
-    z = 2*x + y
+  >>> x = Stream(itertools.count()) # Iterable
+  >>> y = Stream(3) # Non-iterable repeats endlessly
+  >>> z = 2*x + y
+  >>> z
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> z.take(12)
+  [3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25]
 
-  And the result is another Stream, that can be seen as a generator that
-  yields:
+  If you just want to use your existing code, an "itertools" alternative is
+  already done to help you:
 
-    3, 5, 7, 9, 11, 13, ...
+  >>> from audiolazy import lazy_itertools as itertools
+  >>> x = itertools.count()
+  >>> y = itertools.repeat(3)
+  >>> z = 2*x + y
+  >>> w = itertools.takewhile(lambda (idx, el): idx < 10, enumerate(z))
+  >>> list(el for idx, el in w)
+  [3, 5, 7, 9, 11, 13, 15, 17, 19, 21]
 
   All operations over Stream objects are lazy and not thread-safe.
 
-  BE CAREFUL:
-    In that example, after declaring z as function of x and y, you should
-    not use x and y anymore. Use x.tee() or x.copy() instead, if you need
-    to use x again otherwhere.
+  See Also
+  --------
+  thub : A "tee" hub to help using the Streams like numbers in equations.
+  tee : Just like itertools.tee, but returns a tuple of Stream instances.
+  Stream.tee : Keeps the Stream usable and returns a copy to be used safely.
+  Stream.copy : Same to ``Stream.tee``.
+
+  Notes
+  -----
+  In that example, after declaring z as function of x and y, you should
+  not use x and y anymore. Use the thub() or the tee() functions, or
+  perhaps the x.tee() or x.copy() Stream methods instead, if you need
+  to use x again otherwhere.
   """
   __metaclass__ = StreamMeta
   __ignored_classes__ = tuple()
@@ -299,7 +325,9 @@ class MemoryLeakWarning(Warning):
 
 
 class StreamTeeHub(Stream):
-
+  """
+  A Stream that returns a different iterator each time it is used.
+  """
   def __init__(self, data, n):
     super(StreamTeeHub, self).__init__(data)
     iter_self = super(StreamTeeHub, self).__iter__()
@@ -309,10 +337,10 @@ class StreamTeeHub(Stream):
   def __iter__(self):
     return self._iterables.pop()
 
-#  def __del__(self):
-#    if len(self._iterables) > 0:
-#      warn("StreamTeeHub requesting more copies than needed",
-#           MemoryLeakWarning)
+  def __del__(self):
+    if len(self._iterables) > 0:
+      warn("StreamTeeHub requesting more copies than needed",
+           MemoryLeakWarning)
 
 
 def thub(data, n):
