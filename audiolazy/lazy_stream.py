@@ -88,9 +88,9 @@ class Stream(Iterable):
       ...
   TypeError: unsupported operand type(s) for *: 'int' and 'itertools.count'
 
-  That won't work with itertools. That's an error, and not only __mul__ but
-  __add__ isn't supported by those types too. However, with this Stream class,
-  you can do:
+  That won't work with standard itertools. That's an error, and not only
+  __mul__ but also __add__ isn't supported by their types. On the other hand,
+  you can use this Stream class:
 
   >>> x = Stream(itertools.count()) # Iterable
   >>> y = Stream(3) # Non-iterable repeats endlessly
@@ -115,10 +115,14 @@ class Stream(Iterable):
 
   See Also
   --------
-  thub : A "tee" hub to help using the Streams like numbers in equations.
-  tee : Just like itertools.tee, but returns a tuple of Stream instances.
-  Stream.tee : Keeps the Stream usable and returns a copy to be used safely.
-  Stream.copy : Same to ``Stream.tee``.
+  thub :
+    "Tee" hub to help using the Streams like numbers in equations and filters.
+  tee :
+    Just like itertools.tee, but returns a tuple of Stream instances.
+  Stream.tee :
+    Keeps the Stream usable and returns a copy to be used safely.
+  Stream.copy :
+    Same to ``Stream.tee``.
 
   Notes
   -----

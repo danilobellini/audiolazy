@@ -79,7 +79,7 @@ for idx, (fc, endtime) in enumerate(sorted(plot_freq_time.iteritems()), 1):
 # Finish
 for graph in fig1.axes + fig2.axes:
   graph.grid()
-  graph.legend(loc=0) # Zero means "auto"
+  graph.legend(loc="best")
 
 fig1.tight_layout()
 fig2.tight_layout()
