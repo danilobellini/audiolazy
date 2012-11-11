@@ -30,7 +30,7 @@ import itertools as it
 from math import pi
 
 # Audiolazy internal imports
-from ..lazy_filters import ZFilter, z, resonator
+from ..lazy_filters import ZFilter, z, CascadeFilter, resonator
 from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
@@ -301,6 +301,22 @@ class TestZFilter(object):
     assert isinstance(result_stream, Stream)
     result = result_stream.take(length)
     assert almost_eq(result, expected)
+
+
+class TestCascadeFilter(object):
+
+  def test_add(self):
+    filt1 = CascadeFilter(z)
+    filt2 = CascadeFilter(z + 3)
+    filt_sum = filt1 + filt2
+    assert isinstance(filt_sum, CascadeFilter)
+    assert filt_sum == CascadeFilter(z, z + 3)
+
+  def test_mul(self):
+    filt = CascadeFilter(1 - z ** -1)
+    filt_prod = filt * 3
+    assert isinstance(filt_prod, CascadeFilter)
+    assert filt_prod == CascadeFilter(1 - z ** -1, 1 - z ** -1, 1 - z ** -1)
 
 
 class TestResonator(object):

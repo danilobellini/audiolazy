@@ -35,57 +35,16 @@ from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt
 
-__all__ = ["CascadeFilter", "LinearFilter", "ZFilterMeta", "ZFilter", "z",
-           "comb", "resonator"]
+__all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
+           "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator"]
 
 
-@avoid_stream
-class CascadeFilter(list):
+class LinearFilterProperties(object):
   """
-  Filter cascade b
+  Class with common properties in a linear filter.
+  Needs only numpoly and denpoly attributes.
+  This class can be used as a mixin.
   """
-  def __init__(self, *filters):
-    if len(filters) == 1 and isinstance(filters[0], Iterable) \
-                         and not isinstance(filters[0], LinearFilter):
-      self.extend(filters[0])
-    else:
-      self.extend(filters)
-
-  def __call__(self, seq):
-    return reduce(lambda data, filt: filt(data), self, seq)
-
-  @property
-  def numerator(self):
-    return list(reduce(operator.mul,
-                       (filt.numpoly for filt in self)).values())
-
-  @property
-  def denominator(self):
-    return list(reduce(operator.mul,
-                       (filt.denpoly for filt in self)).values())
-
-  @elementwise("freq", 1)
-  def freq_response(self, freq):
-    return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
-
-
-@avoid_stream
-class LinearFilter(object):
-  """
-  Base class for Linear filters, time invariant or not.
-  """
-  def __init__(self, numerator=None, denominator={0: 1}):
-    self.numpoly = Poly(numerator)
-    self.denpoly = Poly(denominator)
-
-    # Ensure denominator has only negative powers of z (positive powers here),
-    # and a not null gain constant
-    power = min(key for key, value in self.denpoly.terms())
-    if power != 0:
-      poly_delta = Poly([0, 1]) ** -power
-      self.numpoly *= poly_delta
-      self.denpoly *= poly_delta
-
   def numlist(self):
     if any(key < 0 for key, value in self.numpoly.terms()):
       raise ValueError("Non-causal filter")
@@ -107,6 +66,24 @@ class LinearFilter(object):
   @property
   def dendict(self):
     return OrderedDict(self.denpoly.terms())
+
+
+@avoid_stream
+class LinearFilter(LinearFilterProperties):
+  """
+  Base class for Linear filters, time invariant or not.
+  """
+  def __init__(self, numerator=None, denominator={0: 1}):
+    self.numpoly = Poly(numerator)
+    self.denpoly = Poly(denominator)
+
+    # Ensure denominator has only negative powers of z (positive powers here),
+    # and a not null gain constant
+    power = min(key for key, value in self.denpoly.terms())
+    if power != 0:
+      poly_delta = Poly([0, 1]) ** -power
+      self.numpoly *= poly_delta
+      self.denpoly *= poly_delta
 
   def __iter__(self):
     yield self.numdict
@@ -478,6 +455,49 @@ class ZFilter(LinearFilter):
 
 
 z = ZFilter({-1: 1})
+
+
+class CascadeFilterMeta(AbstractOperatorOverloaderMeta):
+  __operators__ = ("add mul rmul lt le eq ne gt ge")
+
+  def __binary__(cls, op_func):
+    def dunder(self, other):
+      return cls(getattr(super(cls, self), dunder.__name__)(other))
+    return dunder
+
+  __rbinary__ = __binary__
+
+
+@avoid_stream
+class CascadeFilter(list, LinearFilterProperties):
+  """
+  Filter cascade as a list of filters.
+  A filter is any callable that receives an iterable as input and returns a
+  Stream.
+  """
+  __metaclass__ = CascadeFilterMeta
+
+  def __init__(self, *filters):
+    if len(filters) == 1 and isinstance(filters[0], Iterable) \
+                         and not isinstance(filters[0], LinearFilter):
+      self.extend(filters[0])
+    else:
+      self.extend(filters)
+
+  def __call__(self, seq):
+    return reduce(lambda data, filt: filt(data), self, seq)
+
+  @property
+  def numpoly(self):
+    return reduce(operator.mul, (filt.numpoly for filt in self))
+
+  @property
+  def denpoly(self):
+    return reduce(operator.mul, (filt.denpoly for filt in self))
+
+  @elementwise("freq", 1)
+  def freq_response(self, freq):
+    return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
 
 
 def comb(delay, alpha=1):
