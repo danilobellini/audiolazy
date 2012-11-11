@@ -489,15 +489,24 @@ class CascadeFilter(list, LinearFilterProperties):
 
   @property
   def numpoly(self):
-    return reduce(operator.mul, (filt.numpoly for filt in self))
+    try:
+      return reduce(operator.mul, (filt.numpoly for filt in self))
+    except AttributeError:
+      raise AttributeError("Non-linear filter")
 
   @property
   def denpoly(self):
-    return reduce(operator.mul, (filt.denpoly for filt in self))
+    try:
+      return reduce(operator.mul, (filt.denpoly for filt in self))
+    except AttributeError:
+      raise AttributeError("Non-linear filter")
 
   @elementwise("freq", 1)
   def freq_response(self, freq):
     return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
+
+  def is_linear(self):
+    return all(isinstance(filt, LinearFilter) for filt in self)
 
 
 def comb(delay, alpha=1):

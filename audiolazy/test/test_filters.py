@@ -318,6 +318,22 @@ class TestCascadeFilter(object):
     assert isinstance(filt_prod, CascadeFilter)
     assert filt_prod == CascadeFilter(1 - z ** -1, 1 - z ** -1, 1 - z ** -1)
 
+  @p("filts",
+     [(lambda data: data ** 2),
+      (z ** -1, lambda data: data + 4),
+      (1 / z ** -2, (lambda data: 0.), z** -1),
+     ])
+  def test_non_linear(self, filts):
+    filt = CascadeFilter(filts)
+    assert isinstance(filt, CascadeFilter)
+    assert not filt.is_linear()
+    with pytest.raises(AttributeError):
+      filt.numpoly
+    with pytest.raises(AttributeError):
+      filt.denpoly
+    with pytest.raises(AttributeError):
+      filt.freq_response(pi / 2)
+
 
 class TestResonator(object):
 

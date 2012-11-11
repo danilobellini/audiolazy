@@ -16,7 +16,7 @@ AudioLazy changes history
   - Lots of optimization and refactoring, also on tests and setup.py
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
-  - Now with 5000+ tests and 76% code coverage
+  - Now with 5000+ tests and 77% code coverage
 
 + lazy_auditory (*new!*):
 
@@ -44,7 +44,8 @@ AudioLazy changes history
       each data is a list of pairs that can be used as input for Poly,
       LinearFilter or ZFilter
 
-  - Linear properties numlist, denlist, numdict, dendict
+  - LinearFilterProperties class, implementing numlist, denlist, numdict and
+    dendict, besides numerator and denominator, from numpoly and denpoly
   - Comparison "==" and "!=" are now strict
   - CascadeFilter: list of filters that behave as a filter
   - LinearFilter.__call__ now has the "zero" optional argument (allows
