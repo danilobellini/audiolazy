@@ -652,10 +652,11 @@ def resonator(freq, bandwidth):
 
 lowpass = StrategyDict("lowpass")
 
+
 @lowpass.strategy("pole")
 def lowpass(cutoff):
   """
-  Low-pass filter with 1-pole and no zeros (constant numerator), with
+  Low-pass filter with one pole and no zeros (constant numerator), with
   high-precision cut-off frequency calculation.
 
   Parameters
@@ -681,12 +682,42 @@ def lowpass(cutoff):
   return (1 - R) / (1 - R * z ** -1)
 
 
+@lowpass.strategy("pole_exp")
+def lowpass(cutoff):
+  """
+  Low-pass filter with one pole and no zeros (constant numerator), with
+  exponential approximation for cut-off frequency calculation, found by a
+  matching the one-pole Laplace lowpass filter.
+
+  Parameters
+  ----------
+  cutoff :
+    Cut-off frequency in rad/sample following the equation:
+
+      ``R = exp(-cutoff)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A ZFilter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
+  frequency (zero rad/sample).
+
+  """
+  cutoff = thub(cutoff, 1)
+  R = exp(-cutoff)
+  R = thub(R, 2)
+  return (1 - R) / (1 - R * z ** -1)
+
+
 highpass = StrategyDict("highpass")
+
 
 @highpass.strategy("pole")
 def highpass(cutoff):
   """
-  High-pass filter with 1-pole and no zeros (constant numerator), with
+  High-pass filter with one pole and no zeros (constant numerator), with
   high-precision cut-off frequency calculation.
 
   Parameters
