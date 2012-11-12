@@ -33,7 +33,7 @@ from .lazy_io import *
 from .lazy_synth import *
 from .lazy_midi import *
 from .lazy_auditory import *
-from .lazy_math import *
+from .lazy_analysis import *
 
 # Metadata (see setup.py for more information about these)
 __version__ = "0.03dev"
