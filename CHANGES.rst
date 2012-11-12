@@ -16,7 +16,7 @@ AudioLazy changes history
   - Lots of optimization and refactoring, also on tests and setup.py
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
-  - Now with 5000+ tests and 77% code coverage
+  - Now with 5100+ tests and 77% code coverage
 
 + lazy_auditory (*new!*):
 
@@ -56,6 +56,7 @@ AudioLazy changes history
   - Feedback comb filter
   - 4 resonator filter models with 2-poles with exponential approximation
     for finding the radius from the bandwidth
+  - Simple one pole lowpass and highpass filters
 
 + lazy_io:
 

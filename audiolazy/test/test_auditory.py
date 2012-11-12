@@ -27,7 +27,7 @@ p = pytest.mark.parametrize
 
 # Audiolazy internal imports
 from ..lazy_auditory import erb, gammatone_erb_constants, gammatone
-from ..lazy_misc import almost_eq_diff
+from ..lazy_misc import almost_eq, almost_eq_diff, sHz
 from ..lazy_math import pi
 from ..lazy_filters import CascadeFilter
 from ..lazy_stream import Stream
@@ -41,6 +41,16 @@ class TestERB(object):
      ])
   def test_glasberg_moore_slaney_example(self, freq, bandwidth):
     assert almost_eq_diff(erb["gm90"](freq), bandwidth, max_diff=5e-4)
+
+  @p("erb_func", erb)
+  @p("rate", [8000, 22050, 44100])
+  @p("freq", [440, 20, 2e4])
+  def test_two_input_methods(self, erb_func, rate, freq):
+    Hz = sHz(rate)[1]
+    assert almost_eq(erb_func(freq) * Hz, erb_func(freq * Hz, Hz))
+    if freq < rate:
+      with pytest.raises(ValueError):
+        erb_func(freq * Hz)
 
 
 class TestGammatoneERBConstants(object):
@@ -75,6 +85,6 @@ class TestGammatone(object):
   def test_number_of_poles_order(self, filt_func, freq, bw):
     cfilt = filt_func(freq=freq, bandwidth=bw)
     assert isinstance(cfilt, CascadeFilter)
-    #assert len(cfilt) == 4
-    #for filt in cfilt:
-    #  assert len(filt.denominator) == 3
+    assert len(cfilt) == 4
+    for filt in cfilt:
+      assert len(filt.denominator) == 3
