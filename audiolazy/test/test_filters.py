@@ -30,11 +30,12 @@ import itertools as it
 from math import pi
 
 # Audiolazy internal imports
-from ..lazy_filters import ZFilter, z, CascadeFilter, resonator
+from ..lazy_filters import (ZFilter, z, CascadeFilter, resonator, lowpass,
+                            highpass)
 from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
-from ..lazy_math import dB20
+from ..lazy_math import dB10, dB20
 
 
 class TestZFilter(object):
@@ -366,3 +367,13 @@ class TestResonator(object):
     filt = func(freq, bw)
     gain = dB20(filt.freq_response(freq))
     assert almost_eq_diff(gain, 0., max_diff=5e-14)
+
+
+class TestLowpassHighpass(object):
+
+  @p("filt_func", [lowpass.pole, highpass.pole])
+  @p("freq", [pi * k / 7 for k in xrange(1, 7)])
+  def test_3dB_gain(self, filt_func, freq):
+    filt = filt_func(freq)
+    ref_gain = dB10(.5) # -3.0103 dB
+    assert almost_eq_diff(dB20(filt.freq_response(freq)), ref_gain)

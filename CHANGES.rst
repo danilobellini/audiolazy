@@ -16,7 +16,7 @@ AudioLazy changes history
   - Lots of optimization and refactoring, also on tests and setup.py
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
-  - Now with 5100+ tests and 77% code coverage
+  - Now with 5100+ tests and 78% code coverage
 
 + lazy_auditory (*new!*):
 

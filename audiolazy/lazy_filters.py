@@ -36,7 +36,8 @@ from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt, pi
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
-           "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator"]
+           "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator",
+           "lowpass", "highpass"]
 
 
 class LinearFilterProperties(object):
