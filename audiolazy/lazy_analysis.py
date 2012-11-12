@@ -22,8 +22,95 @@ Created on Sun Jul 29 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
+from math import cos, pi
+
 # Audiolazy internal imports
+from .lazy_core import StrategyDict
 from .lazy_stream import tostream
+
+__all__ = ["window", "zcross"]
+
+
+window = StrategyDict("window")
+
+
+@window.strategy("hamming")
+def window(size):
+  """
+  Hamming window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. Max value is one (1.0).
+
+  """
+
+  if size == 1:
+    return [1.0]
+  return [.54 - .46 * cos(2 * pi * n / (size - 1))
+          for n in xrange(size)]
+
+
+@window.strategy("rectangular", "rect")
+def window(size):
+  """
+  Rectangular window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. All values are ones (1.0).
+
+  """
+  return [1.0 for n in xrange(size)]
+
+
+@window.strategy("bartlett", "triangular", "triangle")
+def window(size):
+  """
+  Bartlett (triangular) window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. Max value is one (1.0).
+
+  """
+  if size == 1:
+    return [1.0]
+  return [2.0 * n / (size - 1) if n <= (size - 1) / 2.0 else
+          2.0 - 2.0 * n / (size - 1)
+          for n in xrange(size)]
+
+
+@window.strategy("hanning", "hann")
+def window(size):
+  """
+  Hann window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. Max value is one (1.0).
+
+  """
+  if size == 1:
+    return [1.0]
+  return [.5 - .5 * cos(2 * pi * n / (size - 1)) for n in xrange(size)]
+
+
+@window.strategy("blackman")
+def window(size):
+  """
+  Blackman window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. Max value is one (1.0).
+
+  """
+  if size == 1:
+    return [1.0]
+  return [.08 * cos(4 * pi * n / (size - 1))
+          -.5 * cos(2 * pi * n / (size - 1)) + .42
+          for n in xrange(size)]
 
 
 @tostream

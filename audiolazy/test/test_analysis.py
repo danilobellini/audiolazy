@@ -26,11 +26,24 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import zcross
+from ..lazy_analysis import window, zcross
 from ..lazy_stream import Stream
+from ..lazy_misc import almost_eq
 
 
-class TestZeroCrossing(object):
+class TestWindow(object):
+
+  @p("wnd", window)
+  @p("M", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
+  def test_min_max_len_symmetry(self, wnd, M):
+    data = wnd(M)
+    assert max(data) <= 1.0
+    assert min(data) >= 0.0
+    assert len(data) == M
+    assert almost_eq(data, data[::-1])
+
+
+class TestZCross(object):
 
   def test_empty(self):
     assert list(zcross([])) == []
