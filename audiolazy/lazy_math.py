@@ -31,7 +31,7 @@ import itertools as it
 from .lazy_misc import elementwise
 
 __all__ = ["abs", "pi", "e", "cexp", "ln", "log2", "factorial", "dB10",
-           "dB20"]
+           "dB20", "inf", "nan"]
 
 # All functions from math with one numeric input
 math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
@@ -51,6 +51,8 @@ pi = math.pi
 e = math.e
 cexp = elementwise("x", 0)(cmath.exp)
 ln = elementwise("x", 0)(math.log)
+inf = float("inf")
+nan = float("nan")
 
 
 @elementwise("x", 0)
@@ -79,14 +81,14 @@ def factorial(n):
 @elementwise("data", 0)
 def dB10(data):
   """
-  Linear magnitude gain in dB.
+  Convert a gain value to dB, from a squared amplitude value to a power gain.
   """
-  return 10 * math.log10(abs(data))
+  return 10 * math.log10(abs(data)) if data != 0 else -inf
 
 
 @elementwise("data", 0)
 def dB20(data):
   """
-  Power magnitude gain in dB.
+  Convert a gain value to dB, from a amplitude value to a power gain.
   """
-  return 20 * math.log10(abs(data))
+  return 20 * math.log10(abs(data)) if data != 0 else -inf

@@ -26,7 +26,7 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_math import factorial
+from ..lazy_math import factorial, dB10, dB20, inf
 
 
 class TestFactorial(object):
@@ -63,3 +63,11 @@ class TestFactorial(object):
     )
   def test_really_big_number_length(self, n, length):
     assert len(str(factorial(n))) == length
+
+
+class TestDB10DB20(object):
+
+  @p("func", [dB10, dB20])
+  def test_zero(self, func):
+    assert func(0) == -inf
+
