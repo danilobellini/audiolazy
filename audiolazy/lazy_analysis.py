@@ -64,24 +64,50 @@ def window(size):
   return [1.0 for n in xrange(size)]
 
 
-@window.strategy("bartlett", "triangular", "triangle")
+@window.strategy("bartlett")
 def window(size):
   """
-  Bartlett (triangular) window function with the given size.
+  Bartlett (triangular with zero-valued endpoints) window function with the
+  given size.
 
   Returns
   -------
   List with the desired window samples. Max value is one (1.0).
 
+  See Also
+  --------
+  window.triangular :
+    Triangular with no zero end-point.
+
   """
   if size == 1:
     return [1.0]
-  return [2.0 * n / (size - 1) if n <= (size - 1) / 2.0 else
-          2.0 - 2.0 * n / (size - 1)
+  return [1 - 2.0 / (size - 1) * abs(n - (size - 1) / 2.0)
           for n in xrange(size)]
 
 
-@window.strategy("hanning", "hann")
+@window.strategy("triangular", "triangle")
+def window(size):
+  """
+  Triangular (with no zero end-point) window function with the given size.
+
+  Returns
+  -------
+  List with the desired window samples. Max value is one (1.0).
+
+  See Also
+  --------
+  window.bartlett :
+    Bartlett window, triangular with zero-valued end-points.
+
+  """
+  if size == 1:
+    return [1.0]
+  return [1 - 2.0 / (size + 1) * abs(n - (size - 1) / 2.0)
+          for n in xrange(size)]
+
+
+@window.strategy("hann", "hanning")
 def window(size):
   """
   Hann window function with the given size.
@@ -93,13 +119,20 @@ def window(size):
   """
   if size == 1:
     return [1.0]
-  return [.5 - .5 * cos(2 * pi * n / (size - 1)) for n in xrange(size)]
+  return [.5 * (1 - cos(2 * pi * n / (size - 1))) for n in xrange(size)]
 
 
 @window.strategy("blackman")
-def window(size):
+def window(size, alpha=.16):
   """
   Blackman window function with the given size.
+
+  Parameters
+  ----------
+  size :
+    Window size in samples.
+  alpha :
+    Blackman window alpha value. Defaults to 0.16.
 
   Returns
   -------
@@ -108,8 +141,8 @@ def window(size):
   """
   if size == 1:
     return [1.0]
-  return [.08 * cos(4 * pi * n / (size - 1))
-          -.5 * cos(2 * pi * n / (size - 1)) + .42
+  return [alpha / 2 * cos(4 * pi * n / (size - 1))
+          -.5 * cos(2 * pi * n / (size - 1)) + (1 - alpha) / 2
           for n in xrange(size)]
 
 

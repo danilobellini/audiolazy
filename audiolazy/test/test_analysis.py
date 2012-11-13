@@ -34,6 +34,10 @@ from ..lazy_misc import almost_eq
 class TestWindow(object):
 
   @p("wnd", window)
+  def test_empty(self, wnd):
+    assert wnd(0) == []
+
+  @p("wnd", window)
   @p("M", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
   def test_min_max_len_symmetry(self, wnd, M):
     data = wnd(M)

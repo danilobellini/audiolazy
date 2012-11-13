@@ -9,6 +9,7 @@ AudioLazy changes history
   - FM synthesis example for benchmarking between CPython and PyPy
   - Simple I/O wire example, connecting the input directly to the output
   - Modulo Counter graphics w/ FM synthesis audio in a wxPython application
+  - Window functions plot example (all window strategies)
 
 + general:
 
@@ -17,6 +18,17 @@ AudioLazy changes history
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
   - Now with 5100+ tests and 78% code coverage
+
++ lazy_analysis (*new!*):
+
+  - New window StrategyDict instance, with:
+
+    * Hamming (default)
+    * Hann
+    * Rectangular
+    * Bartlett (triangular with zero endpoints)
+    * Triangular (without zeros)
+    * Blackman
 
 + lazy_auditory (*new!*):
 
