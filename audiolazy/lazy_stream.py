@@ -23,7 +23,7 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import itertools as it
-from collections import Iterable, Iterator
+from collections import Iterable
 from functools import wraps
 from warnings import warn
 
@@ -138,32 +138,45 @@ class Stream(Iterable):
     """
     Constructor for a Stream.
 
+    Parameters
+    ----------
     The parameters should be iterables that will be chained together. If
     they're not iterables, the stream will be an endless repeat of the
     given elements. If any parameter is a generator and its contents is
     used elsewhere, you should use the "tee" (Stream method or itertools
     function) before.
 
+    Notes
+    -----
     All operations that works on the elements will work with this iterator
     in a element-wise fashion (like Numpy 1D arrays). When the stream
     sizes differ, the resulting stream have the size of the shortest
     operand.
 
-      Stream([1,2,3]) + Stream([8,5])
+    Examples
+    --------
+    A finite sequence:
 
-    yields the [lazy] finite sequence (9,7), but be careful that:
+    >>> x = Stream([1,2,3]) + Stream([8,5]) # Finite constructor
+    >>> x
+    <audiolazy.lazy_stream.Stream object at 0x...>
+    >>> tuple(x)
+    (9, 7)
 
-      Stream(1,2,3) + Stream(8,5)
+    But be careful:
 
-    yields the [lazy] sequence (9,7,11,6,10,8, 9,7,11,6,10, 9,7,11, ...)
+    >>> x = Stream(1,2,3) + Stream(8,5) # Periodic constructor
+    >>> x
+    <audiolazy.lazy_stream.Stream object at 0x...>
+    >>> x.take(15) # Don't try "tuple" or "list": this Stream is endless!
+    [9, 7, 11, 6, 10, 8, 9, 7, 11, 6, 10, 8, 9, 7, 11]
+
     """
     if len(dargs) == 0:
       raise TypeError("Missing argument(s)")
 
     elif len(dargs) == 1:
-      if isinstance(dargs[0], Iterator):
-        self._data = dargs[0]
-      elif isinstance(dargs[0], Iterable):
+      if isinstance(dargs[0], Iterable):
         self._data = iter(dargs[0])
       else:
         self._data = it.repeat(dargs[0])
@@ -325,7 +338,7 @@ class ControlStream(Stream):
 
 
 class MemoryLeakWarning(Warning):
-  """ A warning to be used when a memory leak was detected. """
+  """ A warning to be used when a memory leak is detected. """
 
 
 class StreamTeeHub(Stream):
