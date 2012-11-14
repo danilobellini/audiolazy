@@ -33,7 +33,7 @@ from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import exp, sin, cos, sqrt, pi
+from .lazy_math import exp, sin, cos, sqrt, pi, nan
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator",
@@ -224,6 +224,9 @@ class LinearFilter(LinearFilterProperties):
     z_ = complex_exp(-1j * freq)
     num = self.numpoly(z_)
     den = self.denpoly(z_)
+    if not isinstance(den, Stream):
+      if den == 0:
+        return nan
     return num / den
 
   def is_lti(self):
@@ -345,6 +348,8 @@ class ZFilter(LinearFilter):
 
   def __add__(self, other):
     if isinstance(other, ZFilter):
+      if self.denpoly == other.denpoly:
+        return ZFilter(self.numpoly + other.numpoly, self.denpoly)
       return ZFilter(self.numpoly * other.denpoly +
                      other.numpoly * self.denpoly,
                      self.denpoly * other.denpoly)
