@@ -354,9 +354,10 @@ class StreamTeeHub(Stream):
     return self._iterables.pop()
 
   def __del__(self):
-    if len(self._iterables) > 0:
-      warn("StreamTeeHub requesting more copies than needed",
-           MemoryLeakWarning)
+    length = len(self._iterables)
+    if length > 0:
+      warn("StreamTeeHub requesting {0} more copies than "
+           "needed".format(length), MemoryLeakWarning)
 
 
 def thub(data, n):
