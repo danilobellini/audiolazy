@@ -27,9 +27,10 @@ p = pytest.mark.parametrize
 
 import itertools as it
 import operator
+import warnings
 
 # Audiolazy internal imports
-from ..lazy_stream import Stream
+from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
 from ..lazy_misc import almost_eq
 from ..lazy_itertools import imap, ifilter
 
@@ -89,16 +90,16 @@ class TestStream(object):
       assert si == di
 
   def test_init_docstring_finite(self):
-    x = Stream([1,2,3]) + Stream([8,5])
-    assert list(x) == [9,7]
+    x = Stream([1, 2, 3]) + Stream([8, 5])
+    assert list(x) == [9, 7]
 
   def test_init_docstring_endless(self):
     x = Stream(1,2,3) + Stream(8,5)
-    assert x.take(6) == [9,7,11,6,10,8]
-    assert x.take(6) == [9,7,11,6,10,8]
-    assert x.take(3) == [9,7,11]
-    assert x.take(5) == [6,10,8,9,7]
-    assert x.take(15) == [11,6,10,8,9,7,11,6,10,8,9,7,11,6,10]
+    assert x.take(6) == [9, 7, 11, 6, 10, 8]
+    assert x.take(6) == [9, 7, 11, 6, 10, 8]
+    assert x.take(3) == [9, 7, 11]
+    assert x.take(5) == [6, 10, 8, 9, 7]
+    assert x.take(15) == [11, 6, 10, 8, 9, 7, 11, 6, 10, 8, 9, 7, 11, 6, 10]
 
   def test_tee_copy(self):
     a = Stream([1,2,3])
@@ -151,8 +152,8 @@ class TestStream(object):
       assert list(y) == desiredy
 
   def test_unary_operators_and_binary_pow_xor(self):
-    a = +Stream([1,2,3])
-    b = -Stream([8,5,2,17])
+    a = +Stream([1, 2, 3])
+    b = -Stream([8, 5, 2, 17])
     c = Stream(True) ^ Stream([True, False, None]) # xor
     d = b ** a
     assert d.take(3) == [-8,25,-8]
@@ -185,14 +186,14 @@ class TestStream(object):
     sum_data = data.copy().real + data.copy().imag
     assert sum_data.take(6) == (real + imag).take(6)
 
-  @p("data", [xrange(5), xrange(9,0,-2), [7,22,-5], [8., 3., 15.],
+  @p("data", [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
               range(20,40,3)])
   @p("func", [lambda x: x ** 2, lambda x: x // 2, lambda x: 18])
   def test_map(self, data, func):
     assert map(func, data) == list(Stream(data).map(func))
     assert map(func, data) == list(imap(func, data))
 
-  @p("data", [xrange(5), xrange(9,0,-2), [7,22,-5], [8., 3., 15.],
+  @p("data", [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
               range(20,40,3)])
   @p("func", [lambda x: x > 0, lambda x: x % 2 == 0, lambda x: False])
   def test_filter(self, data, func):
@@ -215,3 +216,27 @@ class TestStream(object):
   def test_next(self):
     """ Streams should have no "next" method! """
     assert not hasattr(Stream(2), "next")
+
+
+class TestThub(object):
+
+  @p("copies", range(5))
+  @p("used_copies", range(5))
+  def test_stream_tee_hub_memory_leak_warning_and_index_error(self, copies,
+                                                              used_copies):
+    data = Stream(.5, 8, 7 + 2j)
+    data = thub(data, copies)
+    assert isinstance(data, StreamTeeHub)
+    if copies < used_copies:
+      with pytest.raises(IndexError):
+        [data * n for n in xrange(used_copies)]
+    else:
+      [data * n for n in xrange(used_copies)]
+      warnings.simplefilter("always")
+      with warnings.catch_warnings(record=True) as warnings_list:
+        data.__del__()
+      if copies != used_copies:
+        w = warnings_list.pop()
+        assert issubclass(w.category, MemoryLeakWarning)
+        assert str(copies - used_copies) in str(w.message)
+      assert warnings_list == []

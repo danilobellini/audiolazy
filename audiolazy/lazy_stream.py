@@ -130,6 +130,7 @@ class Stream(Iterable):
   not use x and y anymore. Use the thub() or the tee() functions, or
   perhaps the x.tee() or x.copy() Stream methods instead, if you need
   to use x again otherwhere.
+
   """
   __metaclass__ = StreamMeta
   __ignored_classes__ = tuple()
@@ -190,9 +191,7 @@ class Stream(Iterable):
         raise TypeError("Input with both iterables and non-iterables")
 
   def __iter__(self):
-    """
-    Returns the generator object.
-    """
+    """ Returns the Stream contents iterator. """
     return self._data
 
   def __nonzero__(self):
@@ -313,7 +312,7 @@ def avoid_stream(cls):
 def tostream(func):
   """
   Decorator to convert the function output into a Stream. Useful for
-  generators.
+  generator functions.
   """
   @wraps(func)
   def new_func(*args, **kwargs):
@@ -326,6 +325,19 @@ class ControlStream(Stream):
   A Stream that yields a control value that can be changed at any time.
   You just need to set the attribute "value" for doing so, and the next
   value the Stream will yield is the given value.
+
+  Examples
+  --------
+
+  >>> cs = ControlStream(7)
+  >>> data = Stream(1, 3) # [1, 3, 1, 3, 1, 3, ...] endless iterable
+  >>> res = data + cs
+  >>> res.take(5)
+  [8, 10, 8, 10, 8]
+  >>> cs.value = 9
+  >>> res.take(5)
+  [12, 10, 12, 10, 12]
+
   """
   def __init__(self, value):
     self.value = value
@@ -344,20 +356,28 @@ class MemoryLeakWarning(Warning):
 class StreamTeeHub(Stream):
   """
   A Stream that returns a different iterator each time it is used.
+
+  See Also
+  --------
+  thub :
+    Auto-copy "tee hub" and helpful constructor alternative for this class.
+
   """
   def __init__(self, data, n):
     super(StreamTeeHub, self).__init__(data)
     iter_self = super(StreamTeeHub, self).__iter__()
-    self._iterables = list(it.tee(iter_self, n))
+    self._iters = list(it.tee(iter_self, n))
 
   def __iter__(self):
-    return self._iterables.pop()
+    try:
+      return self._iters.pop()
+    except IndexError:
+      raise IndexError("StreamTeeHub has no more copies left to use.")
 
   def __del__(self):
-    length = len(self._iterables)
-    if length > 0:
+    if self._iters != []:
       warn("StreamTeeHub requesting {0} more copies than "
-           "needed".format(length), MemoryLeakWarning)
+           "needed".format(len(self._iters)), MemoryLeakWarning)
 
 
 def thub(data, n):
