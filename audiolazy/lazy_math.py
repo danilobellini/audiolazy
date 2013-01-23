@@ -31,7 +31,7 @@ import itertools as it
 from .lazy_misc import elementwise
 
 __all__ = ["abs", "pi", "e", "cexp", "ln", "log2", "factorial", "dB10",
-           "dB20", "inf", "nan"]
+           "dB20", "inf", "nan", "phase"]
 
 # All functions from math with one numeric input
 math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
