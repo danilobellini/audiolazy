@@ -1,6 +1,8 @@
 AudioLazy changes history
 -------------------------
 
+*** Development... ***
+
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***
 
 + examples (*new!*):
