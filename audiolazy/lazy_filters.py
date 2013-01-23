@@ -113,9 +113,10 @@ class LinearFilter(LinearFilterProperties):
     A Stream that have the data from the input sequence filtered.
 
     """
-    # Causality test
+    # Data check
     if any(key < 0 for key, value in it.chain(self.numpoly.terms(),
-                                              self.denpoly.terms())):
+                                              self.denpoly.terms())
+          ):
       raise ValueError("Non-causal filter")
     if self.denpoly[0] == 0:
       raise ZeroDivisionError("Invalid filter gain")
@@ -216,9 +217,17 @@ class LinearFilter(LinearFilterProperties):
 
     Returns
     -------
-    Complex number with the frequency response of the filter. You can use
-    ``20 * log10(abs(result))`` to get its power magnitude in dB, and
-    Numpy ``angle(result)`` or built-in ``phase(result)`` to get its phase.
+    Complex number with the frequency response of the filter.
+
+    See Also
+    --------
+    dB10 :
+      Logarithmic power magnitude from data with squared magnitude.
+    dB20 :
+      Logarithmic power magnitude from raw complex data or data with linear
+      amplitude.
+    phase :
+      Phase from complex data.
 
     """
     z_ = complex_exp(-1j * freq)

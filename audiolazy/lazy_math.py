@@ -53,6 +53,7 @@ cexp = elementwise("x", 0)(cmath.exp)
 ln = elementwise("x", 0)(math.log)
 inf = float("inf")
 nan = float("nan")
+phase = elementwise("z", 0)(cmath.phase)
 
 
 @elementwise("x", 0)
