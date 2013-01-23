@@ -1,7 +1,7 @@
 AudioLazy changes history
 -------------------------
 
-*** Development... ***
+*** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***
 
 + examples (*new!*):
 
@@ -17,7 +17,7 @@ AudioLazy changes history
   - Lots of optimization and refactoring, also on tests and setup.py
   - Better docstrings and README.rst
   - Doctests (with pytest) and code coverage (needs pytest-cov)
-  - Now with 5100+ tests and 78% code coverage
+  - Now with 5200+ tests and 79% code coverage
 
 + lazy_analysis (*new!*):
 
@@ -85,9 +85,9 @@ AudioLazy changes history
     respectively) to logarithmic dB (power) values from complex-numbers
     (like the ones returned by LinearFilter.freq_response)
   - Most functions from math module, but working decorated with elementwise
-    (`sin`, `cos`, `sqrt`, etc.), and the constants `e` and `pi`
-  - Other functions: `factorial`, `ln` (the `log` from math), `log2`, `cexp`
-    (the `exp` from cmath)
+    (``sin``, ``cos``, ``sqrt``, etc.), and the constants ``e`` and ``pi``
+  - Other functions: ``factorial``, ``ln`` (the `log` from math), ``log2``,
+    ``cexp`` (the ``exp`` from cmath) and ``phase`` (from cmath)
 
 + lazy_midi:
 
@@ -162,7 +162,7 @@ AudioLazy changes history
 
   - LTI filters, callable objects with operators and derivatives, returning
     Stream instances
-  - Explicit filter formulas with the `z` object, e.g.
+  - Explicit filter formulas with the ``z`` object, e.g.
     ``filt = 1 / (.5 + z ** -1)``
 
 + lazy_io:
@@ -191,4 +191,4 @@ AudioLazy changes history
 
   - Stream: each instance is basically a generator with elementwise
     operators
-  - Decorator `tostream` so generator functions can return Stream objects
+  - Decorator ``tostream`` so generator functions can return Stream objects

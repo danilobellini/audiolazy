@@ -441,7 +441,7 @@ class TableLookup(object):
 
   def __getitem__(self, idx):
     """
-    Get a item from the table from its index, which can possibly be a float.
+    Gets an item from the table from its index, which can possibly be a float.
     The data is linearly interpolated.
     """
     total_length = len(self)
@@ -459,7 +459,7 @@ class TableLookup(object):
 
   def harmonize(self, harmonics_dict):
     """
-    Return a "harmonized" table lookup instance by using a "harmonics"
+    Returns a "harmonized" table lookup instance by using a "harmonics"
     dictionary with {partial: amplitude} terms, where all "partial" keys have
     to be integers.
     """
@@ -469,7 +469,7 @@ class TableLookup(object):
 
   def normalize(self):
     """
-    Return a new table with values ranging from -1 to 1, reaching at least
+    Returns a new table with values ranging from -1 to 1, reaching at least
     one of these, unless there's no data.
     """
     max_abs = max(self.table, key=abs)
