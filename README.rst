@@ -19,7 +19,7 @@ Goal
 Prioritizing code expressiveness, clarity and simplicity, without precluding
 the lazy evaluation, and aiming to be used together with Numpy, Scipy and
 Matplotlib as well as default Python structures like lists and generators,
-AudioLazy is a starting project written in pure Python proposing digital
+AudioLazy is a package written in pure Python proposing digital
 audio signal processing (DSP), featuring a simple synthesizer, analysis
 tools, filters, biological auditory periphery modeling, among other
 functionalities.

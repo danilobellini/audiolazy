@@ -8,7 +8,7 @@ AudioLazy changes history
 + examples (*new!*):
 
   - Gammatone frequency and impulse response plots example
-  - FM synthesis example for benchmarking between CPython and PyPy
+  - FM synthesis example for benchmarking with CPython and PyPy
   - Simple I/O wire example, connecting the input directly to the output
   - Modulo Counter graphics w/ FM synthesis audio in a wxPython application
   - Window functions plot example (all window strategies)
@@ -34,17 +34,19 @@ AudioLazy changes history
 
 + lazy_auditory (*new!*):
 
-  - Two ERB (Equivalent Rectangular Bandwidth) models (Glasberg and Moore)
+  - Two ERB (Equivalent Rectangular Bandwidth) models (both by Glasberg and
+    Moore)
   - Function to find gammatone bandwidth from ERB for any gammatone order
-  - Three gammatone filter implementations: sampled, Slaney, Klapuri
+  - Three gammatone filter implementations: sampled impulse response, Slaney,
+    Klapuri
 
 + lazy_core:
 
   - MultiKeyDict: an "inversible" dict (i.e., a dict whose values must be
-  - StrategyDict: callable dict to store multiple function implementations
     hasheable) that may have several keys for each value
+  - StrategyDict: callable dict to store multiple function implementations
     in. Inherits from MultiKeyDict, so the same strategy may have multiple
-    names. It is also an iterable on its values (functions)
+    names. It's also an iterable on its values (functions)
 
 + lazy_filters:
 
@@ -88,7 +90,7 @@ AudioLazy changes history
     (like the ones returned by LinearFilter.freq_response)
   - Most functions from math module, but working decorated with elementwise
     (``sin``, ``cos``, ``sqrt``, etc.), and the constants ``e`` and ``pi``
-  - Other functions: ``factorial``, ``ln`` (the `log` from math), ``log2``,
+  - Other functions: ``factorial``, ``ln`` (the ``log`` from math), ``log2``,
     ``cexp`` (the ``exp`` from cmath) and ``phase`` (from cmath)
 
 + lazy_midi:
@@ -119,7 +121,7 @@ AudioLazy changes history
   - Karplus-Strong synthesis algorithm
   - ADSR envelope
   - Impulse, ones, zeros/zeroes and white noise Stream generator
-  - Faster sinusoid not based on table lookup
+  - Faster sinusoid not based on the TableLookup class
 
 
 *** Version 0.02 (Table lookup synthesis!) ***
