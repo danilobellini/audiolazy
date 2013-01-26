@@ -3,6 +3,43 @@ AudioLazy changes history
 
 *** Development... ***
 
++ lazy_analysis:
+
+  - One-dimensional autocorrelation function with ``acorr`` and lag
+    "covariance" (due to lpc.covar) with ``lag_matrix``
+  - DFT for any frequency, given a block
+
++ lazy_filters:
+
+  - ZFilter composition/substitution, e.g., ``(1 + z ** -1)(1 / z)`` results
+    to the ZFilter instance ``1 + z``
+  - LinearFilter.plot() directly plots the frequency response of a LTI filter
+    to a MatPlotLib figure. Plot with the DFT of a given block, too.
+
++ lazy_lpc (*new!*):
+
+  - Linear Predictive Coding (LPC) coefficients as a ZFilter from:
+
+    * ``lpc.autocor``: Faster and safer autocorrelation, perhaps using NumPy
+    * ``lpc.nautocor``: Autocorrelation, with linear system solved by NumPy
+    * ``lpc.kautocor``: Autocorrelation, using the Levinson-Durbin algorithm
+    * ``lpc.covar``: Covariance, with linear system solved by NumPy
+    * ``lpc.kcovar``: Covariance, slower. Mainly for those without NumPy
+    * ``levinson_durbin``: Same to the ``lpc.kautocor``, but with the
+      autocorrelation vector as the input, not the signal data
+
+  - Toeplitz matrix as a list of lists
+  - Partial correlation coefficients (PARCOR) or reflection coefficients
+  - Line Spectral Frequencies (LSF)
+  - Stability testers for filters with LSF and PARCOR
+
++ lazy_misc:
+
+  - New ``rational_formatter``: casts floats to strings, perhaps with a symbol
+    string as multiplier.
+  - New ``pi_formatter``: same to ``rational_formatter``, but with the symbol
+    fixed to pi, mainly for use in MatPlotLib labels.
+
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***
 
 + examples (*new!*):
@@ -23,7 +60,7 @@ AudioLazy changes history
 
 + lazy_analysis (*new!*):
 
-  - New window StrategyDict instance, with:
+  - New ``window`` StrategyDict instance, with:
 
     * Hamming (default)
     * Hann
