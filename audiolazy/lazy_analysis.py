@@ -27,8 +27,9 @@ from math import cos, pi
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_stream import tostream
+from .lazy_math import cexp
 
-__all__ = ["window", "zcross"]
+__all__ = ["window", "acorr", "lag_matrix", "dft", "zcross"]
 
 
 window = StrategyDict("window")
@@ -144,6 +145,106 @@ def window(size, alpha=.16):
   return [alpha / 2 * cos(4 * pi * n / (size - 1))
           -.5 * cos(2 * pi * n / (size - 1)) + (1 - alpha) / 2
           for n in xrange(size)]
+
+
+def acorr(blk, max_lag=None):
+  """
+  Calculate the autocorrelation of a given 1-D block sequence.
+
+  Parameters
+  ----------
+  blk :
+    An iterable with well-defined length. Don't use this function with Stream
+    objects!
+  max_lag :
+    The size of the result, the lags you'd need. Defaults to ``len(blk) - 1``,
+    since any lag beyond would be zero.
+
+  Returns
+  -------
+  A list with lags from 0 up to max_lag, where its ``i``-th element has the
+  autocorrelation for a lag equals to ``i``. Be careful with negative lags!
+  You should use abs(lag) indexes when working with them.
+
+  Examples
+  --------
+  >>> seq = [1, 2, 3, 4, 3, 4, 2]
+  >>> acorr(seq) # Default max_lag is len(seq) - 1
+  [59, 52, 42, 30, 17, 8, 2]
+  >>> acorr(seq, 9) # Zeros at the end
+  [59, 52, 42, 30, 17, 8, 2, 0, 0, 0]
+  >>> len(acorr(seq, 3)) # Resulting length is max_lag + 1
+  4
+  >>> acorr(seq, 3)
+  [59, 52, 42, 30]
+
+  """
+  if max_lag is None:
+    max_lag = len(blk) - 1
+  return [sum(blk[n] * blk[n + tau] for n in xrange(len(blk) - tau))
+          for tau in xrange(max_lag + 1)]
+
+
+def lag_matrix(blk, max_lag=None):
+  """
+  Finds the lag matrix for a given 1-D block sequence.
+
+  Parameters
+  ----------
+  blk :
+    An iterable with well-defined length. Don't use this function with Stream
+    objects!
+  max_lag :
+    The size of the result, the lags you'd need. Defaults to ``len(blk) - 1``,
+    the maximum lag that doesn't create fully zeroed matrices.
+
+  Returns
+  -------
+  The covariance matrix as a list of lists. Each cell (i, j) contains the sum
+  of ``blk[n - i] * blk[n - j]`` elements for all n that allows such without
+  padding the given block.
+
+  """
+  if max_lag is None:
+    max_lag = len(blk) - 1
+  elif max_lag >= len(blk):
+    raise ValueError("Block length should be higher than order")
+
+  return [[sum(blk[n - i] * blk[n - j] for n in xrange(max_lag, len(blk))
+              ) for i in xrange(max_lag + 1)
+          ] for j in xrange(max_lag + 1)]
+
+
+def dft(blk, freqs):
+  """
+  Finds the complex DFT values for the given frequency list, in order, over
+  the data block as periodic.
+
+  Parameters
+  ----------
+  blk :
+    An iterable with well-defined length. Don't use this function with Stream
+    objects!
+  freqs :
+    List of frequencies to find the DFT, in rad/sample. FFT implementations
+    like numpy.fft.ftt finds the coefficients for N frequencies equally
+    spaced as ``line(N, 0, 2 * pi, finish=True)`` for N frequencies.
+
+  Returns
+  -------
+  A list of DFT values for each frequency, in the same order that they appear
+  in the freqs input. The coefficient sums are divided by ``len(blk)``.
+
+  Note
+  ----
+  This isn't a FFT implementation. This function can find the DFT for any
+  specific frequency, with no need for zero padding or finding all frequencies
+  in a linearly spaced band grid with N frequency bins at once.
+
+  """
+  lblk = len(blk)
+  return [sum(xn * cexp(-1j * n * f) for n, xn in enumerate(blk)) / lblk
+          for f in freqs]
 
 
 @tostream
