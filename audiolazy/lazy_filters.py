@@ -30,10 +30,10 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
-                        pair_strings_sum_formatter)
+                        pair_strings_sum_formatter, sHz, pi_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import exp, sin, cos, sqrt, pi, nan
+from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator",
@@ -298,6 +298,79 @@ class LinearFilter(LinearFilterProperties):
             new_poly[key] = value
     return self.__class__(*data)
 
+  def plot(self, fig=None, samples=300, rate=None, min_freq=0., max_freq=pi):
+    """
+    Plots the filter frequency response into a formatted MatPlotLib figure
+    with two subplots, labels and title, including the magnitude response
+    and the phase response.
+
+    Parameters
+    ----------
+    fig :
+      A matplotlib.pylab.Figure instance. Defaults to None, which means that
+      it will use the current figure.
+    samples :
+      Number of samples (frequency values) to plot. Defaults to 300.
+    rate :
+      Given rate (samples/second) or "s" object from ``sHz``. Defaults to 300.
+    min_freq, max_freq :
+      Frequency range to be drawn, in rad/sample. Defaults to [0, pi].
+
+    Returns
+    -------
+    The matplotlib.pylab.Figure instance.
+
+    See Also
+    --------
+    sHz :
+      Second and hertz constants from samples/second rate.
+
+    """
+    if not self.is_lti():
+      raise ValueError("Filter is not time invariant (LTI)")
+
+    from .lazy_synth import line
+    from matplotlib import pylab as plt
+    if fig is None:
+      fig = plt.gcf()
+
+    Hz = 1. if rate == None else sHz(rate)[1]
+    funit = "rad/sample" if rate == None else "Hz"
+
+    freqs = list(line(samples, min_freq, max_freq, finish=True))
+    freqs_label = list(line(samples, min_freq / Hz, max_freq / Hz,
+                            finish=True))
+    data = self.freq_response(freqs)
+
+    mag_plot = fig.add_subplot(2, 1, 1)
+    mag_plot.set_title("Frequency response")
+    mag_plot.plot(freqs_label, dB20(data))
+    mag_plot.set_ylabel("Magnitude (dB)")
+    mag_plot.grid()
+    plt.setp(mag_plot.get_xticklabels(), visible = False)
+
+    ph_plot = fig.add_subplot(2, 1, 2, sharex = mag_plot)
+    ph_plot.plot(freqs_label, phase(data))
+    ph_plot.set_ylabel("Phase (rad)")
+    ph_plot.set_xlabel("Frequency ({funit})".format(funit=funit))
+    ph_plot.set_xlim(freqs_label[0], freqs_label[-1])
+    ph_plot.grid()
+
+    tick_values = list(line(7, min_freq, max_freq, finish=True))
+    if rate is None:
+      tick_labels = pi_formatter(tick_values)
+    else:
+      tick_labels = ["{0:g}".format(tick) for tick in tick_values]
+    mag_plot.set_xticks(tick_values)
+    ph_plot.set_xticks(tick_values)
+    ph_plot.set_xticklabels(tick_labels)
+
+    ph_plot.set_yticks(list(line(7, -pi, pi, finish=True)))
+    ph_plot.set_yticklabels(pi_formatter(ph_plot.get_yticks()))
+
+    fig.tight_layout(h_pad=0.)
+    return fig
+
 
 class ZFilterMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
@@ -499,18 +572,18 @@ class ZFilter(LinearFilter):
 
       >>> filt = 1 + z ** -1
       >>> filt(z ** -1)
-      1 + z
+      z + 1
       >>> filt(- z ** 2)
-      1 - z ** -1
+      1 - z^-2
 
     With any iterable (but ZFilter instances):
 
       >>> filt = 1 + z ** -1
-      >>> data = filt([1, 2, 3])
+      >>> data = filt([1.0, 2.0, 3.0])
       >>> data
-      <audiolazy.lazy_stream.Stream at ...>
+      <audiolazy.lazy_stream.Stream object at ...>
       >>> list(data)
-      [1, 3, 5]
+      [1.0, 3.0, 5.0]
 
     """
     if isinstance(seq, ZFilter):

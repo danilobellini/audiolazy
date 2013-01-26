@@ -30,11 +30,13 @@ import types
 import itertools as it
 import sys
 from math import pi
+from fractions import Fraction
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "blocks", "chunks",
            "array_chunks", "zero_pad", "elementwise", "almost_eq_diff",
            "almost_eq", "multiplication_formatter",
-           "pair_strings_sum_formatter", "sHz"]
+           "pair_strings_sum_formatter", "rational_formatter",
+           "pi_formatter", "sHz"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -311,6 +313,99 @@ def pair_strings_sum_formatter(a, b):
   if b[:1] == "-":
     return "{0} - {1}".format(a, b[1:])
   return "{0} + {1}".format(a, b)
+
+
+@elementwise("value", 0)
+def rational_formatter(value, symbol_str="", symbol_value=1, after=False,
+                       max_denominator=1000000):
+  """
+  Converts a given numeric value to a string based on rational fractions of
+  the given symbol, useful for labels in plots.
+
+  Parameters
+  ----------
+  value :
+    A float number or an iterable with floats.
+  symbol_str :
+    String data that will be in the output representing the data as a
+    numerator multiplier, if needed. Defaults to an empty string.
+  symbol_value :
+    The conversion value for the given symbol (e.g. pi = 3.1415...). Defaults
+    to one (no effect).
+  after :
+    Chooses the place where the symbol_str should be written. If True, that's
+    the end of the string. If False, that's in between the numerator and the
+    denominator, before the slash. Defaults to False.
+  max_denominator :
+    An int instance, used to round the float following the given limit.
+    Defaults to the integer 1,000,000 (one million).
+
+  Returns
+  -------
+  A string with the rational number written into, with or without the symbol.
+
+  Examples
+  --------
+  >>> rational_formatter(12.5)
+  '25/2'
+  >>> rational_formatter(0.333333333333333)
+  '1/3'
+  >>> rational_formatter(0.333)
+  '333/1000'
+  >>> rational_formatter(0.333, max_denominator=100)
+  '1/3'
+  >>> rational_formatter(0.125, symbol_str="steps")
+  'steps/8'
+  >>> rational_formatter(0.125, symbol_str=" Hz",
+  ...                    after=True) # The symbol includes whitespace!
+  '1/8 Hz'
+
+  See Also
+  --------
+  pi_formatter :
+    Curried rational_formatter for the "pi" symbol.
+
+  """
+  if value == 0:
+    return "0"
+
+  frac = Fraction(value/symbol_value).limit_denominator(max_denominator)
+  num, den = frac.numerator, frac.denominator
+
+  output_data = []
+
+  if num < 0:
+    num = -num
+    output_data.append("-")
+
+  if (num != 1) or (symbol_str == "") or after:
+    output_data.append(str(num))
+
+  if (value != 0) and not after:
+    output_data.append(symbol_str)
+
+  if den != 1:
+    output_data.extend(["/", str(den)])
+
+  if after:
+    output_data.append(symbol_str)
+
+  return "".join(output_data)
+
+
+def pi_formatter(value, after=False, max_denominator=1000000):
+  """
+  Alike the rational_formatter, but fixed to the symbol string "$\\pi$"
+  (LaTeX) and symbol value ``pi``, for direct use with MatPlotLib labels.
+
+  See Also
+  --------
+  rational_formatter :
+    Float to string conversion, perhaps with a symbol as a multiplier.
+
+  """
+  return rational_formatter(value, symbol_str="$\\pi$", symbol_value=pi,
+                            after=after, max_denominator=max_denominator)
 
 
 def sHz(rate):

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Math module "decorated" and complemented to work elementwise when needed
+Math modules "decorated" and complemented to work elementwise when needed
 
 Copyright (C) 2012 Danilo de Jesus da Silva Bellini
 
