@@ -92,7 +92,7 @@ class LinearFilter(LinearFilterProperties):
 
   def __call__(self, seq, memory=None, zero=0.):
     """
-    IIR and FIR linear filtering.
+    IIR, FIR and time variant linear filtering.
 
     Parameters
     ----------
@@ -467,6 +467,57 @@ class ZFilter(LinearFilter):
                           xrange(1, n + 1),
                           self.numpoly(inv_sign))(inv_sign),
                    self.denpoly ** (n + 1))
+
+  def __call__(self, seq, memory=None, zero=0.):
+    """
+    IIR, FIR and time variant linear filtering.
+
+    Parameters
+    ----------
+    seq :
+      Any iterable to be seem as the input stream for the filter, or another
+      ZFilter for substituition.
+    memory :
+      Might be an iterable or a callable. Generally, as a iterable, the first
+      needed elements from this input will be used directly as the memory
+      (not the last ones!), and as a callable, it will be called with the
+      size as the only positional argument, and should return an iterable.
+      If ``None`` (default), memory is initialized with zeros. Neglect when
+      ``seq`` input is a ZFilter.
+    zero :
+      Value to fill the memory, when needed, and to be seem as previous
+      input when there's a delay. Defaults to ``0.0``. Neglect when ``seq``
+      input is a ZFilter.
+
+    Returns
+    -------
+    A Stream that have the data from the input sequence filtered.
+
+    Examples
+    --------
+    With ZFilter instances:
+
+      >>> filt = 1 + z ** -1
+      >>> filt(z ** -1)
+      1 + z
+      >>> filt(- z ** 2)
+      1 - z ** -1
+
+    With any iterable (but ZFilter instances):
+
+      >>> filt = 1 + z ** -1
+      >>> data = filt([1, 2, 3])
+      >>> data
+      <audiolazy.lazy_stream.Stream at ...>
+      >>> list(data)
+      [1, 3, 5]
+
+    """
+    if isinstance(seq, ZFilter):
+      return sum(v * seq ** -k for k, v in self.numpoly.terms()) / \
+             sum(v * seq ** -k for k, v in self.denpoly.terms())
+    else:
+      return super(ZFilter, self).__call__(seq, memory, zero)
 
 
 z = ZFilter({-1: 1})
