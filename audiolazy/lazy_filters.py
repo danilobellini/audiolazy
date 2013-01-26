@@ -298,7 +298,8 @@ class LinearFilter(LinearFilterProperties):
             new_poly[key] = value
     return self.__class__(*data)
 
-  def plot(self, fig=None, samples=300, rate=None, min_freq=0., max_freq=pi):
+  def plot(self, fig=None, samples=2048, rate=None, min_freq=0., max_freq=pi,
+           blk=None):
     """
     Plots the filter frequency response into a formatted MatPlotLib figure
     with two subplots, labels and title, including the magnitude response
@@ -308,13 +309,16 @@ class LinearFilter(LinearFilterProperties):
     ----------
     fig :
       A matplotlib.pylab.Figure instance. Defaults to None, which means that
-      it will use the current figure.
+      it will create a new figure.
     samples :
-      Number of samples (frequency values) to plot. Defaults to 300.
+      Number of samples (frequency values) to plot. Defaults to 2048.
     rate :
       Given rate (samples/second) or "s" object from ``sHz``. Defaults to 300.
     min_freq, max_freq :
       Frequency range to be drawn, in rad/sample. Defaults to [0, pi].
+    blk :
+      Sequence block. Plots the block DFT together with the filter frequency.
+      Defaults to None (no block).
 
     Returns
     -------
@@ -332,7 +336,7 @@ class LinearFilter(LinearFilterProperties):
     from .lazy_synth import line
     from matplotlib import pylab as plt
     if fig is None:
-      fig = plt.gcf()
+      fig = plt.figure()
 
     Hz = 1. if rate == None else sHz(rate)[1]
     funit = "rad/sample" if rate == None else "Hz"
@@ -341,20 +345,27 @@ class LinearFilter(LinearFilterProperties):
     freqs_label = list(line(samples, min_freq / Hz, max_freq / Hz,
                             finish=True))
     data = self.freq_response(freqs)
+    if blk is not None:
+      from .lazy_analysis import dft
+      fft_data = dft(blk, freqs)
 
     mag_plot = fig.add_subplot(2, 1, 1)
     mag_plot.set_title("Frequency response")
+    if blk is not None:
+      mag_plot.plot(freqs_label, dB20(fft_data))
     mag_plot.plot(freqs_label, dB20(data))
     mag_plot.set_ylabel("Magnitude (dB)")
-    mag_plot.grid()
+    mag_plot.grid(True)
     plt.setp(mag_plot.get_xticklabels(), visible = False)
 
     ph_plot = fig.add_subplot(2, 1, 2, sharex = mag_plot)
+    if blk is not None:
+      ph_plot.plot(freqs_label, phase(fft_data))
     ph_plot.plot(freqs_label, phase(data))
     ph_plot.set_ylabel("Phase (rad)")
     ph_plot.set_xlabel("Frequency ({funit})".format(funit=funit))
     ph_plot.set_xlim(freqs_label[0], freqs_label[-1])
-    ph_plot.grid()
+    ph_plot.grid(True)
 
     tick_values = list(line(7, min_freq, max_freq, finish=True))
     if rate is None:
