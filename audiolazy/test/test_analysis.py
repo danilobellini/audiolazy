@@ -26,9 +26,10 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import window, zcross
+from ..lazy_analysis import window, zcross, maverage
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
+from ..lazy_synth import line
 
 
 class TestWindow(object):
@@ -81,3 +82,18 @@ class TestZCross(object):
     assert isinstance(output, Stream)
     expected = list(zcross([sign] + data))[1:] # Skip first "zero" sample
     assert list(output) == expected
+
+
+class TestMAverage(object):
+
+  @p("val", [0, 1, 2, 3., 4.8])
+  @p("size", [2, 8, 15, 23])
+  @p("strategy", maverage)
+  def test_const_input(self, val, size, strategy):
+    signal = Stream(val)
+    result = strategy(size)(signal)
+    small_result = result.take(size - 1)
+    assert almost_eq(small_result, list(line(size, 0., val))[1:])
+    const_result = result.take(int(2.5 * size))
+    for el in const_result:
+      assert almost_eq(el, val)

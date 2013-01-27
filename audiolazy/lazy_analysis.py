@@ -23,13 +23,16 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 from math import cos, pi
+from collections import deque
 
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
-from .lazy_stream import tostream
+from .lazy_stream import tostream, thub
 from .lazy_math import cexp
+from .lazy_filters import lowpass, z
 
-__all__ = ["window", "acorr", "lag_matrix", "dft", "zcross"]
+__all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
+           "maverage"]
 
 
 window = StrategyDict("window")
@@ -293,3 +296,185 @@ def zcross(seq, hysteresis=0, first_sign=0):
       yield 1
     else:
       yield 0
+
+
+envelope = StrategyDict("envelope")
+
+
+@envelope.strategy("rms")
+def envelope(sig, cutoff=pi/512):
+  """
+  Envelope non-linear filter.
+
+  This strategy finds a RMS by passing the squared data through a low pass
+  filter and taking its square root afterwards.
+
+  Parameters
+  ----------
+  sig :
+    The signal to be filtered.
+  cutoff :
+    Lowpass filter cutoff frequency, in rad/sample. Defaults to ``pi/512``.
+
+  Returns
+  -------
+  A Stream instance with the envelope, without any decimation.
+
+  See Also
+  --------
+  maverage :
+    Moving average linear filter.
+
+  """
+  return lowpass(cutoff)(thub(sig, 1) ** 2) ** .5
+
+
+@envelope.strategy("abs")
+def envelope(sig, cutoff=pi/512):
+  """
+  Envelope non-linear filter.
+
+  This strategy make an ideal half wave rectification (get the absolute value
+  of each signal) and pass the resulting data through a low pass filter.
+
+  Parameters
+  ----------
+  sig :
+    The signal to be filtered.
+  cutoff :
+    Lowpass filter cutoff frequency, in rad/sample. Defaults to ``pi/512``.
+
+  Returns
+  -------
+  A Stream instance with the envelope, without any decimation.
+
+  See Also
+  --------
+  maverage :
+    Moving average linear filter.
+
+  """
+  return lowpass(cutoff)(abs(thub(sig, 1)))
+
+
+@envelope.strategy("squared")
+def envelope(sig, cutoff=pi/512):
+  """
+  Squared envelope non-linear filter.
+
+  This strategy squares the input, and apply a low pass filter afterwards.
+
+  Parameters
+  ----------
+  sig :
+    The signal to be filtered.
+  cutoff :
+    Lowpass filter cutoff frequency, in rad/sample. Defaults to ``pi/512``.
+
+  Returns
+  -------
+  A Stream instance with the envelope, without any decimation.
+
+  See Also
+  --------
+  maverage :
+    Moving average linear filter.
+
+  """
+  return lowpass(cutoff)(thub(sig, 1) ** 2)
+
+
+maverage = StrategyDict("maverage")
+
+
+@maverage.strategy("deque")
+def maverage(size):
+  """
+  Moving average
+
+  This is the only strategy that uses a ``collections.deque`` object
+  instead of a ZFilter instance. Fast, but without extra capabilites such
+  as a frequency response plotting method.
+
+  Parameters
+  ----------
+  size :
+    Data block window size. Should be an integer.
+
+  Returns
+  -------
+  A callable that accepts two parameters: a signal ``sig`` and the starting
+  memory element ``zero`` that behaves like the ``LinearFilter.__call__``
+  arguments. The output from that callable is a Stream instance, and has
+  no decimation applied.
+
+  See Also
+  --------
+  envelope :
+    Signal envelope (time domain) strategies.
+
+  """
+  size_inv = 1. / size
+
+  @tostream
+  def maverage_filter(sig, zero=0.):
+    data = deque((zero * size_inv for _ in xrange(size)), maxlen=size)
+    mean_value = zero
+    for el in sig:
+      mean_value -= data.popleft()
+      new_value = el * size_inv
+      data.append(new_value)
+      mean_value += new_value
+      yield mean_value
+
+  return maverage_filter
+
+
+@maverage.strategy("recursive", "feedback")
+def maverage(size):
+  """
+  Moving average
+
+  Linear filter implementation as a recursive / feedback ZFilter.
+
+  Parameters
+  ----------
+  size :
+    Data block window size. Should be an integer.
+
+  Returns
+  -------
+  A ZFilter instance with the feedback filter.
+
+  See Also
+  --------
+  envelope :
+    Signal envelope (time domain) strategies.
+
+  """
+  return (1. / size) * (1 - z ** -size) / (1 - z ** -1)
+
+
+@maverage.strategy("fir")
+def maverage(size):
+  """
+  Moving average
+
+  Linear filter implementation as a FIR ZFilter.
+
+  Parameters
+  ----------
+  size :
+    Data block window size. Should be an integer.
+
+  Returns
+  -------
+  A ZFilter instance with the FIR filter.
+
+  See Also
+  --------
+  envelope :
+    Signal envelope (time domain) strategies.
+
+  """
+  return sum((1. / size) * z ** -i for i in range(size))
