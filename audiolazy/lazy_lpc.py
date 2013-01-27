@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Linear Prediction Coding (LPC) module
+Linear Predictive Coding (LPC) module
 
 Copyright (C) 2012 Danilo de Jesus da Silva Bellini
 
@@ -32,55 +32,17 @@ from .lazy_filters import ZFilter, z
 from .lazy_math import phase
 from .lazy_core import StrategyDict
 from .lazy_misc import blocks
+from .lazy_analysis import acorr, lag_matrix
 
-__all__ = ["lpc", "ParCorError", "acorr", "levinson_durbin", "parcor",
+__all__ = ["ParCorError", "toeplitz", "levinson_durbin", "lpc", "parcor",
            "parcor_stable", "lsf", "lsf_stable"]
 
-
-lpc = StrategyDict("lpc")
 
 class ParCorError(ZeroDivisionError):
   """
   Error when trying to find the partial correlation coefficients
   (reflection coefficients) and there's no way to find them.
   """
-
-def acorr(blk, max_lag=None):
-  """
-  Calculate the autocorrelation of a given block.
-
-  Parameters
-  ----------
-  blk :
-    An iterable with well-defined length. Don't use this function with Stream
-    objects!
-  max_lag :
-    The size of the result, the lags you'd need. Defaults to ``len(blk) - 1``,
-    since any lag beyond would be zero.
-
-  Returns
-  -------
-  A list with lags from 0 up to max_lag, where its ``i``-th element has the
-  autocorrelation for a lag equals to ``i``. Be careful with negative lags!
-  You should use abs(lag) indexes when working with them.
-
-  Examples
-  --------
-  >>> seq = [1, 2, 3, 4, 3, 4, 2]
-  >>> acorr(seq) # Default max_lag is len(seq) - 1
-  [59, 52, 42, 30, 17, 8, 2]
-  >>> acorr(seq, 9) # Zeros at the end
-  [59, 52, 42, 30, 17, 8, 2, 0, 0, 0]
-  >>> len(acorr(seq, 3)) # Resulting length is max_lag + 1
-  4
-  >>> acorr(seq, 3)
-  [59, 52, 42, 30]
-
-  """
-  if max_lag is None:
-    max_lag = len(blk) - 1
-  return [sum(blk[n] * blk[n + tau] for n in xrange(len(blk) - tau))
-          for tau in xrange(max_lag + 1)]
 
 
 def toeplitz(vect):
@@ -121,7 +83,7 @@ def levinson_durbin(acdata, order=None):
   acorr:
     Calculate the autocorrelation of a given block.
   lpc :
-    Calculate the Linear Prediction Coding (LPC) coefficients.
+    Calculate the Linear Predictive Coding (LPC) coefficients.
   parcor :
     Partial correlation coefficients (PARCOR), or reflection coefficients,
     relative to the lattice implementation of a filter, obtained by reversing
@@ -141,7 +103,7 @@ def levinson_durbin(acdata, order=None):
 
   Notes
   -----
-  The Levinson-Durbin algorithm used to solve the equations uses
+  The Levinson-Durbin algorithm used to solve the equations needs
   ``O(order ** 2)`` floating point operations.
 
   """
@@ -157,10 +119,10 @@ def levinson_durbin(acdata, order=None):
                for j, bj in enumerate(b.numlist)
               )
 
-  A = ZFilter(1)
   try:
+    A = ZFilter(1)
     for m in range(1, order + 1):
-      B = ZFilter(A.numerator[::-1]) * z ** -1
+      B = A(1 / z) * z ** -m
       A -= inner(A, z ** -m) / inner(B, B) * B
   except ZeroDivisionError:
     raise ParCorError("Can't find next PARCOR coefficient")
@@ -169,13 +131,16 @@ def levinson_durbin(acdata, order=None):
   return A
 
 
+lpc = StrategyDict("lpc")
+
+
 @lpc.strategy("autocor", "acorr", "autocorrelation", "auto_correlation")
 def lpc(blk, order=None):
   """
-  Find the Linear Prediction Coding (LPC) coefficients as a ZFilter object,
+  Find the Linear Predictive Coding (LPC) coefficients as a ZFilter object,
   the analysis whitening filter. This implementation uses the autocorrelation
-  method, using the Levinson-Durbin algorithm or Numpy linear system solver,
-  when needed.
+  method, using the Levinson-Durbin algorithm or Numpy pseudo-inverse for
+  linear system solving, when needed.
 
   Parameters
   ----------
@@ -196,12 +161,22 @@ def lpc(blk, order=None):
   >>> len(data) # Small data
   16
   >>> filt = lpc.autocor(data, 2)
-  >>> print filt # The analysis filter
+  >>> filt # The analysis filter
   1 + 0.875 * z^-1
-  >>> print filt.numerator # List of coefficients
+  >>> filt.numerator # List of coefficients
   [1, 0.875]
-  >>> print filt.error # Prediction error (squared!)
+  >>> filt.error # Prediction error (squared!)
   14.125
+
+  See Also
+  --------
+  levinson_durbin :
+    Levinson-Durbin algorithm for solving Yule-Walker equations (Toeplitz
+    matrix linear system).
+  lpc.nautocor:
+    LPC coefficients from linear system solved with Numpy pseudo-inverse.
+  lpc.kautocor:
+    LPC coefficients obtained with Levinson-Durbin algorithm.
 
   """
   if order < 100:
@@ -215,9 +190,9 @@ def lpc(blk, order=None):
 @lpc.strategy("nautocor", "nacorr", "nautocorrelation", "nauto_correlation")
 def lpc(blk, order=None):
   """
-  Find the Linear Prediction Coding (LPC) coefficients as a ZFilter object,
+  Find the Linear Predictive Coding (LPC) coefficients as a ZFilter object,
   the analysis whitening filter. This implementation uses the autocorrelation
-  method, using Numpy linear system solver.
+  method, using numpy.linalg.pinv as a linear system solver.
 
   Parameters
   ----------
@@ -238,28 +213,28 @@ def lpc(blk, order=None):
   >>> len(data) # Small data
   16
   >>> filt = lpc["nautocor"](data, 2)
-  >>> print filt # The analysis filter
+  >>> filt # The analysis filter
   1 + 0.875 * z^-1
-  >>> print filt.numerator # List of coefficients
+  >>> filt.numerator # List of coefficients3
   [1, 0.875]
-  >>> print filt.error # Prediction error (squared!)
+  >>> filt.error # Prediction error (squared!)
   14.125
 
   """
-  from numpy import array
-  from numpy.linalg import solve
+  from numpy import matrix
+  from numpy.linalg import pinv
   acdata = acorr(blk, order)
-  psi = array(acdata[1:])
-  coeffs = solve(toeplitz(acdata[:-1]), -psi)
+  coeffs = pinv(toeplitz(acdata[:-1])) * -matrix(acdata[1:]).T
+  coeffs = coeffs.T.tolist()[0]
   filt = 1  + sum(ai * z ** -i for i, ai in enumerate(coeffs, 1))
-  filt.error = acdata[0] + sum(psi * coeffs)
+  filt.error = acdata[0] + sum(a * c for a, c in izip(acdata[1:], coeffs))
   return filt
 
 
 @lpc.strategy("kautocor", "kacorr", "kautocorrelation", "kauto_correlation")
 def lpc(blk, order=None):
   """
-  Find the Linear Prediction Coding (LPC) coefficients as a ZFilter object,
+  Find the Linear Predictive Coding (LPC) coefficients as a ZFilter object,
   the analysis whitening filter. This implementation uses the autocorrelation
   method, using the Levinson-Durbin algorithm.
 
@@ -282,11 +257,11 @@ def lpc(blk, order=None):
   >>> len(data) # Small data
   16
   >>> filt = lpc.kautocor(data, 2)
-  >>> print filt # The analysis filter
+  >>> filt # The analysis filter
   1 + 0.875 * z^-1
-  >>> print filt.numerator # List of coefficients
+  >>> filt.numerator # List of coefficients
   [1, 0.875]
-  >>> print filt.error # Prediction error (squared!)
+  >>> filt.error # Prediction error (squared!)
   14.125
 
   See Also
@@ -302,50 +277,39 @@ def lpc(blk, order=None):
 @lpc.strategy("covar", "cov", "covariance", "ncovar", "ncov", "ncovariance")
 def lpc(blk, order=None):
   """
-  Find the Linear Prediction Coding (LPC) coefficients as a ZFilter object,
+  Find the Linear Predictive Coding (LPC) coefficients as a ZFilter object,
   the analysis whitening filter. This implementation uses the covariance
-  method, assuming a zero-mean stochastic process, using Numpy linear system
-  solver.
+  method, assuming a zero-mean stochastic process, using numpy.linalg.pinv
+  as a linear system solver.
 
   """
-  from numpy import array
-  from numpy.linalg import solve
+  from numpy import matrix
+  from numpy.linalg import pinv
 
-  # Calculate the covariance for each lag pair
-  if order is None:
-    order = len(blk) - 1
-  elif order >= len(blk):
-    raise ValueError("Block length should be higher than order")
-  phi = [[sum(blk[n - c1] * blk[n - c2] for n in xrange(order, len(blk))
-             ) for c1 in xrange(order+1)
-         ] for c2 in xrange(order+1)]
-  fi = [[phi[i][j] for i in xrange(1, order + 1)]
-                   for j in xrange(1, order + 1)]
-  psi = array([phi[i][0] for i in xrange(1, order + 1)])
-  coeffs = solve(fi, -psi)
+  lagm = lag_matrix(blk, order)
+  phi = matrix(lagm)
+  psi = phi[1:, 0]
+  coeffs = pinv(phi[1:, 1:]) * -psi
+  coeffs = coeffs.T.tolist()[0]
   filt = 1  + sum(ai * z ** -i for i, ai in enumerate(coeffs, 1))
-  filt.error = max(0., phi[0][0] + sum(psi * coeffs))
+  filt.error = phi[0, 0] + sum(a * c for a, c in izip(lagm[0][1:], coeffs))
   return filt
 
 
 @lpc.strategy("kcovar", "kcov", "kcovariance")
 def lpc(blk, order=None):
   """
-  Find the Linear Prediction Coding (LPC) coefficients as a ZFilter object,
-  the analysis whitening filter. This implementation uses the covariance
-  method, assuming a zero-mean stochastic process, by finding the reflection
-  coefficients iteratively.
+  Find the Linear Predictive Coding (LPC) coefficients as a ZFilter object,
+  the analysis whitening filter. This implementation is based on the
+  covariance method, assuming a zero-mean stochastic process, finding
+  the coefficients iteratively and greedily like the lattice implementation
+  in Levinson-Durbin algorithm, although the lag matrix found from the given
+  block don't have to be toeplitz. Slow, but this strategy don't need NumPy.
 
   """
-
   # Calculate the covariance for each lag pair
-  if order is None:
-    order = len(blk) - 1
-  elif order >= len(blk):
-    raise ValueError("Block length should be higher than order")
-  phi = [[sum(blk[n - c1] * blk[n - c2] for n in xrange(order, len(blk))
-             ) for c1 in xrange(order+1)
-         ] for c2 in xrange(order+1)]
+  phi = lag_matrix(blk, order)
+  order = len(phi) - 1
 
   # Inner product for filters based on above statistics
   def inner(a, b):
@@ -355,21 +319,21 @@ def lpc(blk, order=None):
               )
 
   A = ZFilter(1)
-  eps = inner(A, A)
   B = [z ** -1]
   beta = [inner(B[0], B[0])]
 
   m = 1
   while True:
     try:
-      k = -inner(A, z ** -m) / beta[m - 1]
+      k = -inner(A, z ** -m) / beta[m - 1] # Last one is really a PARCOR coeff
     except ZeroDivisionError:
-      raise ParCorError("Can't find next PARCOR coefficient")
+      raise ZeroDivisionError("Can't find next coefficient")
+    if k >= 1 or k <= -1:
+      raise ValueError("Unstable filter")
     A += k * B[m - 1]
-    eps -= k ** 2 * beta[m - 1]
 
     if m >= order:
-      A.error = eps
+      A.error = inner(A, A)
       return A
 
     gamma = [inner(z ** -(m + 1), B[q]) / beta[q] for q in range(m)]
@@ -382,7 +346,8 @@ def parcor(fir_filt):
   """
   Find the partial correlation coefficients (PARCOR), or reflection
   coefficients, relative to the lattice implementation of a given LTI FIR
-  LinearFilter with a constant denominator (i.e., without feedback).
+  LinearFilter with a constant denominator (i.e., LPC analysis filter, or
+  any filter without feedback).
 
   Parameters
   ----------
@@ -391,16 +356,16 @@ def parcor(fir_filt):
 
   Returns
   -------
-  A generator that results in each partial correlatino coefficient from
+  A generator that results in each partial correlation coefficient from
   iterative decomposition, reversing the Levinson-Durbin algorithm.
 
   Examples
   --------
   >>> filt = levinson_durbin([1, 2, 3, 4, 5, 3, 2, 1])
   >>> filt
-  1 - 0.275 * z^-1 - 0.275 * z^-2 - 0.4125 * z^-3 + 1.5 * z^-4 - 0.9125 * z^-5
-  - 0.275 * z^-6 - 0.275 * z^-7
-  >>> filt.error
+  1 - 0.275 * z^-1 - 0.275 * z^-2 - 0.4125 * z^-3 + 1.5 * z^-4 """\
+  """- 0.9125 * z^-5 - 0.275 * z^-6 - 0.275 * z^-7
+  >>> round(filt.error, 4)
   1.9125
   >>> k_generator = parcor(filt)
   >>> k_generator
@@ -421,15 +386,15 @@ def parcor(fir_filt):
   elif den[0] != 1: # So we don't have to worry with the denominator anymore
     fir_filt /= den[0]
 
-  while fir_filt.numpoly != 1:
-    k = fir_filt.numerator[-1]
-    zB = ZFilter(fir_filt.numerator[::-1])
+  for m in xrange(len(fir_filt.numerator) - 1, 0, -1):
+    k = fir_filt.numpoly[m]
+    yield k
+    zB = fir_filt(1 / z) * z ** -m
     try:
       fir_filt = (fir_filt - k * zB) / (1 - k ** 2)
     except ZeroDivisionError:
       raise ParCorError("Can't find next PARCOR coefficient")
     fir_filt = (fir_filt - fir_filt.numpoly[0]) + 1 # Avoid rounding errors
-    yield k
 
 
 def parcor_stable(filt):
@@ -456,7 +421,10 @@ def parcor_stable(filt):
     Tests filter stability with Line Spectral Frequencies (LSF) values.
 
   """
-  return all(abs(k) < 1 for k in parcor(ZFilter(filt.denpoly)))
+  try:
+    return all(abs(k) < 1 for k in parcor(ZFilter(filt.denpoly)))
+  except ParCorError:
+    return False
 
 
 def lsf(fir_filt):
@@ -471,7 +439,7 @@ def lsf(fir_filt):
   Returns
   -------
   A tuple with all LSFs in rad/sample, alternating from the forward prediction
-  (even indexes) and backward prediction filters (odd indexes).
+  and backward prediction filters, starting with the lowest LSF value.
 
   """
   den = fir_filt.denominator
@@ -488,7 +456,7 @@ def lsf(fir_filt):
   roots_q = roots(Q.numerator[::-1])
   lsf_p = sorted(phase(roots_p))
   lsf_q = sorted(phase(roots_q))
-  return reduce(operator.concat, izip(lsf_p, lsf_q))
+  return reduce(operator.concat, izip(*sorted([lsf_p, lsf_q])), tuple())
 
 
 def lsf_stable(filt):
@@ -517,5 +485,5 @@ def lsf_stable(filt):
     coefficients).
 
   """
-  return all(a < b for a, b in blocks(lsf(ZFilter(filt.denpoly)),
-                                      size=2, hop=1))
+  lsf_data = lsf(ZFilter(filt.denpoly))
+  return all(a < b for a, b in blocks(lsf_data, size=2, hop=1))

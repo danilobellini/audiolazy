@@ -3,6 +3,12 @@ AudioLazy changes history
 
 *** Development... ***
 
++ general:
+
+  - Integration with NumPy and MatPlotLib
+  - Better docstrings and README.rst
+  - Now with 5300+ tests and 78% code coverage
+
 + lazy_analysis:
 
   - One-dimensional autocorrelation function with ``acorr`` and lag
@@ -39,6 +45,7 @@ AudioLazy changes history
     string as multiplier.
   - New ``pi_formatter``: same to ``rational_formatter``, but with the symbol
     fixed to pi, mainly for use in MatPlotLib labels.
+
 
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***
 

@@ -34,6 +34,7 @@ from .lazy_synth import *
 from .lazy_midi import *
 from .lazy_auditory import *
 from .lazy_analysis import *
+from .lazy_lpc import *
 
 # Metadata (see setup.py for more information about these)
 __version__ = "0.04dev"
