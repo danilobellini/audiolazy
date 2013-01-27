@@ -14,6 +14,8 @@ AudioLazy changes history
   - One-dimensional autocorrelation function with ``acorr`` and lag
     "covariance" (due to lpc.covar) with ``lag_matrix``
   - DFT for any frequency, given a block
+  - Three envelope filtering strategies (time domain)
+  - Three moving average filter strategies
 
 + lazy_filters:
 

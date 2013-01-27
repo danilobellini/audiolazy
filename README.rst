@@ -44,11 +44,11 @@ repository (requires ``git`` for cloning):
 The package doesn't have any strong dependency for its core besides the Python
 itself and its standard library, but you might need:
 
-  - PyAudio: needed for playing and recording audio
-  - NumPy: needed for doing some maths, such as finding the LSFs from a filter
-  - MatPlotLib: needed for all default plotting, like in LinearFilter.plot
-    method and several examples
-  - wxPython: used by one example with GUI
+- PyAudio: needed for playing and recording audio
+- NumPy: needed for doing some maths, such as finding the LSFs from a filter
+- MatPlotLib: needed for all default plotting, like in LinearFilter.plot
+  method and several examples
+- wxPython: used by one example with GUI
 
 
 Getting started
@@ -77,7 +77,7 @@ iterator!):
 And also finite iterators (you can think on any Stream as a generator with
 elementwise operators):
 
-  >>> a = Stream([1, 2, 3, 2, 1]) # Finite
+  >>> a = Stream([1, 2, 3, 2, 1]) # Finite, since it's a cast from an iterable
   >>> b = Stream(3, 7, 5, 4) # Periodic
   >>> c = a + b # Elementwise sum, finite
   >>> list(c)
@@ -106,9 +106,29 @@ LTI Filter frequency response plot (needs MatPlotLib):
 
   >>> (1 + z ** -2).plot().show()
 
-Linear Predictive Coding analysis filter frequency response plot (MatPlotLib):
+Linear Predictive Coding (LPC) autocorrelation method analysis filter
+frequency response plot (MatPlotLib):
 
   >>> lpc([1, -2, 3, -4, -3, 2, -3, 2, 1], order=3).plot().show()
+
+Linear Predictive Coding covariance method analysis and synthesis filter,
+followed by the frequency response plot together with block data DFT
+(MatPlotLib):
+
+  >>> data = Stream(-1., 0., 1., 0.) # Periodic
+  >>> blk = data.take(200)
+  >>> analysis_filt = lpc.covar(blk, 4)
+  >>> analysis_filt
+  1 + 0.5 * z^-2 - 0.5 * z^-4
+  >>> residual = list(analysis_filt(blk))
+  >>> residual[:10]
+  [-1.0, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  >>> synth_filt = 1 / analysis_filt
+  >>> synth_filt(residual).take(10)
+  [-1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0]
+  >>> gain_rms = sqrt(analysis_filt.error)
+  >>> amplified_blk = list(Stream(blk) * 200) # Just for alignment w/ DFT gain
+  >>> synth_filt.plot(blk=amplified_blk).show()
 
 AudioLazy doesn't need any audio card to process audio, but needs PyAudio to
 play some sound:
