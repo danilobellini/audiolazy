@@ -27,12 +27,12 @@ from collections import deque
 
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
-from .lazy_stream import tostream, thub
+from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp
 from .lazy_filters import lowpass, z
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage"]
+           "maverage", "clip"]
 
 
 window = StrategyDict("window")
@@ -478,3 +478,34 @@ def maverage(size):
 
   """
   return sum((1. / size) * z ** -i for i in range(size))
+
+
+def clip(sig, low=-1., high=1.):
+  """
+  Clips the signal up to both a lower and a higher limit.
+
+  Parameters
+  ----------
+  sig :
+    The signal to be clipped, be it a Stream instance, a list or any iterable.
+  low, high :
+    Lower and higher clipping limit, "saturating" the input to them. Defaults
+    to -1.0 and 1.0, respectively. These can be None when needed one-sided
+    clipping. When both limits are set to None, the output will be a Stream
+    that yields exactly the ``sig`` input data.
+
+  Returns
+  -------
+  Clipped signal as a Stream instance.
+
+  """
+  if low is None:
+    if high is None:
+      return Stream(sig)
+    return Stream(el if el < high else high for el in sig)
+  if high is None:
+    return Stream(el if el > low else low for el in sig)
+  if high < low:
+    raise ValueError("Higher clipping limit is smaller than lower one")
+  return Stream(high if el > high else
+                (low if el < low else el) for el in sig)

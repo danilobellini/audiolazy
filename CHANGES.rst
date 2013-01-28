@@ -16,6 +16,7 @@ AudioLazy changes history
   - DFT for any frequency, given a block
   - Three envelope filtering strategies (time domain)
   - Three moving average filter strategies
+  - Signal clipping function
 
 + lazy_filters:
 

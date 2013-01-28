@@ -26,7 +26,7 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import window, zcross, maverage
+from ..lazy_analysis import window, zcross, maverage, clip
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
 from ..lazy_synth import line
@@ -97,3 +97,23 @@ class TestMAverage(object):
     const_result = result.take(int(2.5 * size))
     for el in const_result:
       assert almost_eq(el, val)
+
+
+class TestClip(object):
+
+  @p("low", [None, 0, -3])
+  @p("high", [None, 0, 5])
+  def test_with_range(self, low, high):
+    data = range(-10, 10)
+    result = clip(data, low=low, high=high)
+    assert isinstance(result, Stream)
+    if low is None or low < -10:
+      low = -10
+    if high is None or high > 10:
+      high = 10
+    expected = [low] * (10 + low) + range(low, high) + [high] * (10 - high)
+    assert expected == list(result)
+
+  def test_with_inverted_high_and_low(self):
+    with pytest.raises(ValueError):
+      clip([], low=4, high=3.9)
