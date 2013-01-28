@@ -23,7 +23,7 @@ danilo [dot] bellini [at] gmail [dot] com
 """
 
 import itertools as it
-from collections import Iterable
+from collections import Iterable, deque
 from functools import wraps
 from warnings import warn
 
@@ -32,7 +32,8 @@ from .lazy_misc import blocks
 from .lazy_core import AbstractOperatorOverloaderMeta
 
 __all__ = ["StreamMeta", "Stream", "avoid_stream", "tostream",
-           "ControlStream", "MemoryLeakWarning", "StreamTeeHub", "thub"]
+           "ControlStream", "MemoryLeakWarning", "StreamTeeHub", "thub",
+           "Streamix"]
 
 
 class StreamMeta(AbstractOperatorOverloaderMeta):
@@ -438,3 +439,119 @@ def thub(data, n):
 
   """
   return StreamTeeHub(data, n) if isinstance(data, Iterable) else data
+
+
+class Streamix(Stream):
+  """
+  Stream mixer of iterables.
+
+  Examples
+  --------
+
+  With integer iterables:
+
+  >>> s1 = [-1, 1, 3, 2]
+  >>> s2 = Stream([4, 4, 4])
+  >>> s3 = tuple([-3, -5, -7, -5, -7, -1])
+  >>> smix = Streamix(zero=0) # Default zero is 0.0, changed to keep integers
+  >>> smix.add(0, s1) # 1st number = delta time (in samples) from last added
+  >>> smix.add(2, s2)
+  >>> smix.add(0, s3)
+  >>> smix
+  <audiolazy.lazy_stream.Streamix object at ...>
+  >>> list(smix)
+  [-1, 1, 4, 1, -3, -5, -7, -1]
+
+  With time constants:
+
+  >>> from audiolazy import sHz, line
+  >>> s, Hz = sHz(10) # You probably will use 44100 or something alike, not 10
+  >>> sdata = list(line(2 * s, 1, -1, finish=True))
+  >>> smix = Streamix()
+  >>> smix.add(0.0 * s, sdata)
+  >>> smix.add(0.5 * s, sdata)
+  >>> smix.add(1.0 * s, sdata)
+  >>> result = [round(sm, 2) for sm in smix]
+  >>> len(result)
+  35
+  >>> 0.5 * s # Let's see how many samples this is
+  5.0
+  >>> result[:7]
+  [1.0, 0.89, 0.79, 0.68, 0.58, 1.47, 1.26]
+  >>> result[10:17]
+  [0.42, 0.21, 0.0, -0.21, -0.42, 0.37, 0.05]
+  >>> result[-1]
+  -1.0
+
+  See Also
+  --------
+  ControlStream :
+    Stream (iterable with operators)
+  sHz :
+    Time in seconds (s) and frequency in hertz (Hz) constants from sample
+    rate in samples/second.
+
+  """
+  def __init__(self, keep=False, zero=0.):
+    self._not_playing = deque() # Tuples (integer delta, iterable)
+    self._playing = []
+    self.keep = keep
+
+    def data_generator():
+      count = 0.5
+      to_remove = []
+
+      while True:
+        # Find if there's anything new to start "playing"
+        while self._not_playing and (count >= self._not_playing[0][0]):
+          delta, newdata = self._not_playing.popleft()
+          self._playing.append(newdata)
+          count -= delta # Delta might be float (less error propagation)
+
+        # Sum the data to be played, seeing if something finished
+        data = zero
+        for snd in self._playing:
+          try:
+            data += snd.next()
+          except StopIteration:
+            to_remove.append(snd)
+
+        # Remove finished
+        if to_remove:
+          for snd in to_remove:
+            self._playing.remove(snd)
+          to_remove = []
+
+        # Tests whether there were any data (finite Streamix had finished?)
+        if not (self.keep or self._playing or self._not_playing):
+          break # Stops the iterator
+
+        # Finish iteration
+        yield data
+        count += 1.
+
+    super(Streamix, self).__init__(data_generator())
+
+  def add(self, delta, data):
+    """
+    Adds (enqueues) an iterable event to the mixer.
+
+    Parameters
+    ----------
+    delta :
+      Time in samples since last added event. This can be zero and can be
+      float. Use "s" object from sHz for time conversion.
+    data :
+      Iterable (e.g. a list, a tuple, a Stream) to be "played" by the mixer at
+      the given time delta.
+
+    See Also
+    --------
+    sHz :
+      Time in seconds (s) and frequency in hertz (Hz) constants from sample
+      rate in samples/second.
+
+    """
+    if delta < 0:
+      raise ValueError("Delta time should be always positive")
+    self._not_playing.append((delta, iter(data)))

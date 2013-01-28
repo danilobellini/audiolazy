@@ -49,6 +49,11 @@ AudioLazy changes history
   - New ``pi_formatter``: same to ``rational_formatter``, but with the symbol
     fixed to pi, mainly for use in MatPlotLib labels.
 
++ lazy_stream:
+
+  - Streamix class for mixing Streams based on delta starting times,
+    automatically managing the need for multiple "tracks".
+
 
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***
 
