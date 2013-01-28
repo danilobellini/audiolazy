@@ -3,6 +3,10 @@ AudioLazy changes history
 
 *** Development... ***
 
++ examples:
+
+  - Random Bach Choral playing example (needs Music21 corpus)
+
 + general:
 
   - Integration with NumPy and MatPlotLib

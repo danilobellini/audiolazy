@@ -49,6 +49,7 @@ itself and its standard library, but you might need:
 - MatPlotLib: needed for all default plotting, like in LinearFilter.plot
   method and several examples
 - wxPython: used by one example with GUI
+- Music21: Bach chorals from its corpora, used in a synthesis and play example
 
 
 Getting started
