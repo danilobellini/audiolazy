@@ -31,7 +31,7 @@ import itertools as it
 from .lazy_misc import elementwise
 
 __all__ = ["abs", "pi", "e", "cexp", "ln", "log2", "factorial", "dB10",
-           "dB20", "inf", "nan", "phase"]
+           "dB20", "inf", "nan", "phase", "sign"]
 
 # All functions from math with one numeric input
 math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
@@ -93,3 +93,8 @@ def dB20(data):
   Convert a gain value to dB, from a amplitude value to a power gain.
   """
   return 20 * math.log10(abs(data)) if data != 0 else -inf
+
+
+@elementwise("x", 0)
+def sign(x):
+  return cmp(x, 0)

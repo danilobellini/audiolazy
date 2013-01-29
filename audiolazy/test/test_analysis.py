@@ -26,7 +26,7 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import window, zcross, maverage, clip
+from ..lazy_analysis import window, zcross, maverage, clip, unwrap
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
 from ..lazy_synth import line
@@ -117,3 +117,14 @@ class TestClip(object):
   def test_with_inverted_high_and_low(self):
     with pytest.raises(ValueError):
       clip([], low=4, high=3.9)
+
+
+class TestUnwrap(object):
+
+  @p(("data", "out_data"),[
+    ([0, 27, 11, 19, -1, -19, 48, 12], [0, -3, 1, 9, 9, 11, 8, 12]),
+    ([0, 10, -10, 20, -20, 30, -30, 40, -40, 50], [0] * 10),
+    ([-55, -49, -40, -38, -29, -17, -25], [-55, -49, -50, -48, -49, -47, -55]),
+  ])
+  def test_max_delta_8_change_10(self, data, out_data):
+    assert list(unwrap(data, max_delta=8, change=10)) == out_data

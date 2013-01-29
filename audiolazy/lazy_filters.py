@@ -299,7 +299,7 @@ class LinearFilter(LinearFilterProperties):
     return self.__class__(*data)
 
   def plot(self, fig=None, samples=2048, rate=None, min_freq=0., max_freq=pi,
-           blk=None):
+           blk=None, unwrap=True):
     """
     Plots the filter frequency response into a formatted MatPlotLib figure
     with two subplots, labels and title, including the magnitude response
@@ -319,6 +319,9 @@ class LinearFilter(LinearFilterProperties):
     blk :
       Sequence block. Plots the block DFT together with the filter frequency.
       Defaults to None (no block).
+    unwrap :
+      Boolean that chooses whether should unwrap the data phase or keep it as
+      is. Defaults to True.
 
     Returns
     -------
@@ -335,6 +338,8 @@ class LinearFilter(LinearFilterProperties):
 
     from .lazy_synth import line
     from matplotlib import pylab as plt
+    from .lazy_analysis import dft, unwrap as unwrap_func
+
     if fig is None:
       fig = plt.figure()
 
@@ -346,7 +351,6 @@ class LinearFilter(LinearFilterProperties):
                             finish=True))
     data = self.freq_response(freqs)
     if blk is not None:
-      from .lazy_analysis import dft
       fft_data = dft(blk, freqs)
 
     mag_plot = fig.add_subplot(2, 1, 1)
@@ -359,9 +363,10 @@ class LinearFilter(LinearFilterProperties):
     plt.setp(mag_plot.get_xticklabels(), visible = False)
 
     ph_plot = fig.add_subplot(2, 1, 2, sharex = mag_plot)
+    ph = (lambda x: list(unwrap_func(phase(x)))) if unwrap else phase
     if blk is not None:
-      ph_plot.plot(freqs_label, phase(fft_data))
-    ph_plot.plot(freqs_label, phase(data))
+      ph_plot.plot(freqs_label, ph(fft_data))
+    ph_plot.plot(freqs_label, ph(data))
     ph_plot.set_ylabel("Phase (rad)")
     ph_plot.set_xlabel("Frequency ({funit})".format(funit=funit))
     ph_plot.set_xlim(freqs_label[0], freqs_label[-1])

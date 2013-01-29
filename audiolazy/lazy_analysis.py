@@ -32,7 +32,7 @@ from .lazy_math import cexp
 from .lazy_filters import lowpass, z
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip"]
+           "maverage", "clip", "unwrap"]
 
 
 window = StrategyDict("window")
@@ -509,3 +509,23 @@ def clip(sig, low=-1., high=1.):
     raise ValueError("Higher clipping limit is smaller than lower one")
   return Stream(high if el > high else
                 (low if el < low else el) for el in sig)
+
+
+@tostream
+def unwrap(data, max_delta=pi, change=2*pi):
+  """
+  Unwraps data, minimizing the step difference when any adjacency step in
+  ``data`` is higher than ``max_delta`` by summing/subtracting ``change``.
+
+  """
+  idata = iter(data)
+  d0 = idata.next()
+  yield d0
+  delta = d0 - d0 # Get the zero (e.g., integer, float) from data
+  for d1 in idata:
+    d_diff = d1 - d0
+    if abs(d_diff) > max_delta:
+      delta += - d_diff + min((d_diff) % change,
+                              (d_diff) % -change, key=lambda x: abs(x))
+    yield d1 + delta
+    d0 = d1
