@@ -30,7 +30,8 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
-                        pair_strings_sum_formatter, sHz, pi_formatter)
+                        pair_strings_sum_formatter, sHz, pi_formatter,
+                        auto_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase
@@ -337,15 +338,17 @@ class LinearFilter(LinearFilterProperties):
       raise ValueError("Filter is not time invariant (LTI)")
 
     from .lazy_synth import line
-    from matplotlib import pylab as plt
     from .lazy_analysis import dft, unwrap as unwrap_func
+    import pylab
 
     if fig is None:
-      fig = plt.figure()
+      fig = pylab.figure()
 
-    Hz = 1. if rate == None else sHz(rate)[1]
+    # Units! Bizarre "pi/12" just to help MaxNLocator, corrected by fmt_func
+    Hz = pi / 12. if rate == None else sHz(rate)[1]
     funit = "rad/sample" if rate == None else "Hz"
 
+    # Sample the frequency range linearly (data scale) and get the data
     freqs = list(line(samples, min_freq, max_freq, finish=True))
     freqs_label = list(line(samples, min_freq / Hz, max_freq / Hz,
                             finish=True))
@@ -353,6 +356,7 @@ class LinearFilter(LinearFilterProperties):
     if blk is not None:
       fft_data = dft(blk, freqs)
 
+    # Plots the magnitude response
     mag_plot = fig.add_subplot(2, 1, 1)
     mag_plot.set_title("Frequency response")
     if blk is not None:
@@ -360,30 +364,30 @@ class LinearFilter(LinearFilterProperties):
     mag_plot.plot(freqs_label, dB20(data))
     mag_plot.set_ylabel("Magnitude (dB)")
     mag_plot.grid(True)
-    plt.setp(mag_plot.get_xticklabels(), visible = False)
+    pylab.setp(mag_plot.get_xticklabels(), visible = False)
 
+    # Plots the phase response
     ph_plot = fig.add_subplot(2, 1, 2, sharex = mag_plot)
-    ph = (lambda x: list(unwrap_func(phase(x)))) if unwrap else phase
+    ph = (lambda x: unwrap_func(phase(x))) if unwrap else phase
     if blk is not None:
-      ph_plot.plot(freqs_label, ph(fft_data))
-    ph_plot.plot(freqs_label, ph(data))
+      ph_plot.plot(freqs_label, [xi * 12 / pi for xi in ph(fft_data)])
+    ph_plot.plot(freqs_label, [xi * 12 / pi for xi in ph(data)])
     ph_plot.set_ylabel("Phase (rad)")
     ph_plot.set_xlabel("Frequency ({funit})".format(funit=funit))
     ph_plot.set_xlim(freqs_label[0], freqs_label[-1])
     ph_plot.grid(True)
 
-    tick_values = list(line(7, min_freq, max_freq, finish=True))
-    if rate is None:
-      tick_labels = pi_formatter(tick_values)
-    else:
-      tick_labels = ["{0:g}".format(tick) for tick in tick_values]
-    mag_plot.set_xticks(tick_values)
-    ph_plot.set_xticks(tick_values)
-    ph_plot.set_xticklabels(tick_labels)
+    # Ticks (gets strange unit "7.5 * degrees / sample" back )
+    fmt_func = lambda value, pos: auto_formatter(value * pi / 12., "p", [8])
+    pi_axis = [ph_plot.xaxis,
+               ph_plot.yaxis] if rate is None else [ph_plot.yaxis]
+    for axis in pi_axis:
+      loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
+      axis.set_major_locator(loc)
+      axis.set_major_formatter(pylab.FuncFormatter(fmt_func))
 
-    ph_plot.set_yticks(list(line(7, -pi, pi, finish=True)))
-    ph_plot.set_yticklabels(pi_formatter(ph_plot.get_yticks()))
-
+    mag_plot.yaxis.get_major_locator().set_params(prune="lower")
+    ph_plot.yaxis.get_major_locator().set_params(prune="upper")
     fig.tight_layout(h_pad=0.)
     return fig
 

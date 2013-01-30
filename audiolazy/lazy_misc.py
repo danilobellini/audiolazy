@@ -32,15 +32,16 @@ import sys
 from math import pi
 from fractions import Fraction
 
-__all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "blocks", "chunks",
-           "array_chunks", "zero_pad", "elementwise", "almost_eq_diff",
-           "almost_eq", "multiplication_formatter",
+__all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
+           "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
+           "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
-           "pi_formatter", "sHz"]
+           "pi_formatter", "auto_formatter", "sHz"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
 DEFAULT_CHUNK_SIZE = 2048 # Samples
+LATEX_PI_SYMBOL = r"$\pi$"
 
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
@@ -395,8 +396,9 @@ def rational_formatter(value, symbol_str="", symbol_value=1, after=False,
 
 def pi_formatter(value, after=False, max_denominator=1000000):
   """
-  Alike the rational_formatter, but fixed to the symbol string "$\\pi$"
-  (LaTeX) and symbol value ``pi``, for direct use with MatPlotLib labels.
+  Alike the rational_formatter, but fixed to the symbol string
+  LATEX_PI_SYMBOL and symbol value ``pi``, for direct use with MatPlotLib
+  labels.
 
   See Also
   --------
@@ -404,8 +406,68 @@ def pi_formatter(value, after=False, max_denominator=1000000):
     Float to string conversion, perhaps with a symbol as a multiplier.
 
   """
-  return rational_formatter(value, symbol_str="$\\pi$", symbol_value=pi,
-                            after=after, max_denominator=max_denominator)
+  return rational_formatter(value, symbol_str=LATEX_PI_SYMBOL,
+                            symbol_value=pi, after=after,
+                            max_denominator=max_denominator)
+
+
+def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
+                   after=False, max_denominator=1000000):
+  """
+  Chooses between pi_formatter, rational_formatter without a symbol and
+  a float representation by counting each digit, the "pi" symbol and the
+  slash as one char each, trying in the given ``order`` until one gets at
+  most the given ``size`` limit parameter as its length.
+
+  Parameters
+  ----------
+  value :
+    A float number or an iterable with floats.
+  order :
+    A string that gives the order to try formatting. Each char should be:
+
+    - "p" for pi_formatter;
+    - "r" for rational_formatter without symbol;
+    - "f" for the float representation.
+
+    Defaults to "pprpr". If no trial has the desired size, returns the
+    float representation.
+  size :
+    The max size allowed for each formatting in the ``order``, respectively.
+    Defaults to [4, 5, 3, 6, 4].
+  after :
+    Chooses the place where the LATEX_PI_SYMBOL symbol, if that's the case.
+    If True, that's the end of the string. If False, that's in between the
+    numerator and the denominator, before the slash. Defaults to False.
+  max_denominator :
+    An int instance, used to round the float following the given limit.
+    Defaults to the integer 1,000,000 (one million).
+
+  Returns
+  -------
+  A string with the number written into.
+
+  Note
+  ----
+  You probably want to keep ``max_denominator`` high to avoid rounding.
+
+  """
+  if len(order) != len(size):
+    raise ValueError("Arguments 'order' and 'size' should have the same size")
+
+  str_data = {
+    "p": pi_formatter(value, after=after, max_denominator=max_denominator),
+    "r": rational_formatter(value, max_denominator=max_denominator),
+    "f": elementwise("v", 0)(lambda v: "{0:g}".format(v))(value)
+  }
+
+  sizes = {k: len(v) for k, v in str_data.iteritems()}
+  sizes["p"] = max(1, sizes["p"] - len(LATEX_PI_SYMBOL) + 1)
+
+  for char, max_size in it.izip(order, size):
+    if sizes[char] <= max_size:
+      return str_data[char]
+  return str_data["f"]
 
 
 def sHz(rate):
