@@ -30,11 +30,10 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
-                        pair_strings_sum_formatter, sHz, pi_formatter,
-                        auto_formatter)
+                        pair_strings_sum_formatter, sHz, auto_formatter)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase
+from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase, abs as lzabs
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator",
@@ -300,7 +299,7 @@ class LinearFilter(LinearFilterProperties):
     return self.__class__(*data)
 
   def plot(self, fig=None, samples=2048, rate=None, min_freq=0., max_freq=pi,
-           blk=None, unwrap=True):
+           blk=None, unwrap=True, fscale="linear", magscale="dB"):
     """
     Plots the filter frequency response into a formatted MatPlotLib figure
     with two subplots, labels and title, including the magnitude response
@@ -323,6 +322,12 @@ class LinearFilter(LinearFilterProperties):
     unwrap :
       Boolean that chooses whether should unwrap the data phase or keep it as
       is. Defaults to True.
+    fscale :
+      Chooses whether plot is "linear" or "log" with respect to the frequency
+      axis. Defaults to "linear". Case insensitive.
+    magscale :
+      Chooses whether magnitude plot scale should be "linear", "squared" or
+      "dB". Defaults do "dB". Case insensitive.
 
     Returns
     -------
@@ -336,6 +341,13 @@ class LinearFilter(LinearFilterProperties):
     """
     if not self.is_lti():
       raise ValueError("Filter is not time invariant (LTI)")
+    fscale = fscale.lower()
+    magscale = magscale.lower()
+    magscale = "dB" if magscale == "db" else magscale
+    if fscale not in ["linear", "log"]:
+      raise ValueError("Unknown frequency scale")
+    if magscale not in ["linear", "squared", "dB"]:
+      raise ValueError("Unknown magnitude scale")
 
     from .lazy_synth import line
     from .lazy_analysis import dft, unwrap as unwrap_func
@@ -358,11 +370,19 @@ class LinearFilter(LinearFilterProperties):
 
     # Plots the magnitude response
     mag_plot = fig.add_subplot(2, 1, 1)
+    if fscale == "symlog":
+      mag_plot.set_xscale(fscale, basex=2., basey=2., steps=[1., 1.25, 1.5, 1.75])
+    else:
+      mag_plot.set_xscale(fscale)
     mag_plot.set_title("Frequency response")
+    mag = {"linear": lzabs,
+           "squared": lambda x: [abs(xi) ** 2 for xi in x],
+           "dB": dB20
+          }[magscale]
     if blk is not None:
-      mag_plot.plot(freqs_label, dB20(fft_data))
-    mag_plot.plot(freqs_label, dB20(data))
-    mag_plot.set_ylabel("Magnitude (dB)")
+      mag_plot.plot(freqs_label, mag(fft_data))
+    mag_plot.plot(freqs_label, mag(data))
+    mag_plot.set_ylabel("Magnitude ({munit})".format(munit=magscale))
     mag_plot.grid(True)
     pylab.setp(mag_plot.get_xticklabels(), visible = False)
 
@@ -377,14 +397,22 @@ class LinearFilter(LinearFilterProperties):
     ph_plot.set_xlim(freqs_label[0], freqs_label[-1])
     ph_plot.grid(True)
 
-    # Ticks (gets strange unit "7.5 * degrees / sample" back )
+    # X Ticks (gets strange unit "7.5 * degrees / sample" back ) ...
     fmt_func = lambda value, pos: auto_formatter(value * pi / 12., "p", [8])
-    pi_axis = [ph_plot.xaxis,
-               ph_plot.yaxis] if rate is None else [ph_plot.yaxis]
-    for axis in pi_axis:
-      loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
-      axis.set_major_locator(loc)
-      axis.set_major_formatter(pylab.FuncFormatter(fmt_func))
+    if rate is None:
+      if fscale == "linear":
+        loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
+      elif fscale == "log":
+        loc = pylab.LogLocator(base=2.)
+        loc_minor = pylab.LogLocator(base=2., subs=[1.25, 1.5, 1.75])
+        ph_plot.xaxis.set_minor_locator(loc_minor)
+      ph_plot.xaxis.set_major_locator(loc)
+      ph_plot.xaxis.set_major_formatter(pylab.FuncFormatter(fmt_func))
+
+    # ... and Y Ticks
+    loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
+    ph_plot.yaxis.set_major_locator(loc)
+    ph_plot.yaxis.set_major_formatter(pylab.FuncFormatter(fmt_func))
 
     mag_plot.yaxis.get_major_locator().set_params(prune="lower")
     ph_plot.yaxis.get_major_locator().set_params(prune="upper")
