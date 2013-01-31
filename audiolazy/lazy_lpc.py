@@ -462,7 +462,7 @@ def lsf(fir_filt):
 def lsf_stable(filt):
   """
   Tests whether the given filter is stable or not by using the Line Spectral
-  Frequencies (LSF) of the given filter.
+  Frequencies (LSF) of the given filter. Needs NumPy.
 
   Parameters
   ----------
@@ -479,7 +479,7 @@ def lsf_stable(filt):
   See Also
   --------
   lsf :
-    Gets the Line Spectral Frequencies from a filter.
+    Gets the Line Spectral Frequencies from a filter. Needs NumPy.
   parcor_stable :
     Tests filter stability with partial correlation coefficients (reflection
     coefficients).

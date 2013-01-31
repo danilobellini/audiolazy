@@ -27,19 +27,20 @@ functionalities.
 Installing
 ----------
 
-The package works both on Linux and on Windows. With the file below you can
-install it with the usual Python installing mechanism:
+The package works both on Linux and on Windows. You can find the last stable
+version at `http://pypi.python.org/pypi/audiolazy` and install it with
+the usual Python installing mechanism::
 
-   $ python setup.py install
+  python setup.py install
 
-If you have pip, you can go directly:
+If you have pip, you can go directly::
 
-   $ pip install audiolazy
+  pip install audiolazy
 
 For the *bleeding-edge* version, you can install directly from the github
-repository (requires ``git`` for cloning):
+repository (requires ``git`` for cloning)::
 
-   $ pip install git+http://github.com/danilobellini/audiolazy
+  pip install git+http://github.com/danilobellini/audiolazy
 
 The package doesn't have any strong dependency for its core besides the Python
 itself and its standard library, but you might need:
@@ -50,7 +51,7 @@ itself and its standard library, but you might need:
   method and several examples
 - wxPython: used by one example with GUI
 - Music21: Bach chorals from its corpora, used in a synthesis and play example
-
+- pytest and pytest-cov: runs test suite and shows code coverage status
 
 Getting started
 ---------------
@@ -58,16 +59,22 @@ Getting started
 Before all examples below, it's easier to get everything from audiolazy
 namespace:
 
-  >>> from audiolazy import *
+.. code-block:: python
 
-All modules starts with "lazy_", but their data is already loaded in the main
+  from audiolazy import *
+
+All modules starts with "lazy\_", but their data is already loaded in the main
 namespace. These two lines of code do the same thing:
 
-  >>> from audiolazy.lazy_stream import Stream
-  >>> from audiolazy import Stream
+.. code-block:: python
+
+  from audiolazy.lazy_stream import Stream
+  from audiolazy import Stream
 
 Endless iterables with operators (be careful with loops through an endless
 iterator!):
+
+.. code-block:: python
 
   >>> a = Stream(2) # Periodic
   >>> b = Stream(3, 7, 5, 4) # Periodic
@@ -78,6 +85,8 @@ iterator!):
 And also finite iterators (you can think on any Stream as a generator with
 elementwise operators):
 
+.. code-block:: python
+
   >>> a = Stream([1, 2, 3, 2, 1]) # Finite, since it's a cast from an iterable
   >>> b = Stream(3, 7, 5, 4) # Periodic
   >>> c = a + b # Elementwise sum, finite
@@ -85,7 +94,9 @@ elementwise operators):
   [4, 9, 8, 6, 4]
 
 LTI Filtering from system equations (Z-transform). After this, try summing,
-composing, multiplying ZFilter objects.
+composing, multiplying ZFilter objects:
+
+.. code-block:: python
 
   >>> filt = 1 - z ** -1 # Diff between a sample and the previous one
   >>> filt
@@ -101,20 +112,54 @@ composing, multiplying ZFilter objects.
   [1, 1, 2, -1, -1, -3, -2, 1]
 
 The AudioLazy core doesn't depend on NumPy, SciPy nor MatPlotLib, but there
-are some parts of it that needs them. Below are some examples:
+are some routines that needs them. Up to now, they are:
+
+- LinearFilter and CascadeFilter plotting with ``plot`` and ``zplot`` methods
+- LinearFilter and CascadeFilter root finding with ``zeros`` and ``poles``
+  properties
+- Poly ``roots`` property
+- Some Linear Predictive Coding (``lpc``) strategies: ``nautocor``,
+  ``autocor`` and ``covar``
+- Line Spectral Frequencies ``lsf`` and ``lsf_stable`` functions
+
+Below are some examples using them:
 
 LTI Filter frequency response plot (needs MatPlotLib):
 
-  >>> (1 + z ** -2).plot().show()
+.. code-block:: python
+
+  (1 + z ** -2).plot().show()
+
+.. image:: images/filt_plot.png
+
+CascadeFilters are lists of filters with the same operator behaviour as a
+list, and also works for plotting linear filters. For example, a zeros and
+poles plot (needs MatPlotLib):
+
+.. code-block:: python
+
+  filt1 = CascadeFilter(0.2 - z ** -3) # 3 zeros
+  filt2 = CascadeFilter(1 / (1 -.8 * z ** -1 + .6 * z ** -2)) # 2 poles
+  # Here __add__ concatenates and __mul__ by an integer make reference copies
+  filt = (filt1 * 5 + filt2 * 10) # 15 zeros and 20 poles
+  filt.zplot().show()
+
+.. image:: images/cascade_plot.png
 
 Linear Predictive Coding (LPC) autocorrelation method analysis filter
-frequency response plot (MatPlotLib):
+frequency response plot (needs MatPlotLib):
 
-  >>> lpc([1, -2, 3, -4, -3, 2, -3, 2, 1], order=3).plot().show()
+.. code-block:: python
+
+  lpc([1, -2, 3, -4, -3, 2, -3, 2, 1], order=3).plot().show()
+
+.. image:: images/lpc_plot.png
 
 Linear Predictive Coding covariance method analysis and synthesis filter,
 followed by the frequency response plot together with block data DFT
 (MatPlotLib):
+
+.. code-block:: python
 
   >>> data = Stream(-1., 0., 1., 0.) # Periodic
   >>> blk = data.take(200)
@@ -128,21 +173,25 @@ followed by the frequency response plot together with block data DFT
   >>> synth_filt(residual).take(10)
   [-1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0]
   >>> gain_rms = sqrt(analysis_filt.error)
-  >>> amplified_blk = list(Stream(blk) * 200) # Just for alignment w/ DFT gain
+  >>> amplified_blk = list(Stream(blk) * -200) # For alignment w/ DFT
   >>> synth_filt.plot(blk=amplified_blk).show()
+
+.. image:: images/dft_lpc_plot.png
 
 AudioLazy doesn't need any audio card to process audio, but needs PyAudio to
 play some sound:
 
-  >>> rate = 44100 # Sampling rate, in samples/second
-  >>> s, Hz = sHz(rate) # Seconds and hertz
-  >>> ms = 1e-3 * s
-  >>> note1 = karplus_strong(440 * Hz) # Pluck "digitar" synth
-  >>> note2 = zeros(300 * ms).append(karplus_strong(880 * Hz))
-  >>> notes = note1 + note2
-  >>> sound = notes.take(int(2 * s)) # 2 seconds of a Karplus-Strong note
-  >>> with AudioIO(True) as player: # True means "wait for all sounds to stop"
-  ...   player.play(sound, rate=rate)
+.. code-block:: python
+
+  rate = 44100 # Sampling rate, in samples/second
+  s, Hz = sHz(rate) # Seconds and hertz
+  ms = 1e-3 * s
+  note1 = karplus_strong(440 * Hz) # Pluck "digitar" synth
+  note2 = zeros(300 * ms).append(karplus_strong(880 * Hz))
+  notes = note1 + note2
+  sound = notes.take(int(2 * s)) # 2 seconds of a Karplus-Strong note
+  with AudioIO(True) as player: # True means "wait for all sounds to stop"
+    player.play(sound, rate=rate)
 
 See also the docstrings and the "examples" directory at the github repository
 for more help. Also, the huge test suite might help you understanding how the
