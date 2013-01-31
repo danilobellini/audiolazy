@@ -22,7 +22,7 @@ AudioLazy changes history
   - Three moving average filter strategies
   - Signal clipping function
   - Signal unwrap, defaults to the ``2 * pi`` radians range but configurable
-    to other units and max signal difference allowed.
+    to other units and max signal difference allowed
 
 + lazy_filters:
 
@@ -36,15 +36,17 @@ AudioLazy changes history
       * Plots together the DFT of a given block, if needed. Useful for LPC
       * Phase unwrapping (defaults to True)
       * Allows frequency in Hz and in rad/sample. When using radians units,
-        the tick locator is based on ``pi``, as well as the formatter.
+        the tick locator is based on ``pi``, as well as the formatter
 
   - New LinearFilter.zplot() for plotting the zero-pole plane of a LTI filter
-    directly into a MatPlotLib figure.
+    directly into a MatPlotLib figure
   - New LinearFilterProperties read-only properties ``numpolyz`` and
     ``denpolyz`` returning polynomials based on ``x = z`` instead of the
     polynomials based on ``x = z ** -1`` returned from ``numpoly`` and
-    ``denpoly``.
+    ``denpoly``
   - New LinearFilter properties ``poles`` and ``zeros``, based on NumPy
+  - More LinearFilter behaviour into CascadeFilter: Plotting (``plot`` and
+    ``zplot``), ``poles``, ``zeros``, ``is_lti`` and ``is_causal``
 
 + lazy_lpc (*new!*):
 

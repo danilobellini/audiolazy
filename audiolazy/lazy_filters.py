@@ -361,7 +361,7 @@ class LinearFilter(LinearFilterProperties):
 
     """
     if not self.is_lti():
-      raise ValueError("Filter is not time invariant (LTI)")
+      raise AttributeError("Filter is not time invariant (LTI)")
     fscale = freq_scale.lower()
     mscale = mag_scale.lower()
     mscale = "dB" if mag_scale == "db" else mag_scale
@@ -475,7 +475,7 @@ class LinearFilter(LinearFilterProperties):
 
     """
     if not self.is_lti():
-      raise ValueError("Filter is not time invariant (LTI)")
+      raise AttributeError("Filter is not time invariant (LTI)")
 
     import pylab
     from matplotlib import transforms
@@ -491,16 +491,16 @@ class LinearFilter(LinearFilterProperties):
                                      linestyle="dashed"))
 
     # Plot the poles and zeros
+    zeros = self.zeros # Start with zeros to avoid overdrawn hidden poles
+    for zero in zeros:
+      zp_plot.plot(zero.real, zero.imag, "o", markersize=8.,
+                   markeredgewidth=1.5, markerfacecolor="c",
+                   markeredgecolor="b")
     poles = self.poles
     for pole in poles:
       zp_plot.plot(pole.real, pole.imag, "x", markersize=8.,
                    markeredgewidth=2.5, markerfacecolor="r",
                    markeredgecolor="r")
-    zeros = self.zeros
-    for zero in zeros:
-      zp_plot.plot(zero.real, zero.imag, "o", markersize=8.,
-                   markeredgewidth=1.5, markerfacecolor="c",
-                   markeredgecolor="b")
 
     # Configure the axis (top/right is translated by 1 internally in pylab)
     zp_plot.spines["top"].set_position(("data", -1.))
@@ -523,40 +523,42 @@ class LinearFilter(LinearFilterProperties):
       Input: list of number pairs (tuples with size two)
       Output: dict of pairs {pair: amount_of_repeats}
       """
-      result = {pair: {pair} for pair in pairs}
-      for p1, p2 in it.combinations(pairs, 2):
+      result = {idx: {idx} for idx, pair in enumerate(pairs)}
+      for idx1, idx2 in it.combinations(range(len(pairs)), 2):
+        p1 = pairs[idx1]
+        p2 = pairs[idx2]
         if almost_eq(p1, p2):
-          result[p1] = result[p1].union(result[p2])
-          result[p2] = result[p1]
+          result[idx1] = result[idx1].union(result[idx2])
+          result[idx2] = result[idx1]
       to_verify = [pair for pair in pairs]
       while to_verify:
-        pair = to_verify.pop()
-        if pair in result:
-          for peq in result[pair]:
-            if peq != pair and peq in result:
-              del result[peq]
-              to_verify.remove(peq)
-      return {k: len(v) for k, v in result.iteritems() if len(v) > 1}
+        idx = to_verify.pop()
+        if idx in result:
+          for idxeq in result[idx]:
+            if idxeq != idx and idx in result:
+              del result[idx]
+              to_verify.remove(idx)
+      return {pairs[k]: len(v) for k, v in result.iteritems() if len(v) > 1}
 
     # Multiple roots text printing
     td = zp_plot.transData
     tpole = transforms.offset_copy(td, x=7, y=6, units="dots")
     tzero = transforms.offset_copy(td, x=7, y=-6, units="dots")
     tdi = td.inverted()
-    pole_pos = [tuple(td.transform((pole.real, pole.imag)))
-                for pole in poles]
     zero_pos = [tuple(td.transform((zero.real, zero.imag)))
                 for zero in zeros]
-    for pole, prep in get_repeats(pole_pos).iteritems():
-      px, py = tdi.transform(pole)
-      txt = zp_plot.text(px, py, "{0:d}".format(prep), color="black",
-                         transform=tpole, ha="center", va="center",
-                         fontsize=10)
-      txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
+    pole_pos = [tuple(td.transform((pole.real, pole.imag)))
+                for pole in poles]
     for zero, zrep in get_repeats(zero_pos).iteritems():
       px, py = tdi.transform(zero)
       txt = zp_plot.text(px, py, "{0:d}".format(zrep), color="darkgreen",
                          transform=tzero, ha="center", va="center",
+                         fontsize=10)
+      txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
+    for pole, prep in get_repeats(pole_pos).iteritems():
+      px, py = tdi.transform(pole)
+      txt = zp_plot.text(px, py, "{0:d}".format(prep), color="black",
+                         transform=tpole, ha="center", va="center",
                          fontsize=10)
       txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
 
@@ -874,7 +876,33 @@ class CascadeFilter(list, LinearFilterProperties):
     return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
 
   def is_linear(self):
-    return all(isinstance(filt, LinearFilter) for filt in self)
+    try:
+      return all(isinstance(filt, LinearFilter) or filt.is_linear()
+                 for filt in self)
+    except:
+      return False
+
+  def is_lti(self):
+    return self.is_linear() and all(filt.is_lti() for filt in self)
+
+  def is_causal(self):
+    return all(filt.is_causal() for filt in self
+                                if hasattr(filt, "is_causal"))
+
+  @property
+  def poles(self):
+    if not self.is_lti():
+      raise AttributeError("Not a LTI filter")
+    return reduce(operator.concat, (filt.poles for filt in self))
+
+  @property
+  def zeros(self):
+    if not self.is_lti():
+      raise AttributeError("Not a LTI filter")
+    return reduce(operator.concat, (filt.zeros for filt in self))
+
+  plot = LinearFilter.plot.im_func
+  zplot = LinearFilter.zplot.im_func
 
 
 def comb(delay, alpha=1):
