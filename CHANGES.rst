@@ -11,7 +11,7 @@ AudioLazy changes history
 
   - Integration with NumPy and MatPlotLib
   - Better docstrings and README.rst
-  - Now with 5300+ tests and 78% code coverage
+  - Now with 5300+ tests and 74% code coverage
 
 + lazy_analysis:
 
@@ -21,13 +21,30 @@ AudioLazy changes history
   - Three envelope filtering strategies (time domain)
   - Three moving average filter strategies
   - Signal clipping function
+  - Signal unwrap, defaults to the ``2 * pi`` radians range but configurable
+    to other units and max signal difference allowed.
 
 + lazy_filters:
 
   - ZFilter composition/substitution, e.g., ``(1 + z ** -1)(1 / z)`` results
     to the ZFilter instance ``1 + z``
-  - LinearFilter.plot() directly plots the frequency response of a LTI filter
-    to a MatPlotLib figure. Plot with the DFT of a given block, too.
+  - New LinearFilter.plot() directly plots the frequency response of a LTI
+    filter to a MatPlotLib figure. Configurable:
+
+      * Linear (default) or logarithmic frequency scale
+      * Linear, squared or dB (default) magnitude scale
+      * Plots together the DFT of a given block, if needed. Useful for LPC
+      * Phase unwrapping (defaults to True)
+      * Allows frequency in Hz and in rad/sample. When using radians units,
+        the tick locator is based on ``pi``, as well as the formatter.
+
+  - New LinearFilter.zplot() for plotting the zero-pole plane of a LTI filter
+    directly into a MatPlotLib figure.
+  - New LinearFilterProperties read-only properties ``numpolyz`` and
+    ``denpolyz`` returning polynomials based on ``x = z`` instead of the
+    polynomials based on ``x = z ** -1`` returned from ``numpoly`` and
+    ``denpoly``.
+  - New LinearFilter properties ``poles`` and ``zeros``, based on NumPy
 
 + lazy_lpc (*new!*):
 
@@ -46,17 +63,25 @@ AudioLazy changes history
   - Line Spectral Frequencies (LSF)
   - Stability testers for filters with LSF and PARCOR
 
++ lazy_math:
+
+  - New ``sign`` gets the sign of a given sequence.
+
 + lazy_misc:
 
   - New ``rational_formatter``: casts floats to strings, perhaps with a symbol
-    string as multiplier.
+    string as multiplier
   - New ``pi_formatter``: same to ``rational_formatter``, but with the symbol
-    fixed to pi, mainly for use in MatPlotLib labels.
+    fixed to pi, mainly for use in MatPlotLib labels
+
++ lazy_poly:
+
+  - New Poly.roots property, based on NumPy
 
 + lazy_stream:
 
   - Streamix class for mixing Streams based on delta starting times,
-    automatically managing the need for multiple "tracks".
+    automatically managing the need for multiple "tracks"
 
 
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***

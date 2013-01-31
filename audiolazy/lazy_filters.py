@@ -30,7 +30,8 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
-                        pair_strings_sum_formatter, sHz, auto_formatter)
+                        pair_strings_sum_formatter, sHz, auto_formatter,
+                        almost_eq)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase, abs as lzabs
@@ -67,6 +68,24 @@ class LinearFilterProperties(object):
   @property
   def dendict(self):
     return OrderedDict(self.denpoly.terms())
+
+  @property
+  def numpolyz(self):
+    """
+    Like numpoly, the linear filter numerator (or forward coefficients) as a
+    Poly instance based on ``x = z`` instead of numpoly's ``x = z ** -1``,
+    useful for taking roots.
+    """
+    return Poly(self.numerator[::-1])
+
+  @property
+  def denpolyz(self):
+    """
+    Like denpoly, the linear filter denominator (or backward coefficients) as
+    a Poly instance based on ``x = z`` instead of denpoly's ``x = z ** -1``,
+    useful for taking roots.
+    """
+    return Poly(self.denominator[::-1])
 
 
 @avoid_stream
@@ -299,7 +318,7 @@ class LinearFilter(LinearFilterProperties):
     return self.__class__(*data)
 
   def plot(self, fig=None, samples=2048, rate=None, min_freq=0., max_freq=pi,
-           blk=None, unwrap=True, fscale="linear", magscale="dB"):
+           blk=None, unwrap=True, freq_scale="linear", mag_scale="dB"):
     """
     Plots the filter frequency response into a formatted MatPlotLib figure
     with two subplots, labels and title, including the magnitude response
@@ -322,10 +341,10 @@ class LinearFilter(LinearFilterProperties):
     unwrap :
       Boolean that chooses whether should unwrap the data phase or keep it as
       is. Defaults to True.
-    fscale :
+    freq_scale :
       Chooses whether plot is "linear" or "log" with respect to the frequency
       axis. Defaults to "linear". Case insensitive.
-    magscale :
+    mag_scale :
       Chooses whether magnitude plot scale should be "linear", "squared" or
       "dB". Defaults do "dB". Case insensitive.
 
@@ -337,16 +356,18 @@ class LinearFilter(LinearFilterProperties):
     --------
     sHz :
       Second and hertz constants from samples/second rate.
+    LinearFilter.zplot :
+      Zeros-poles diagram plotting.
 
     """
     if not self.is_lti():
       raise ValueError("Filter is not time invariant (LTI)")
-    fscale = fscale.lower()
-    magscale = magscale.lower()
-    magscale = "dB" if magscale == "db" else magscale
+    fscale = freq_scale.lower()
+    mscale = mag_scale.lower()
+    mscale = "dB" if mag_scale == "db" else mag_scale
     if fscale not in ["linear", "log"]:
       raise ValueError("Unknown frequency scale")
-    if magscale not in ["linear", "squared", "dB"]:
+    if mscale not in ["linear", "squared", "dB"]:
       raise ValueError("Unknown magnitude scale")
 
     from .lazy_synth import line
@@ -378,11 +399,11 @@ class LinearFilter(LinearFilterProperties):
     mag = {"linear": lzabs,
            "squared": lambda x: [abs(xi) ** 2 for xi in x],
            "dB": dB20
-          }[magscale]
+          }[mscale]
     if blk is not None:
       mag_plot.plot(freqs_label, mag(fft_data))
     mag_plot.plot(freqs_label, mag(data))
-    mag_plot.set_ylabel("Magnitude ({munit})".format(munit=magscale))
+    mag_plot.set_ylabel("Magnitude ({munit})".format(munit=mscale))
     mag_plot.grid(True)
     pylab.setp(mag_plot.get_xticklabels(), visible = False)
 
@@ -418,6 +439,166 @@ class LinearFilter(LinearFilterProperties):
     ph_plot.yaxis.get_major_locator().set_params(prune="upper")
     fig.tight_layout(h_pad=0.)
     return fig
+
+  def zplot(self, fig=None, circle=True):
+    """
+    Plots the filter zero-pole plane into a formatted MatPlotLib figure
+    with one subplot, labels and title.
+
+    Parameters
+    ----------
+    fig :
+      A matplotlib.pylab.Figure instance. Defaults to None, which means that
+      it will create a new figure.
+    circle :
+      Chooses whether to include the unit circle in the plot. Defaults to
+      True.
+
+    Returns
+    -------
+    The matplotlib.pylab.Figure instance.
+
+    Note
+    ----
+    Multiple roots detection is slow, and roots may suffer from numerical
+    errors (e.g., filter ``f = 1 - 2 * z ** -1 + 1 * z ** -2`` has twice the
+    root ``1``, but ``f ** 3`` suffer noise from the root finding algorithm).
+    For the exact number of poles and zeros, see the result title, or the
+    length of LinearFilter.poles() and LinearFilter.zeros().
+
+    See Also
+    --------
+    LinearFilter.plot :
+      Frequency response plotting. Needs MatPlotLib.
+    LinearFilter.zeros, LinearFilter.poles :
+      Filter zeros and poles, as a list. Needs NumPy.
+
+    """
+    if not self.is_lti():
+      raise ValueError("Filter is not time invariant (LTI)")
+
+    import pylab
+    from matplotlib import transforms
+
+    if fig is None:
+      fig = pylab.figure()
+
+    # Configure the plot pylab.Axes artist and circle background
+    zp_plot = fig.add_subplot(1, 1, 1)
+    if circle:
+      zp_plot.add_patch(pylab.Circle((0., 0.), radius=1., fill=False,
+                                     linewidth=1., color="gray",
+                                     linestyle="dashed"))
+
+    # Plot the poles and zeros
+    poles = self.poles
+    for pole in poles:
+      zp_plot.plot(pole.real, pole.imag, "x", markersize=8.,
+                   markeredgewidth=2.5, markerfacecolor="r",
+                   markeredgecolor="r")
+    zeros = self.zeros
+    for zero in zeros:
+      zp_plot.plot(zero.real, zero.imag, "o", markersize=8.,
+                   markeredgewidth=1.5, markerfacecolor="c",
+                   markeredgecolor="b")
+
+    # Configure the axis (top/right is translated by 1 internally in pylab)
+    zp_plot.spines["top"].set_position(("data", -1.))
+    zp_plot.spines["right"].set_position(("data", -1.))
+    zp_plot.spines["top"].set_color("lightgray")
+    zp_plot.spines["right"].set_color("lightgray")
+    zp_plot.axis("scaled") # Keep aspect ratio
+
+    # Configure the plot limits
+    border_width = .1
+    zp_plot.set_xlim(xmin=zp_plot.dataLim.xmin - border_width,
+                     xmax=zp_plot.dataLim.xmax + border_width)
+    zp_plot.set_ylim(ymin=zp_plot.dataLim.ymin - border_width,
+                     ymax=zp_plot.dataLim.ymax + border_width)
+
+    # Multiple roots (or slightly same roots) detection
+    def get_repeats(pairs):
+      """
+      Find numbers that are almost equal, for the printing sake.
+      Input: list of number pairs (tuples with size two)
+      Output: dict of pairs {pair: amount_of_repeats}
+      """
+      result = {pair: {pair} for pair in pairs}
+      for p1, p2 in it.combinations(pairs, 2):
+        if almost_eq(p1, p2):
+          result[p1] = result[p1].union(result[p2])
+          result[p2] = result[p1]
+      to_verify = [pair for pair in pairs]
+      while to_verify:
+        pair = to_verify.pop()
+        if pair in result:
+          for peq in result[pair]:
+            if peq != pair and peq in result:
+              del result[peq]
+              to_verify.remove(peq)
+      return {k: len(v) for k, v in result.iteritems() if len(v) > 1}
+
+    # Multiple roots text printing
+    td = zp_plot.transData
+    tpole = transforms.offset_copy(td, x=7, y=6, units="dots")
+    tzero = transforms.offset_copy(td, x=7, y=-6, units="dots")
+    tdi = td.inverted()
+    pole_pos = [tuple(td.transform((pole.real, pole.imag)))
+                for pole in poles]
+    zero_pos = [tuple(td.transform((zero.real, zero.imag)))
+                for zero in zeros]
+    for pole, prep in get_repeats(pole_pos).iteritems():
+      px, py = tdi.transform(pole)
+      txt = zp_plot.text(px, py, "{0:d}".format(prep), color="black",
+                         transform=tpole, ha="center", va="center",
+                         fontsize=10)
+      txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
+    for zero, zrep in get_repeats(zero_pos).iteritems():
+      px, py = tdi.transform(zero)
+      txt = zp_plot.text(px, py, "{0:d}".format(zrep), color="darkgreen",
+                         transform=tzero, ha="center", va="center",
+                         fontsize=10)
+      txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
+
+    # Labels, title and finish
+    zp_plot.set_title("Zero-Pole plot ({0:d} zeros, {1:d} poles)"
+                      .format(len(zeros), len(poles)))
+    zp_plot.set_xlabel("Real part")
+    zp_plot.set_ylabel("Imaginary part")
+    return fig
+
+  @property
+  def poles(self):
+    """
+    Returns a list with all poles (denominator roots in ``z``). Needs Numpy.
+
+    See Also
+    --------
+    LinearFilter.numpoly, LinearFilter.denpoly:
+      Numerator and denominator polynomials where *x* is ``z ** -1``.
+    LinearFilter.numpolyz, LinearFilter.denpolyz:
+      Numerator and denominator polynomials where *x* is ``z``.
+
+    """
+    return self.denpolyz.roots
+
+  @property
+  def zeros(self):
+    """
+    Returns a list with all zeros (numerator roots in ``z``), besides the
+    zero-valued "zeros" that might arise from the difference between the
+    numerator and denominator order (i.e., the roots returned are the inverse
+    from the ``numpoly.roots()`` in ``z ** -1``). Needs Numpy.
+
+    See Also
+    --------
+    LinearFilter.numpoly, LinearFilter.denpoly:
+      Numerator and denominator polynomials where *x* is ``z ** -1``.
+    LinearFilter.numpolyz, LinearFilter.denpolyz:
+      Numerator and denominator polynomials where *x* is ``z``.
+
+    """
+    return self.numpolyz.roots
 
 
 class ZFilterMeta(AbstractOperatorOverloaderMeta):

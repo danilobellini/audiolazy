@@ -254,3 +254,14 @@ class Poly(object):
            reduce(pair_strings_sum_formatter, term_strings)
 
   __repr__ = __str__
+
+  # -----------
+  # NumPy-based
+  # -----------
+  @property
+  def roots(self):
+    """
+    Returns a list with all roots. Needs Numpy.
+    """
+    import numpy as np
+    return np.roots(list(self.values())[::-1]).tolist()
