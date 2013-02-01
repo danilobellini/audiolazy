@@ -220,16 +220,51 @@ class Stream(Iterable):
 
   def take(self, n=None, constructor=list):
     """
-    Returns a list with the n first elements. Use this without args if you
-    need only one element outside a list. By taking 1 element using n=1 as
-    parameter, it will be in a list instead.
+    Returns a container with the n first elements from the Stream, or less if
+    there aren't enough. Use this without args if you need only one element
+    outside a list.
+
+    Parameters
+    ----------
+    n :
+      Number of elements to be taken. Defaults to None.
+    constructor :
+      Container constructor function that can receie a generator as input.
+      Defaults to ``list``.
+
+    Returns
+    -------
+    The first ``n`` elements of the Stream sequence, created by the given
+    constructor unless ``n == None``, which means returns the next element
+    from the sequence outside any container.
+    If ``n`` is None, this can raise StopIteration due to lack of data in
+    the Stream. When ``n`` is an integer, there's no such exception.
+
+    Examples
+    --------
+    >>> Stream(5).take(3) # Three elements
+    [5, 5, 5]
+    >>> Stream(1.2, 2, 3).take() # One element, outside a container
+    1.2
+    >>> Stream(1.2, 2, 3).take(1) # With n = 1 argument, it'll be in a list
+    [1.2]
+    >>> Stream(1.2, 2, 3).take(1, constructor=tuple) # Why not a tuple?
+    (1.2,)
+    >>> Stream([1, 2]).take(3) # More than the Stream size, n is integer
+    [1, 2]
+    >>> Stream([]).take() # More than the Stream size, n is None
+    Traceback (most recent call last):
+      ...
+    StopIteration
+
+    Note
+    ----
     You should avoid using take() as if this would be an iterator. Streams
     are iterables that can be easily part of a "for" loop, and their
     iterators (the ones automatically used in for loops) are slightly faster.
     Use iter() builtin if you need that, instead, or perhaps the blocks
     method.
-    If there are less than n samples in the stream, raises StopIteration,
-    and at most n-1 last samples can be lost.
+
     """
     if n is None:
       return next(self._data)

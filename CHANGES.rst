@@ -33,12 +33,12 @@ AudioLazy changes history
   - New LinearFilter.plot() directly plots the frequency response of a LTI
     filter to a MatPlotLib figure. Configurable:
 
-      * Linear (default) or logarithmic frequency scale
-      * Linear, squared or dB (default) magnitude scale
-      * Plots together the DFT of a given block, if needed. Useful for LPC
-      * Phase unwrapping (defaults to True)
-      * Allows frequency in Hz and in rad/sample. When using radians units,
-        the tick locator is based on ``pi``, as well as the formatter
+    * Linear (default) or logarithmic frequency scale
+    * Linear, squared or dB (default) magnitude scale
+    * Plots together the DFT of a given block, if needed. Useful for LPC
+    * Phase unwrapping (defaults to True)
+    * Allows frequency in Hz and in rad/sample. When using radians units,
+      the tick locator is based on ``pi``, as well as the formatter
 
   - New LinearFilter.zplot() for plotting the zero-pole plane of a LTI filter
     directly into a MatPlotLib figure
