@@ -10,9 +10,9 @@ AudioLazy changes history
 + general:
 
   - Integration with NumPy and MatPlotLib
-  - More docstrings (and doctests)
-  - Installation instructions and getting started with plot examples in
-    README.rst
+  - More docstrings and doctests
+  - Itemized package description, installation instructions and getting
+    started examples with plots in README.rst
   - Now with 5300+ tests and 74% code coverage
 
 + lazy_analysis:

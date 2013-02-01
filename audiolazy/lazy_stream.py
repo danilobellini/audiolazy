@@ -437,9 +437,9 @@ def thub(data, n):
   --------
 
   >>> def sub_sum(x, y):
-  ...     x = thub(x, 2) # Casts to StreamTeeHub, when needed
-  ...     y = thub(y, 2)
-  ...     return (x - y) / (x + y) # Return type might be number or Stream
+  ...   x = thub(x, 2) # Casts to StreamTeeHub, when needed
+  ...   y = thub(y, 2)
+  ...   return (x - y) / (x + y) # Return type might be number or Stream
 
   With numbers:
 

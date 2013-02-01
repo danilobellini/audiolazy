@@ -3,8 +3,8 @@ AudioLazy
 
 Expressive Digital Signal Processing (DSP) package for Python.
 
-Lazyness
---------
+Lazyness and object representation
+----------------------------------
 
 There are several tools and packages that let the Python use and
 expressiveness look like languages such as MatLab and Octave. However, the
@@ -13,16 +13,46 @@ impossible, to use them for real time audio processing. Another difficulty
 concerns expressive code creation for audio processing in blocks through
 indexes and vectors.
 
-Goal
-----
+What does it do?
+----------------
 
 Prioritizing code expressiveness, clarity and simplicity, without precluding
 the lazy evaluation, and aiming to be used together with Numpy, Scipy and
 Matplotlib as well as default Python structures like lists and generators,
-AudioLazy is a package written in pure Python proposing digital
-audio signal processing (DSP), featuring a simple synthesizer, analysis
-tools, filters, biological auditory periphery modeling, among other
-functionalities.
+AudioLazy is a package written in pure Python proposing digital audio signal
+processing (DSP), featuring:
+
+- A ``Stream`` class for finite and endless signals representation with
+  elementwise operators (auto-broadcast with non-Stream) in a common Python
+  iterable container accepting heterogeneous data;
+- Strongly sample-based representation (Stream class) with easy conversion
+  to block representation using the ``Stream.blocks(size, hop)`` method;
+- Sample-based interactive processing with ``ControlStream``;
+- ``Streamix`` mixer for iterables given their starting time deltas;
+- Multi-thread audio I/O integration with PyAudio;
+- Linear filtering with Z-transform filters directly as equations (e.g.
+  ``filt = 1 / (1 - .3 * z ** -1)``), including linear time variant filters
+  (i.e., the ``a`` in ``a * z ** k`` can be a Stream instance), cascade
+  filters (behaves as a list of filters), resonators, etc.. Each
+  ``LinearFilter`` instance is compiled just in time when called;
+- Zeros and poles plots and frequency response plotting integration with
+  MatPlotLib ``pylab``;
+- Linear Predictive Coding (LPC) directly to ``ZFilter`` instances, from
+  which you can find PARCOR coeffs and LSFs;
+- Both sample-based (Zero-cross rate, envelope, moving average, clipping,
+  unwrapping) and block-based (Window functions, DFT, autocorrelation, lag
+  matrix) analysis and processing tools;
+- A simple synthesizer (Table lookup, Karplus-Strong) with processing tools
+  (Linear ADSR envelope, fade in/out, fixed duration line stream) and basic
+  wave data generation (sinusoid, white noise, impulse);
+- Biological auditory periphery modeling (ERB and gammatone filter models);
+- Multiple implementation organization as ``StrategyDict`` instances:
+  callable dictionaries that allows the same name to have several different
+  implementations (e.g. ``erb``, ``gammatone``, ``lowpass``, ``resonator``,
+  ``lpc``, ``window``);
+- Converters among MIDI pitch numbers, strings like "F#4" and frequencies;
+- Polynomials, Stream-based functions from itertools, math, cmath, and more!
+  Go try yourself! =)
 
 Installing
 ----------
@@ -45,13 +75,29 @@ repository (requires ``git`` for cloning)::
 The package doesn't have any strong dependency for its core besides the Python
 itself and its standard library, but you might need:
 
-- PyAudio: needed for playing and recording audio
+- PyAudio: needed for playing and recording audio (``AudioIO`` class);
 - NumPy: needed for doing some maths, such as finding the LSFs from a filter
-- MatPlotLib: needed for all default plotting, like in LinearFilter.plot
-  method and several examples
-- wxPython: used by one example with GUI
-- Music21: Bach chorals from its corpora, used in a synthesis and play example
-- pytest and pytest-cov: runs test suite and shows code coverage status
+  or roots from a polynomial;
+- MatPlotLib: needed for all default plotting, like in ``LinearFilter.plot``
+  method and several examples;
+- SciPy (testing only): used as an oracle for LTI filter testing;
+- pytest and pytest-cov (testing only): runs test suite and shows code
+  coverage status;
+- wxPython (example only): used by one example with FM synthesis in an
+  interactive GUI;
+- Music21 (example only): there's one example that gets the Bach chorals from that package
+  corpora for synthesizing and and playing.
+
+Beside examples and tests, only the LinearFilter and CascadeFilter plotting
+with ``plot`` and ``zplot`` methods needs MatPlotLib. Also, the routines that
+needs NumPy up to now are:
+
+- LinearFilter and CascadeFilter root finding with ``zeros`` and ``poles``
+  properties;
+- Poly ``roots`` property;
+- Some Linear Predictive Coding (``lpc``) strategies: ``nautocor``,
+  ``autocor`` and ``covar``;
+- Line Spectral Frequencies ``lsf`` and ``lsf_stable`` functions.
 
 Getting started
 ---------------
@@ -110,19 +156,6 @@ composing, multiplying ZFilter objects:
   >>> data_int = filt([1, 2, 4, 3, 2, -1, -3, -2], zero=0) # Now zero is int
   >>> list(data_int)
   [1, 1, 2, -1, -1, -3, -2, 1]
-
-The AudioLazy core doesn't depend on NumPy, SciPy nor MatPlotLib, but there
-are some routines that needs them. Up to now, they are:
-
-- LinearFilter and CascadeFilter plotting with ``plot`` and ``zplot`` methods
-- LinearFilter and CascadeFilter root finding with ``zeros`` and ``poles``
-  properties
-- Poly ``roots`` property
-- Some Linear Predictive Coding (``lpc``) strategies: ``nautocor``,
-  ``autocor`` and ``covar``
-- Line Spectral Frequencies ``lsf`` and ``lsf_stable`` functions
-
-Below are some examples using them:
 
 LTI Filter frequency response plot (needs MatPlotLib):
 

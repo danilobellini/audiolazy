@@ -43,16 +43,19 @@ with open(os.path.join(path, "README.rst"), "r") as fr:
   readme_data = fr.read()
 readme_data = readme_data.replace("\r\n", "\n")
 title, descr, ldescr = readme_data.split("\n\n", 2)
+ldescr = "\n\n".join([title, ldescr]).rsplit("----", 1)[0].strip()
 metadata["description"] = descr
-metadata["long_description"] = "\n\n".join([title, ldescr]
-                                          ).rsplit("----", 1)[0].strip()
+
+# Correction for image links
+url_links = "https://raw.github.com/danilobellini/audiolazy/master/"
+img_string = ".. image:: "
+ldescr = ldescr.replace(img_string, img_string + url_links)
 
 # Append long description with the change log from CHANGES.rst
 with open(os.path.join(path, "CHANGES.rst"), "r") as fc:
   changes_data = fc.read()
 changes_data = changes_data.replace("\r\n", "\n")
-metadata["long_description"] = "\n".join(["", metadata["long_description"],
-                                          "", changes_data])
+metadata["long_description"] = "\n".join(["", ldescr, "", changes_data])
 
 # Classifiers and license
 metadata["license"] = "GPLv3"
