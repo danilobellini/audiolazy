@@ -145,14 +145,77 @@ def line(dur, begin=0., end=1., finish=False):
   """
   Finite Stream with a straight line, could be used as fade in/out effects.
 
-  Duration is given in number of samples. Use the sHz function to help with
-  durations in seconds. Amplitudes should be float numbers between -1 and 1.\n
-  The last sample won't have "end" amplitude unless finish is True, i.e.,
-  without explicitly saying "finish=True", the "end" input works like a
-  "stop" range parameter, although it can [should] be a float. This is so
-  to help concatenating several lines.\n
+  Parameters
+  ----------
+  dur :
+    Duration, given in number of samples. Use the sHz function to help with
+    durations in seconds.
+  begin, end :
+    First and last (or stop) values to be yielded. Defaults to [0., 1.],
+    respectively.
+  finish :
+    Choose if ``end`` it the last to be yielded or it shouldn't be yield at
+    all. Defauts to False, which means that ``end`` won't be yield. The last
+    sample won't have "end" amplitude unless finish is True, i.e., without
+    explicitly saying "finish=True", the "end" input works like a "stop" range
+    parameter, although it can [should] be a float. This is so to help
+    concatenating several lines.
+
+  Returns
+  -------
+  A finite Stream with the linearly spaced data.
+
+  Examples
+  --------
+  With ``finish = True``, it works just like NumPy ``np.linspace``, besides
+  argument order and lazyness:
+
+  >>> import numpy as np
+  >>> np.linspace(.2, .7, 6)
+  array([ 0.2,  0.3,  0.4,  0.5,  0.6,  0.7])
+  >>> line(6, .1, .7, finish=True)
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> list(line(6, .2, .7, finish=True))
+  [0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
+  >>> list(line(6, 1, 4)) # With finish = False (default)
+  [1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+
+  Line also works with Numpy arrays and matrices
+
+  >>> a = np.mat([[1, 2], [3, 4]])
+  >>> b = np.mat([[3, 2], [2, 1]])
+  >>> for el in line(4, a, b):
+  ...   print el
+  [[ 1.  2.]
+   [ 3.  4.]]
+  [[ 1.5   2.  ]
+   [ 2.75  3.25]]
+  [[ 2.   2. ]
+   [ 2.5  2.5]]
+  [[ 2.5   2.  ]
+   [ 2.25  1.75]]
+
+  And also with ZFilter instances:
+
+  >>> from audiolazy import z
+  >>> for el in line(4, z ** 2 - 5, z + 2):
+  ...   print el
+  z^2 - 5
+  0.75 * z^2 + 0.25 * z - 3.25
+  0.5 * z^2 + 0.5 * z - 1.5
+  0.25 * z^2 + 0.75 * z + 0.25
+
+  Note
+  ----
+  Amplitudes commonly should be float numbers between -1 and 1.
   Using line(<inputs>).append([end]) you can finish the line with one extra
   sample without worrying with the "finish" input.
+
+  See Also
+  --------
+  sHz :
+    Second and hertz constants from samples/second rate.
+
   """
   m = (end - begin) / (dur - (1. if finish else 0.))
   for sample in xrange(int(dur + .5)):
