@@ -37,8 +37,8 @@ from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase, abs as lzabs
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
-           "z", "CascadeFilterMeta", "CascadeFilter", "comb", "resonator",
-           "lowpass", "highpass"]
+           "z", "FilterListMeta", "CascadeFilter", "ParallelFilter", "comb",
+           "resonator", "lowpass", "highpass"]
 
 
 class LinearFilterProperties(object):
@@ -801,33 +801,33 @@ class ZFilter(LinearFilter):
     --------
     With ZFilter instances:
 
-      >>> filt = 1 + z ** -1
-      >>> filt(z ** -1)
-      z + 1
-      >>> filt(- z ** 2)
-      1 - z^-2
+    >>> filt = 1 + z ** -1
+    >>> filt(z ** -1)
+    z + 1
+    >>> filt(- z ** 2)
+    1 - z^-2
 
     With any iterable (but ZFilter instances):
 
-      >>> filt = 1 + z ** -1
-      >>> data = filt([1.0, 2.0, 3.0])
-      >>> data
-      <audiolazy.lazy_stream.Stream object at ...>
-      >>> list(data)
-      [1.0, 3.0, 5.0]
+    >>> filt = 1 + z ** -1
+    >>> data = filt([1.0, 2.0, 3.0])
+    >>> data
+    <audiolazy.lazy_stream.Stream object at ...>
+    >>> list(data)
+    [1.0, 3.0, 5.0]
 
     """
     if isinstance(seq, ZFilter):
       return sum(v * seq ** -k for k, v in self.numpoly.terms()) / \
              sum(v * seq ** -k for k, v in self.denpoly.terms())
     else:
-      return super(ZFilter, self).__call__(seq, memory, zero)
+      return super(ZFilter, self).__call__(seq, memory=memory, zero=zero)
 
 
 z = ZFilter({-1: 1})
 
 
-class CascadeFilterMeta(AbstractOperatorOverloaderMeta):
+class FilterListMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("add mul rmul lt le eq ne gt ge")
 
   def __binary__(cls, op_func):
@@ -844,18 +844,28 @@ class CascadeFilter(list, LinearFilterProperties):
   Filter cascade as a list of filters.
   A filter is any callable that receives an iterable as input and returns a
   Stream.
+
+  Examples
+  --------
+  >>> filt = CascadeFilter(z ** -1, 2 * (1 - z ** -3))
+  >>> data = Stream(1, 3, 5, 3, 1, -1, -3, -5, -3, -1) # Endless
+  >>> filt(data, zero=0).take(15)
+  [0, 2, 6, 10, 4, -4, -12, -12, -12, -4, 4, 12, 12, 12, 4]
+
   """
-  __metaclass__ = CascadeFilterMeta
+  __metaclass__ = FilterListMeta
 
   def __init__(self, *filters):
     if len(filters) == 1 and isinstance(filters[0], Iterable) \
-                         and not isinstance(filters[0], LinearFilter):
+                         and not isinstance(filters[0],
+                                            LinearFilterProperties):
       self.extend(filters[0])
     else:
       self.extend(filters)
 
-  def __call__(self, seq):
-    return reduce(lambda data, filt: filt(data), self, seq)
+  def __call__(self, *args, **kwargs):
+    return reduce(lambda data, filt: filt(data, *args[1:], **kwargs),
+                  self, args[0])
 
   @property
   def numpoly(self):
@@ -876,11 +886,9 @@ class CascadeFilter(list, LinearFilterProperties):
     return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
 
   def is_linear(self):
-    try:
-      return all(isinstance(filt, LinearFilter) or filt.is_linear()
-                 for filt in self)
-    except:
-      return False
+    return all(isinstance(filt, LinearFilter) or
+               (hasattr(filt, "is_linear") and filt.is_linear())
+               for filt in self)
 
   def is_lti(self):
     return self.is_linear() and all(filt.is_lti() for filt in self)
@@ -900,6 +908,86 @@ class CascadeFilter(list, LinearFilterProperties):
     if not self.is_lti():
       raise AttributeError("Not a LTI filter")
     return reduce(operator.concat, (filt.zeros for filt in self))
+
+  plot = LinearFilter.plot.im_func
+  zplot = LinearFilter.zplot.im_func
+
+
+@avoid_stream
+class ParallelFilter(list, LinearFilterProperties):
+  """
+  List of filters that behaves as a filter, returning the sum of all signals
+  that results from applying the the same given input into all filters.
+  Besides the name, the data processing done isn't parallel.
+  A filter is any callable that receives an iterable as input and returns a
+  Stream.
+
+  Examples
+  --------
+  >>> filt = 1 + z ** -1 -  z ** -2
+  >>> pfilt = ParallelFilter(1 + z ** -1, - z ** -2)
+  >>> list(filt(range(100))) == list(pfilt(range(100)))
+  True
+  >>> list(filt(range(10), zero=0))
+  [0, 1, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  """
+  __metaclass__ = FilterListMeta
+
+  def __init__(self, *filters):
+    if len(filters) == 1 and isinstance(filters[0], Iterable) \
+                         and not isinstance(filters[0],
+                                            LinearFilterProperties):
+      self.extend(filters[0])
+    else:
+      self.extend(filters)
+
+  def __call__(self, *args, **kwargs):
+    if len(self) == 0:
+      return Stream(kwargs["zero"] if "zero" in kwargs else 0.
+                    for _ in args[0])
+    return reduce(operator.add, (filt(*args, **kwargs) for filt in self))
+
+  @property
+  def numpoly(self):
+    if not self.is_linear():
+      raise AttributeError("Non-linear filter")
+    return reduce(operator.add, self).numpoly
+
+  @property
+  def denpoly(self):
+    try:
+      return reduce(operator.mul, (filt.denpoly for filt in self))
+    except AttributeError:
+      raise AttributeError("Non-linear filter")
+
+  @elementwise("freq", 1)
+  def freq_response(self, freq):
+    return reduce(operator.add, (filt.freq_response(freq) for filt in self))
+
+  def is_linear(self):
+    return all(isinstance(filt, LinearFilter) or
+               (hasattr(filt, "is_linear") and filt.is_linear())
+               for filt in self)
+
+  def is_lti(self):
+    return self.is_linear() and all(filt.is_lti() for filt in self)
+
+  def is_causal(self):
+    return all(filt.is_causal() for filt in self
+                                if hasattr(filt, "is_causal"))
+
+  @property
+  def poles(self):
+    if not self.is_lti():
+      raise AttributeError("Not a LTI filter")
+    return reduce(operator.concat, (filt.poles for filt in self))
+
+  @property
+  def zeros(self):
+    if not self.is_lti():
+      raise AttributeError("Not a LTI filter")
+    return reduce(operator.add, self).zeros
 
   plot = LinearFilter.plot.im_func
   zplot = LinearFilter.zplot.im_func

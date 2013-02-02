@@ -13,7 +13,7 @@ AudioLazy changes history
   - More docstrings and doctests
   - Itemized package description, installation instructions and getting
     started examples with plots in README.rst
-  - Now with 5300+ tests and 74% code coverage
+  - Now with 5400+ tests and 74% code coverage
 
 + lazy_analysis:
 
@@ -49,6 +49,8 @@ AudioLazy changes history
   - New LinearFilter properties ``poles`` and ``zeros``, based on NumPy
   - More LinearFilter behaviour into CascadeFilter: Plotting (``plot`` and
     ``zplot``), ``poles``, ``zeros``, ``is_lti`` and ``is_causal``
+  - New ``ParallelFilter`` class, instance of ``FilterListMeta`` (old
+    CascadeFilterMeta).
 
 + lazy_lpc (*new!*):
 

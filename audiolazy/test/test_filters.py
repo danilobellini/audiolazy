@@ -30,8 +30,8 @@ import itertools as it
 from math import pi
 
 # Audiolazy internal imports
-from ..lazy_filters import (ZFilter, z, CascadeFilter, resonator, lowpass,
-                            highpass)
+from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
+                            resonator, lowpass, highpass)
 from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
@@ -304,29 +304,30 @@ class TestZFilter(object):
     assert almost_eq(result, expected)
 
 
-class TestCascadeFilter(object):
+@p("filt_class", [CascadeFilter, ParallelFilter])
+class TestCascadeAndParallelFilters(object):
 
-  def test_add(self):
-    filt1 = CascadeFilter(z)
-    filt2 = CascadeFilter(z + 3)
+  def test_add(self, filt_class):
+    filt1 = filt_class(z)
+    filt2 = filt_class(z + 3)
     filt_sum = filt1 + filt2
-    assert isinstance(filt_sum, CascadeFilter)
-    assert filt_sum == CascadeFilter(z, z + 3)
+    assert isinstance(filt_sum, filt_class)
+    assert filt_sum == filt_class(z, z + 3)
 
-  def test_mul(self):
-    filt = CascadeFilter(1 - z ** -1)
+  def test_mul(self, filt_class):
+    filt = filt_class(1 - z ** -1)
     filt_prod = filt * 3
-    assert isinstance(filt_prod, CascadeFilter)
-    assert filt_prod == CascadeFilter(1 - z ** -1, 1 - z ** -1, 1 - z ** -1)
+    assert isinstance(filt_prod, filt_class)
+    assert filt_prod == filt_class(1 - z ** -1, 1 - z ** -1, 1 - z ** -1)
 
   @p("filts",
      [(lambda data: data ** 2),
       (z ** -1, lambda data: data + 4),
       (1 / z ** -2, (lambda data: 0.), z** -1),
      ])
-  def test_non_linear(self, filts):
-    filt = CascadeFilter(filts)
-    assert isinstance(filt, CascadeFilter)
+  def test_non_linear(self, filts, filt_class):
+    filt = filt_class(filts)
+    assert isinstance(filt, filt_class)
     assert not filt.is_linear()
     with pytest.raises(AttributeError):
       filt.numpoly
@@ -334,6 +335,25 @@ class TestCascadeFilter(object):
       filt.denpoly
     with pytest.raises(AttributeError):
       filt.freq_response(pi / 2)
+
+
+class TestCascadeOrParallelFilter(object):
+
+  data_values = [range(3),
+                 Stream([5., 4., 6., 7., 12., -2.]),
+                 [.2, .5, .4, .1]
+                ]
+
+  @p("data", data_values)
+  def test_call_empty_cascade(self, data):
+    dtest = data.copy() if isinstance(data, Stream) else data
+    for el, elt in it.izip(CascadeFilter()(data), dtest):
+      assert el == elt
+
+  @p("data", data_values)
+  def test_call_empty_parallel(self, data):
+    for el in ParallelFilter()(data):
+      assert el == 0.
 
 
 class TestResonator(object):
