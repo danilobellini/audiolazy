@@ -30,7 +30,7 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
-from .lazy_filters import comb
+from .lazy_filters import comb, LinearFilter
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
@@ -587,5 +587,37 @@ def impulse(dur=None):
       yield 0.
 
 
-def karplus_strong(freq, alpha=.99, memory=white_noise):
-  return comb(2 * pi / freq, alpha).linearize()(zeros(), memory=memory)
+def karplus_strong(freq, tau=2e4, memory=white_noise):
+  """
+  Karplus-Strong "digitar" synthesis algorithm.
+
+  Parameters
+  ----------
+  freq :
+    Frequency, in rad/sample.
+  tau :
+    Time decay, in number of samples. Defaults to 2e4. Be careful: using
+    the default value will make duration different on each sample rate
+    value. Use ``sHz`` if you need that independent from the sample rate and
+    in seconds unit.
+  memory :
+    Memory data for the comb filter (delayed "output" data in memory).
+    Defaults to the ``white_noise`` function.
+
+  Returns
+  -------
+  Stream instance with the synthesized data.
+
+  Note
+  ----
+  The fractional delays are solved by exponent linearization.
+
+  See Also
+  --------
+  sHz :
+    Second and hertz constants from samples/second rate.
+  white_noise :
+    White noise stream generator.
+
+  """
+  return comb.tau(2 * pi / freq, tau).linearize()(zeros(), memory=memory)

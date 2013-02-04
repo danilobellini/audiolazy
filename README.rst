@@ -205,7 +205,6 @@ followed by the frequency response plot together with block data DFT
   >>> synth_filt = 1 / analysis_filt
   >>> synth_filt(residual).take(10)
   [-1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0]
-  >>> gain_rms = sqrt(analysis_filt.error)
   >>> amplified_blk = list(Stream(blk) * -200) # For alignment w/ DFT
   >>> synth_filt.plot(blk=amplified_blk).show()
 
@@ -221,7 +220,7 @@ play some sound:
   ms = 1e-3 * s
   note1 = karplus_strong(440 * Hz) # Pluck "digitar" synth
   note2 = zeros(300 * ms).append(karplus_strong(880 * Hz))
-  notes = note1 + note2
+  notes = (note1 + note2) * .5
   sound = notes.take(int(2 * s)) # 2 seconds of a Karplus-Strong note
   with AudioIO(True) as player: # True means "wait for all sounds to stop"
     player.play(sound, rate=rate)

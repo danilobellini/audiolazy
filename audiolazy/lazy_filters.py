@@ -34,7 +34,8 @@ from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         almost_eq)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase, abs as lzabs
+from .lazy_math import (exp, sin, cos, sqrt, pi, nan, dB20, phase,
+                        abs as lzabs, e, inf)
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "FilterListMeta", "CascadeFilter", "ParallelFilter", "comb",
@@ -993,8 +994,78 @@ class ParallelFilter(list, LinearFilterProperties):
   zplot = LinearFilter.zplot.im_func
 
 
+comb = StrategyDict("comb")
+
+
+@comb.strategy("fb", "alpha", "fb_alpha", "feedback_alpha")
 def comb(delay, alpha=1):
+  """
+  Feedback comb filter for a given alpha (and delay).
+
+    ``y[n] = x[n] + alpha * y[n - delay]``
+
+  Parameters
+  ----------
+  delay :
+    Feedback delay, in number of samples.
+  alpha :
+    Exponential decay gain. You can find it from time decay ``tau`` in the
+    impulse response, bringing us ``alpha = e ** (-delay / tau)``. See
+    ``comb.tau`` strategy if that's the case. Defaults to 1 (no decay).
+
+  Returns
+  -------
+  A ZFilter instance with the comb filter.
+
+  """
   return 1 / (1 - alpha * z ** -delay)
+
+
+@comb.strategy("tau", "fb_tau", "feedback_tau")
+def comb(delay, tau=inf):
+  """
+  Feedback comb filter for a given time constant (and delay).
+
+    ``y[n] = x[n] + alpha * y[n - delay]``
+
+  Parameters
+  ----------
+  delay :
+    Feedback delay, in number of samples.
+  tau :
+    Time decay in number of samples, which allows finding
+    ``alpha = e ** (-delay / tau)``. Defaults to inf (infinite), which means
+    alpha = 1.
+
+  Returns
+  -------
+  A ZFilter instance with the comb filter.
+
+  """
+  alpha = e ** (-delay / tau)
+  return 1 / (1 - alpha * z ** -delay)
+
+
+@comb.strategy("ff", "ff_alpha", "feedforward_alpha")
+def comb(delay, alpha=1):
+  """
+  Feedforward comb filter for a given alpha (and delay).
+
+    ``y[n] = x[n] + alpha * x[n - delay]``
+
+  Parameters
+  ----------
+  delay :
+    Feedback delay, in number of samples.
+  alpha :
+    Memory value gain.
+
+  Returns
+  -------
+  A ZFilter instance with the comb filter.
+
+  """
+  return 1 + alpha * z ** -delay
 
 
 resonator = StrategyDict("resonator")
