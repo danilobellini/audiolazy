@@ -51,12 +51,20 @@ AudioLazy changes history
     ``zplot``), ``poles``, ``zeros``, ``is_lti`` and ``is_causal``
   - New ``ParallelFilter`` class, instance of ``FilterListMeta`` (old
     CascadeFilterMeta).
+  - Now comb is a StrategyDict too, with 3 strategies:
+
+    * ``comb.fb`` (default): Feedback comb filter (IIR or time variant)
+    * ``comb.tau``: Same to the feedback strategy, but with a time decay
+      ``tau`` parameter (time in samples up to ``1/e`` amplitude, or
+      -8.686 dB) instead of a gain ``alpha``.
+    * ``comb.ff``: Feed-forward comb filter (FIR or time variant)
 
 + lazy_lpc (*new!*):
 
   - Linear Predictive Coding (LPC) coefficients as a ZFilter from:
 
-    * ``lpc.autocor``: Faster and safer autocorrelation, perhaps using NumPy
+    * ``lpc.autocor`` (default): Faster & safer auto-select from the
+      two autocorrelation implementations
     * ``lpc.nautocor``: Autocorrelation, with linear system solved by NumPy
     * ``lpc.kautocor``: Autocorrelation, using the Levinson-Durbin algorithm
     * ``lpc.covar``: Covariance, with linear system solved by NumPy
@@ -88,6 +96,11 @@ AudioLazy changes history
 
   - Streamix class for mixing Streams based on delta starting times,
     automatically managing the need for multiple "tracks"
+
++ lazy_synth:
+
+  - Karplus-Strong algorithm now uses ``tau`` time decay constant instead of
+    the comb filter ``alpha`` gain.
 
 
 *** Version 0.03 (Time variant filters, examples, etc.. Major changes!) ***

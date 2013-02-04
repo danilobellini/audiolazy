@@ -30,7 +30,7 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
-from .lazy_filters import comb, LinearFilter
+from .lazy_filters import comb
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
@@ -596,10 +596,10 @@ def karplus_strong(freq, tau=2e4, memory=white_noise):
   freq :
     Frequency, in rad/sample.
   tau :
-    Time decay, in number of samples. Defaults to 2e4. Be careful: using
-    the default value will make duration different on each sample rate
-    value. Use ``sHz`` if you need that independent from the sample rate and
-    in seconds unit.
+    Time decay (up to ``1/e``, or -8.686 dB), in number of samples. Defaults
+    to 2e4. Be careful: using the default value will make duration different
+    on each sample rate value. Use ``sHz`` if you need that independent from
+    the sample rate and in seconds unit.
   memory :
     Memory data for the comb filter (delayed "output" data in memory).
     Defaults to the ``white_noise`` function.

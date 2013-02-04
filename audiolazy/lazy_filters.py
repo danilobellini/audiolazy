@@ -947,7 +947,9 @@ class ParallelFilter(list, LinearFilterProperties):
     if len(self) == 0:
       return Stream(kwargs["zero"] if "zero" in kwargs else 0.
                     for _ in args[0])
-    return reduce(operator.add, (filt(*args, **kwargs) for filt in self))
+    arg0 = thub(args[0], len(self))
+    return reduce(operator.add, (filt(arg0, *args[1:], **kwargs)
+                                 for filt in self))
 
   @property
   def numpoly(self):
@@ -1033,9 +1035,9 @@ def comb(delay, tau=inf):
   delay :
     Feedback delay, in number of samples.
   tau :
-    Time decay in number of samples, which allows finding
-    ``alpha = e ** (-delay / tau)``. Defaults to inf (infinite), which means
-    alpha = 1.
+    Time decay (up to ``1/e``, or -8.686 dB), in number of samples, which
+    allows finding ``alpha = e ** (-delay / tau)``. Defaults to ``inf``
+    (infinite), which means alpha = 1.
 
   Returns
   -------
