@@ -27,7 +27,7 @@ from __future__ import division
 from audiolazy import (erb, gammatone, gammatone_erb_constants, sHz, impulse,
                        dB20)
 from numpy import linspace, ceil
-from matplotlib import pylab as plt
+from matplotlib import pyplot as plt
 
 # Initialization info
 rate = 44100

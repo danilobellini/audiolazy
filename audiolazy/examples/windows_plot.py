@@ -23,7 +23,7 @@ Created on Fri Nov 02 2012
 danilo [dot] bellini [at] gmail [dot] com
 """
 
-from matplotlib import pylab as plt
+from matplotlib import pyplot as plt
 from audiolazy import window
 
 M = 256

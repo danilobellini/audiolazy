@@ -36,7 +36,7 @@ processing (DSP), featuring:
   filters (behaves as a list of filters), resonators, etc.. Each
   ``LinearFilter`` instance is compiled just in time when called;
 - Zeros and poles plots and frequency response plotting integration with
-  MatPlotLib ``pylab``;
+  MatPlotLib;
 - Linear Predictive Coding (LPC) directly to ``ZFilter`` instances, from
   which you can find PARCOR coeffs and LSFs;
 - Both sample-based (Zero-cross rate, envelope, moving average, clipping,
@@ -86,7 +86,7 @@ itself and its standard library, but you might need:
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;
 - Music21 (example only): there's one example that gets the Bach chorals from that package
-  corpora for synthesizing and and playing.
+  corpora for synthesizing and playing.
 
 Beside examples and tests, only the LinearFilter and CascadeFilter plotting
 with ``plot`` and ``zplot`` methods needs MatPlotLib. Also, the routines that
@@ -151,7 +151,7 @@ composing, multiplying ZFilter objects:
   >>> data # This should have internally [.1, .1, .2, -.1, -.1, -.3, -.2, .1]
   <audiolazy.lazy_stream.Stream object at ...>
   >>> data *= 10 # Elementwise gain
-  >>> [int(x) for x in data] # Streams are iterables
+  >>> [int(round(x)) for x in data] # Streams are iterables
   [1, 1, 2, -1, -1, -3, -2, 1]
   >>> data_int = filt([1, 2, 4, 3, 2, -1, -3, -2], zero=0) # Now zero is int
   >>> list(data_int)

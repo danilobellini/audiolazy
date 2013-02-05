@@ -328,7 +328,7 @@ class LinearFilter(LinearFilterProperties):
     Parameters
     ----------
     fig :
-      A matplotlib.pylab.Figure instance. Defaults to None, which means that
+      A matplotlib.figure.Figure instance. Defaults to None, which means that
       it will create a new figure.
     samples :
       Number of samples (frequency values) to plot. Defaults to 2048.
@@ -351,7 +351,7 @@ class LinearFilter(LinearFilterProperties):
 
     Returns
     -------
-    The matplotlib.pylab.Figure instance.
+    The matplotlib.figure.Figure instance.
 
     See Also
     --------
@@ -373,10 +373,10 @@ class LinearFilter(LinearFilterProperties):
 
     from .lazy_synth import line
     from .lazy_analysis import dft, unwrap as unwrap_func
-    import pylab
+    from matplotlib import pyplot as plt
 
     if fig is None:
-      fig = pylab.figure()
+      fig = plt.figure()
 
     # Units! Bizarre "pi/12" just to help MaxNLocator, corrected by fmt_func
     Hz = pi / 12. if rate == None else sHz(rate)[1]
@@ -406,7 +406,7 @@ class LinearFilter(LinearFilterProperties):
     mag_plot.plot(freqs_label, mag(data))
     mag_plot.set_ylabel("Magnitude ({munit})".format(munit=mscale))
     mag_plot.grid(True)
-    pylab.setp(mag_plot.get_xticklabels(), visible = False)
+    plt.setp(mag_plot.get_xticklabels(), visible = False)
 
     # Plots the phase response
     ph_plot = fig.add_subplot(2, 1, 2, sharex = mag_plot)
@@ -423,18 +423,18 @@ class LinearFilter(LinearFilterProperties):
     fmt_func = lambda value, pos: auto_formatter(value * pi / 12., "p", [8])
     if rate is None:
       if fscale == "linear":
-        loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
+        loc = plt.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
       elif fscale == "log":
-        loc = pylab.LogLocator(base=2.)
-        loc_minor = pylab.LogLocator(base=2., subs=[1.25, 1.5, 1.75])
+        loc = plt.LogLocator(base=2.)
+        loc_minor = plt.LogLocator(base=2., subs=[1.25, 1.5, 1.75])
         ph_plot.xaxis.set_minor_locator(loc_minor)
       ph_plot.xaxis.set_major_locator(loc)
-      ph_plot.xaxis.set_major_formatter(pylab.FuncFormatter(fmt_func))
+      ph_plot.xaxis.set_major_formatter(plt.FuncFormatter(fmt_func))
 
     # ... and Y Ticks
-    loc = pylab.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
+    loc = plt.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])
     ph_plot.yaxis.set_major_locator(loc)
-    ph_plot.yaxis.set_major_formatter(pylab.FuncFormatter(fmt_func))
+    ph_plot.yaxis.set_major_formatter(plt.FuncFormatter(fmt_func))
 
     mag_plot.yaxis.get_major_locator().set_params(prune="lower")
     ph_plot.yaxis.get_major_locator().set_params(prune="upper")
@@ -449,7 +449,7 @@ class LinearFilter(LinearFilterProperties):
     Parameters
     ----------
     fig :
-      A matplotlib.pylab.Figure instance. Defaults to None, which means that
+      A matplotlib.figure.Figure instance. Defaults to None, which means that
       it will create a new figure.
     circle :
       Chooses whether to include the unit circle in the plot. Defaults to
@@ -457,7 +457,7 @@ class LinearFilter(LinearFilterProperties):
 
     Returns
     -------
-    The matplotlib.pylab.Figure instance.
+    The matplotlib.figure.Figure instance.
 
     Note
     ----
@@ -478,18 +478,18 @@ class LinearFilter(LinearFilterProperties):
     if not self.is_lti():
       raise AttributeError("Filter is not time invariant (LTI)")
 
-    import pylab
+    from matplotlib import pyplot as plt
     from matplotlib import transforms
 
     if fig is None:
-      fig = pylab.figure()
+      fig = plt.figure()
 
-    # Configure the plot pylab.Axes artist and circle background
+    # Configure the plot matplotlib.axes.Axes artist and circle background
     zp_plot = fig.add_subplot(1, 1, 1)
     if circle:
-      zp_plot.add_patch(pylab.Circle((0., 0.), radius=1., fill=False,
-                                     linewidth=1., color="gray",
-                                     linestyle="dashed"))
+      zp_plot.add_patch(plt.Circle((0., 0.), radius=1., fill=False,
+                                   linewidth=1., color="gray",
+                                   linestyle="dashed"))
 
     # Plot the poles and zeros
     zeros = self.zeros # Start with zeros to avoid overdrawn hidden poles
@@ -503,7 +503,7 @@ class LinearFilter(LinearFilterProperties):
                    markeredgewidth=2.5, markerfacecolor="r",
                    markeredgecolor="r")
 
-    # Configure the axis (top/right is translated by 1 internally in pylab)
+    # Configure the axis (top/right is translated by 1 internally in pyplot)
     zp_plot.spines["top"].set_position(("data", -1.))
     zp_plot.spines["right"].set_position(("data", -1.))
     zp_plot.spines["top"].set_color("lightgray")
