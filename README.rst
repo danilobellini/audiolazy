@@ -70,7 +70,13 @@ If you have pip, you can go directly::
 For the *bleeding-edge* version, you can install directly from the github
 repository (requires ``git`` for cloning)::
 
-  pip install git+http://github.com/danilobellini/audiolazy
+  pip install -U git+git://github.com/danilobellini/audiolazy.git
+
+For older versions, you can install from the PyPI link or directly from the
+github repository, based on the repository tags. For example, to install the
+version 0.03 (requires ``git`` for cloning)::
+
+  pip install -U git+git://github.com/danilobellini/audiolazy.git@v0.03
 
 The package doesn't have any strong dependency for its core besides the Python
 itself and its standard library, but you might need:
@@ -165,9 +171,29 @@ LTI Filter frequency response plot (needs MatPlotLib):
 
 .. image:: images/filt_plot.png
 
-CascadeFilters are lists of filters with the same operator behaviour as a
-list, and also works for plotting linear filters. For example, a zeros and
-poles plot (needs MatPlotLib):
+But the ``matplotlib.figure.Figure.show`` method won't work unless you're
+using a newer version of MatPlotLib (works on MatPlotLib 1.2.0), but you still
+can save the above plot directly to a PDF, PNG, etc. with older versions
+(e.g. MatPlotLib 1.0.1):
+
+.. code-block:: python
+
+  (1 + z ** -2).plot().savefig("my_plot.pdf")
+
+On the other hand, you can always show the figure using MatPlotLib directly:
+
+.. code-block:: python
+
+  from matplotlib import pyplot as plt # Or "import pylab as plt"
+  filt = 1 + z ** -2
+  fig1 = filt.plot(plt.figure()) # Argument not needed on the first figure
+  fig2 = filt.zplot(plt.figure()) # The argument ensures a new figure
+  plt.show()
+
+CascadeFilter instances and ParallelFilter instances are lists of filters with
+the same operator behaviour as a list, and also works for plotting linear
+filters. Constructors accepts both a filter and an iterable with filters.
+For example, a zeros and poles plot (needs MatPlotLib):
 
 .. code-block:: python
 

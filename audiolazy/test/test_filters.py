@@ -336,6 +336,18 @@ class TestCascadeAndParallelFilters(object):
     with pytest.raises(AttributeError):
       filt.freq_response(pi / 2)
 
+  def test_const_filter(self, filt_class):
+    data = [2, 4, 3, 7 -1, -8]
+    filt1 = filt_class(*data)
+    filt2 = filt_class(data)
+    func = operator.mul if filt_class == CascadeFilter else operator.add
+    expected_value = reduce(func, data)
+    count = 10
+    for d in data:
+      expected = [d * expected_value] * count
+      assert filt1(Stream(d)).take(count) == expected
+      assert filt2(Stream(d)).take(count) == expected
+
 
 class TestCascadeOrParallelFilter(object):
 

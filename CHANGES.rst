@@ -9,7 +9,8 @@ AudioLazy changes history
 
 + general:
 
-  - Integration with NumPy and MatPlotLib
+  - Integration with NumPy (tested on 1.5.0, 1.6.1 and 1.6.2) and MatPlotLib
+    (tested on 1.0.1 and 1.2.0)
   - More docstrings and doctests
   - Itemized package description, installation instructions and getting
     started examples with plots in README.rst
@@ -47,27 +48,32 @@ AudioLazy changes history
     polynomials based on ``x = z ** -1`` returned from ``numpoly`` and
     ``denpoly``
   - New LinearFilter properties ``poles`` and ``zeros``, based on NumPy
-  - More LinearFilter behaviour into CascadeFilter: Plotting (``plot`` and
+  - New class ``FilterList`` for filter grouping with a ``callables``
+    property, for casting from lists with constant gain values as filters.
+    It is an instance of ``FilterListMeta`` (old CascadeFilterMeta), and
+    CascadeFilter now inherits from this FilterList
+  - More LinearFilter behaviour into FilterList: Plotting (``plot`` and
     ``zplot``), ``poles``, ``zeros``, ``is_lti`` and ``is_causal``
-  - New ``ParallelFilter`` class, instance of ``FilterListMeta`` (old
-    CascadeFilterMeta).
+  - New ``ParallelFilter`` class, inheriting from FilterList
   - Now comb is a StrategyDict too, with 3 strategies:
 
     * ``comb.fb`` (default): Feedback comb filter (IIR or time variant)
     * ``comb.tau``: Same to the feedback strategy, but with a time decay
       ``tau`` parameter (time in samples up to ``1/e`` amplitude, or
-      -8.686 dB) instead of a gain ``alpha``.
+      -8.686 dB) instead of a gain ``alpha``
     * ``comb.ff``: Feed-forward comb filter (FIR or time variant)
 
 + lazy_lpc (*new!*):
 
   - Linear Predictive Coding (LPC) coefficients as a ZFilter from:
 
-    * ``lpc.autocor`` (default): Faster & safer auto-select from the
-      two autocorrelation implementations
+    * ``lpc.autocor`` (default): Auto-selects autocorrelation implementation
+      (Faster)
     * ``lpc.nautocor``: Autocorrelation, with linear system solved by NumPy
+      (Safer)
     * ``lpc.kautocor``: Autocorrelation, using the Levinson-Durbin algorithm
-    * ``lpc.covar``: Covariance, with linear system solved by NumPy
+    * ``lpc.covar`` or ``lpc.ncovar``: Covariance, with linear system solved
+      by NumPy
     * ``lpc.kcovar``: Covariance, slower. Mainly for those without NumPy
     * ``levinson_durbin``: Same to the ``lpc.kautocor``, but with the
       autocorrelation vector as the input, not the signal data
@@ -224,7 +230,7 @@ AudioLazy changes history
   - Faster sinusoid not based on the TableLookup class
 
 
-*** Version 0.02 (Table lookup synthesis!) ***
+*** Version 0.02 (Interactive Stream objects & Table lookup synthesis!) ***
 
 + general:
 

@@ -38,8 +38,8 @@ from .lazy_math import (exp, sin, cos, sqrt, pi, nan, dB20, phase,
                         abs as lzabs, e, inf)
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
-           "z", "FilterListMeta", "CascadeFilter", "ParallelFilter", "comb",
-           "resonator", "lowpass", "highpass"]
+           "z", "FilterListMeta", "FilterList", "CascadeFilter",
+           "ParallelFilter", "comb", "resonator", "lowpass", "highpass"]
 
 
 class LinearFilterProperties(object):
@@ -94,9 +94,17 @@ class LinearFilter(LinearFilterProperties):
   """
   Base class for Linear filters, time invariant or not.
   """
-  def __init__(self, numerator=None, denominator={0: 1}):
-    self.numpoly = Poly(numerator)
-    self.denpoly = Poly(denominator)
+  def __init__(self, numerator=None, denominator=None):
+    if isinstance(numerator, LinearFilter):
+      # Filter type cast
+      if denominator is not None:
+        numerator = operator.truediv(numerator, denominator)
+      self.numpoly = numerator.numpoly
+      self.denpoly = numerator.denpoly
+    else:
+      # Filter from coefficients
+      self.numpoly = Poly(numerator)
+      self.denpoly = Poly({0: 1} if denominator is None else denominator)
 
     # Ensure denominator has only negative powers of z (positive powers here),
     # and a not null gain constant
@@ -393,7 +401,8 @@ class LinearFilter(LinearFilterProperties):
     # Plots the magnitude response
     mag_plot = fig.add_subplot(2, 1, 1)
     if fscale == "symlog":
-      mag_plot.set_xscale(fscale, basex=2., basey=2., steps=[1., 1.25, 1.5, 1.75])
+      mag_plot.set_xscale(fscale, basex=2., basey=2.,
+                          steps=[1., 1.25, 1.5, 1.75])
     else:
       mag_plot.set_xscale(fscale)
     mag_plot.set_title("Frequency response")
@@ -438,7 +447,7 @@ class LinearFilter(LinearFilterProperties):
 
     mag_plot.yaxis.get_major_locator().set_params(prune="lower")
     ph_plot.yaxis.get_major_locator().set_params(prune="upper")
-    fig.tight_layout(h_pad=0.)
+    fig.subplots_adjust(hspace=0.)
     return fig
 
   def zplot(self, fig=None, circle=True):
@@ -504,10 +513,12 @@ class LinearFilter(LinearFilterProperties):
                    markeredgecolor="r")
 
     # Configure the axis (top/right is translated by 1 internally in pyplot)
+    # Note: older MPL versions (e.g. 1.0.1) still don't have the color
+    # matplotlib.colors.cname["lightgray"], which is the same to "#D3D3D3"
     zp_plot.spines["top"].set_position(("data", -1.))
     zp_plot.spines["right"].set_position(("data", -1.))
-    zp_plot.spines["top"].set_color("lightgray")
-    zp_plot.spines["right"].set_color("lightgray")
+    zp_plot.spines["top"].set_color("#D3D3D3")
+    zp_plot.spines["right"].set_color("#D3D3D3")
     zp_plot.axis("scaled") # Keep aspect ratio
 
     # Configure the plot limits
@@ -603,16 +614,24 @@ class LinearFilter(LinearFilterProperties):
     """
     return self.numpolyz.roots
 
+  def __eq__(self, other):
+    if isinstance(other, LinearFilter):
+      return self.numpoly == other.numpoly and self.denpoly == other.denpoly
+    return False
+
+  def __ne__(self, other):
+    if isinstance(other, LinearFilter):
+      return self.numpoly != other.numpoly and self.denpoly != other.denpoly
+    return False
+
 
 class ZFilterMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
-                   "truediv rtruediv pow "
-                   "eq ne " # almost_eq comparison of Poly terms
-                  )
+                   "truediv rtruediv pow ")
 
   def __rbinary__(cls, op_func):
     def dunder(self, other):
-      if isinstance(other, LinearFilter):
+      if isinstance(other, cls):
         raise ValueError("Filter equations have different domains")
       return op_func(cls([other]), self) # The "other" is probably a number
     return dunder
@@ -704,16 +723,6 @@ class ZFilter(LinearFilter):
     if isinstance(other, (int, float)):
       return ZFilter(self.numpoly ** other, self.denpoly ** other)
     raise ValueError("Z-transform powers only valid with integers")
-
-  def __eq__(self, other):
-    if isinstance(other, LinearFilter):
-      return self.numpoly == other.numpoly and self.denpoly == other.denpoly
-    return False
-
-  def __ne__(self, other):
-    if isinstance(other, LinearFilter):
-      return self.numpoly != other.numpoly and self.denpoly != other.denpoly
-    return False
 
   def __str__(self):
     num_term_strings = []
@@ -829,7 +838,7 @@ z = ZFilter({-1: 1})
 
 
 class FilterListMeta(AbstractOperatorOverloaderMeta):
-  __operators__ = ("add mul rmul lt le eq ne gt ge")
+  __operators__ = ("add mul rmul lt le gt ge")
 
   def __binary__(cls, op_func):
     def dunder(self, other):
@@ -839,8 +848,71 @@ class FilterListMeta(AbstractOperatorOverloaderMeta):
   __rbinary__ = __binary__
 
 
+class FilterList(list, LinearFilterProperties):
+  """
+  Class from which CascadeFilter and ParallelFilter inherits the common part
+  of their contents. You probably won't need to use this directly.
+  """
+  __metaclass__ = FilterListMeta
+
+  def __init__(self, *filters):
+    if len(filters) == 1 and not callable(filters[0]) \
+                         and isinstance(filters[0], Iterable):
+      filters = filters[0]
+    self.extend(filters)
+
+  def is_linear(self):
+    """
+    Tests whether all filters in the list are linear. CascadeFilter and
+    ParallelFilter instances are also linear if all filters they group are
+    linear.
+
+    """
+    return all(isinstance(filt, LinearFilter) or
+               (hasattr(filt, "is_linear") and filt.is_linear())
+               for filt in self.callables)
+
+  def is_lti(self):
+    """
+    Tests whether all filters in the list are linear time invariant (LTI).
+    CascadeFilter and ParallelFilter instances are also LTI if all filters
+    they group are LTI.
+
+    """
+    return self.is_linear() and all(filt.is_lti() for filt in self.callables)
+
+  def is_causal(self):
+    """
+    Tests whether all filters in the list are causal (i.e., no future-data
+    delay in positive ``z`` exponents). Non-linear filters are seem as causal
+    by default. CascadeFilter and ParallelFilter are causal if all the
+    filters they group are causal.
+
+    """
+    return all(filt.is_causal() for filt in self.callables
+                                if hasattr(filt, "is_causal"))
+
+  plot = LinearFilter.plot.im_func
+  zplot = LinearFilter.zplot.im_func
+
+  def __eq__(self, other):
+    return type(self) == type(other) and list.__eq__(self, other)
+
+  def __ne__(self, other):
+    return type(self) != type(other) or list.__ne__(self, other)
+
+  @property
+  def callables(self):
+    """
+    List of callables with all filters, casting to LinearFilter each one that
+    isn't callable.
+
+    """
+    return [(filt if callable(filt) else LinearFilter(filt)) for filt in self]
+
+
 @avoid_stream
-class CascadeFilter(list, LinearFilterProperties):
+class CascadeFilter(FilterList):
   """
   Filter cascade as a list of filters.
   A filter is any callable that receives an iterable as input and returns a
@@ -854,68 +926,44 @@ class CascadeFilter(list, LinearFilterProperties):
   [0, 2, 6, 10, 4, -4, -12, -12, -12, -4, 4, 12, 12, 12, 4]
 
   """
-  __metaclass__ = FilterListMeta
-
-  def __init__(self, *filters):
-    if len(filters) == 1 and isinstance(filters[0], Iterable) \
-                         and not isinstance(filters[0],
-                                            LinearFilterProperties):
-      self.extend(filters[0])
-    else:
-      self.extend(filters)
-
   def __call__(self, *args, **kwargs):
     return reduce(lambda data, filt: filt(data, *args[1:], **kwargs),
-                  self, args[0])
+                  self.callables, args[0])
 
   @property
   def numpoly(self):
     try:
-      return reduce(operator.mul, (filt.numpoly for filt in self))
+      return reduce(operator.mul, (filt.numpoly for filt in self.callables))
     except AttributeError:
       raise AttributeError("Non-linear filter")
 
   @property
   def denpoly(self):
     try:
-      return reduce(operator.mul, (filt.denpoly for filt in self))
+      return reduce(operator.mul, (filt.denpoly for filt in self.callables))
     except AttributeError:
       raise AttributeError("Non-linear filter")
 
   @elementwise("freq", 1)
   def freq_response(self, freq):
-    return reduce(operator.mul, (filt.freq_response(freq) for filt in self))
-
-  def is_linear(self):
-    return all(isinstance(filt, LinearFilter) or
-               (hasattr(filt, "is_linear") and filt.is_linear())
-               for filt in self)
-
-  def is_lti(self):
-    return self.is_linear() and all(filt.is_lti() for filt in self)
-
-  def is_causal(self):
-    return all(filt.is_causal() for filt in self
-                                if hasattr(filt, "is_causal"))
+    return reduce(operator.mul, (filt.freq_response(freq)
+                                 for filt in self.callables))
 
   @property
   def poles(self):
     if not self.is_lti():
       raise AttributeError("Not a LTI filter")
-    return reduce(operator.concat, (filt.poles for filt in self))
+    return reduce(operator.concat, (filt.poles for filt in self.callables))
 
   @property
   def zeros(self):
     if not self.is_lti():
       raise AttributeError("Not a LTI filter")
-    return reduce(operator.concat, (filt.zeros for filt in self))
-
-  plot = LinearFilter.plot.im_func
-  zplot = LinearFilter.zplot.im_func
+    return reduce(operator.concat, (filt.zeros for filt in self.callables))
 
 
 @avoid_stream
-class ParallelFilter(list, LinearFilterProperties):
+class ParallelFilter(FilterList):
   """
   List of filters that behaves as a filter, returning the sum of all signals
   that results from applying the the same given input into all filters.
@@ -933,23 +981,13 @@ class ParallelFilter(list, LinearFilterProperties):
   [0, 1, 3, 4, 5, 6, 7, 8, 9, 10]
 
   """
-  __metaclass__ = FilterListMeta
-
-  def __init__(self, *filters):
-    if len(filters) == 1 and isinstance(filters[0], Iterable) \
-                         and not isinstance(filters[0],
-                                            LinearFilterProperties):
-      self.extend(filters[0])
-    else:
-      self.extend(filters)
-
   def __call__(self, *args, **kwargs):
     if len(self) == 0:
       return Stream(kwargs["zero"] if "zero" in kwargs else 0.
                     for _ in args[0])
     arg0 = thub(args[0], len(self))
     return reduce(operator.add, (filt(arg0, *args[1:], **kwargs)
-                                 for filt in self))
+                                 for filt in self.callables))
 
   @property
   def numpoly(self):
@@ -960,40 +998,26 @@ class ParallelFilter(list, LinearFilterProperties):
   @property
   def denpoly(self):
     try:
-      return reduce(operator.mul, (filt.denpoly for filt in self))
+      return reduce(operator.mul, (filt.denpoly for filt in self.callables))
     except AttributeError:
       raise AttributeError("Non-linear filter")
 
   @elementwise("freq", 1)
   def freq_response(self, freq):
-    return reduce(operator.add, (filt.freq_response(freq) for filt in self))
-
-  def is_linear(self):
-    return all(isinstance(filt, LinearFilter) or
-               (hasattr(filt, "is_linear") and filt.is_linear())
-               for filt in self)
-
-  def is_lti(self):
-    return self.is_linear() and all(filt.is_lti() for filt in self)
-
-  def is_causal(self):
-    return all(filt.is_causal() for filt in self
-                                if hasattr(filt, "is_causal"))
+    return reduce(operator.add, (filt.freq_response(freq)
+                                 for filt in self.callables))
 
   @property
   def poles(self):
     if not self.is_lti():
       raise AttributeError("Not a LTI filter")
-    return reduce(operator.concat, (filt.poles for filt in self))
+    return reduce(operator.concat, (filt.poles for filt in self.callables))
 
   @property
   def zeros(self):
     if not self.is_lti():
       raise AttributeError("Not a LTI filter")
-    return reduce(operator.add, self).zeros
-
-  plot = LinearFilter.plot.im_func
-  zplot = LinearFilter.zplot.im_func
+    return reduce(operator.add, (ZFilter(filt) for filt in self)).zeros
 
 
 comb = StrategyDict("comb")
