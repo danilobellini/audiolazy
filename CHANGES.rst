@@ -26,6 +26,7 @@ AudioLazy changes history
   - Signal clipping function
   - Signal unwrap, defaults to the ``2 * pi`` radians range but configurable
     to other units and max signal difference allowed
+  - New AMDF algorithm as a non-linear filter
 
 + lazy_filters:
 

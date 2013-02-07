@@ -28,11 +28,11 @@ from collections import deque
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
-from .lazy_math import cexp
+from .lazy_math import cexp, abs as lzabs
 from .lazy_filters import lowpass, z
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip", "unwrap"]
+           "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf"]
 
 
 window = StrategyDict("window")
@@ -529,3 +529,49 @@ def unwrap(data, max_delta=pi, change=2*pi):
                               (d_diff) % -change, key=lambda x: abs(x))
     yield d1 + delta
     d0 = d1
+
+
+def freq_to_lag(x):
+  """
+  Frequency to lag and lag to frequency converter. Frequency should be in
+  rad/sample and lag should be in number of samples.
+
+  """
+  return 2 * pi / x
+
+lag_to_freq = freq_to_lag
+
+
+def amdf(lag, size):
+  """
+  Average Magnitude Difference Function as a non-linear filter for a given
+  signal and a fixed lag.
+
+  Parameters
+  ----------
+  lag :
+    Time lag, in samples. See ``freq_to_lag`` if needs conversion from
+    frequency values.
+  size :
+    Moving average size.
+
+  Returns
+  -------
+  A callable that accepts two parameters: a signal ``sig`` and the starting
+  memory element ``zero`` that behaves like the ``LinearFilter.__call__``
+  arguments. The output from that callable is a Stream instance, and has
+  no decimation applied.
+
+  See Also
+  --------
+  freq_to_lag :
+    Frequency to lag and lag to frequency converter.
+
+  """
+  filt = (1 - z ** -lag).linearize()
+
+  @tostream
+  def amdf_filter(sig, zero=0.):
+    return maverage(size)(lzabs(filt(sig, zero=zero)), zero=zero)
+
+  return amdf_filter

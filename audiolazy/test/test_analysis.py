@@ -26,10 +26,10 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import window, zcross, maverage, clip, unwrap
+from ..lazy_analysis import window, zcross, maverage, clip, unwrap, amdf
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
-from ..lazy_synth import line
+from ..lazy_synth import line, white_noise
 
 
 class TestWindow(object):
@@ -128,3 +128,35 @@ class TestUnwrap(object):
   ])
   def test_max_delta_8_change_10(self, data, out_data):
     assert list(unwrap(data, max_delta=8, change=10)) == out_data
+
+
+class TestAMDF(object):
+
+  schema = ("sig", "lag", "size", "expected")
+  signal = [1.0, 2.0, 3.0, 2.0, 1.0, 2.0, 3.0, 2.0, 1.0]
+  table_test = [
+    (signal, 1, 1, [1.0,  1.0,  1.0,  1.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 2, 1, [1.0,  2.0,  2.0,  0.0,  2.0,  0.0, 2.0, 0.0, 2.0]),
+    (signal, 3, 1, [1.0,  2.0,  3.0,  1.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 1, 2, [0.5,  1.0,  1.0,  1.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 2, 2, [0.5,  1.5,  2.0,  1.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 3, 2, [0.5,  1.5,  2.5,  2.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 1, 4, [0.25, 0.5,  0.75, 1.0,  1.0,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 2, 4, [0.25, 0.75, 1.25, 1.25, 1.5,  1.0, 1.0, 1.0, 1.0]),
+    (signal, 3, 4, [0.25, 0.75, 1.5,  1.75, 1.75, 1.5, 1.0, 1.0, 1.0]),
+  ]
+
+  @p(schema, table_test)
+  def test_input_output_mapping(self, sig, lag, size, expected):
+    filt = amdf(lag, size)
+    assert callable(filt)
+    assert almost_eq(list(filt(sig)), expected)
+
+  @p("size", [1, 12])
+  def test_lag_zero(self, size):
+    sig_size = 200
+    zero = 0
+    filt = amdf(lag=0, size=size)
+    sig = list(white_noise(sig_size))
+    assert callable(filt)
+    assert list(filt(sig, zero=zero)) == [zero for el in sig]
