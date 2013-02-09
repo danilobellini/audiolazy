@@ -37,7 +37,7 @@ erb = StrategyDict("erb")
 @elementwise("freq", 0)
 def erb(freq, Hz=None):
   """
-  ERB model from:
+  ERB model from Glasberg and Moore in 1990:
 
     ``B. R. Glasberg and B. C. J. Moore, "Derivation of auditory filter
     shapes from notched-noise data". Hearing Research, vol. 47, 1990, pp.
@@ -70,7 +70,7 @@ def erb(freq, Hz=None):
 @elementwise("freq", 0)
 def erb(freq, Hz=None):
   """
-  ERB model from:
+  ERB model from Moore and Glasberg in 1983:
 
     ``B. C. J. Moore and B. R. Glasberg, "Suggested formulae for calculating
     auditory filter bandwidths and excitation patterns". J. Acoust. Soc.

@@ -208,9 +208,14 @@ class MutableDocstringMeta(type):
   static method, returning the docstring.
 
   """
-  @property
-  def __doc__(cls):
-    return cls._doc()
+  def __new__(mcs, name, bases, namespace):
+
+    class MutableDocstringMetaInstance(MutableDocstringMeta):
+      @property
+      def __doc__(cls):
+        return cls._doc()
+
+    return type.__new__(MutableDocstringMetaInstance, name, bases, namespace)
 
 
 class StrategyDict(MultiKeyDict):

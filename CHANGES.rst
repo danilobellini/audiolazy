@@ -14,7 +14,7 @@ AudioLazy changes history
   - More docstrings and doctests
   - Itemized package description, installation instructions and getting
     started examples with plots in README.rst
-  - Now with 5400+ tests and 74% code coverage
+  - Now with 5400+ tests and 73% code coverage
 
 + lazy_analysis:
 
@@ -27,6 +27,12 @@ AudioLazy changes history
   - Signal unwrap, defaults to the ``2 * pi`` radians range but configurable
     to other units and max signal difference allowed
   - New AMDF algorithm as a non-linear filter
+
++ lazy_core:
+
+  - New MutableDocstringMeta allows classes to have lazy docstrings
+  - StrategyDict instances now are singletons of a new class, which have
+    lazy non-memoized docstrings based on their contents.
 
 + lazy_filters:
 
