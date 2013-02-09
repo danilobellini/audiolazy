@@ -9,9 +9,65 @@ Lazyness and object representation
 There are several tools and packages that let the Python use and
 expressiveness look like languages such as MatLab and Octave. However, the
 eager evaluation done by most of these tools make it difficult, perhaps
-impossible, to use them for real time audio processing. Another difficulty
-concerns expressive code creation for audio processing in blocks through
-indexes and vectors.
+impossible, to use them for real time audio processing. To avoid such
+eagerness, one can make the calculations only when data is requested, not
+when the path to the data is given. This is the core idea in lazyness that
+allows:
+
+- Real-time application (you don't need to wait until all data is
+  processed to have a result);
+- Endless data sequence representation;
+- Data-flow representation;
+- Task elimination when a reverse task is done: instead of doing something
+  to then undo, nothing needs to be done, and no conscious optimization
+  need to be done for that.
+
+Another difficulty concerns expressive code creation for audio processing in
+blocks through indexes and vectors. Sometimes, that's unavoidable, or at
+least such avoidance would limit the power of the system that works with
+sequence data.
+
+Block sequences can be found from sample sequences being both objects, where
+the latter can be the result of a method or function over the former. The
+information needed for such is the block size and where would start the next
+block. Although one can think about the last block and the exact index where
+it would start, most of the time spent in steps like this one happens to be
+an implementation issue that just keep the focus away from the problem being
+worked on. To allow a thing like an endless data sequence, there should be
+no need to know when something stops.
+
+Probably an engineer would find the use of equations and structures from
+electrical engineering theory much cleaner to understand than storing
+everything into data arrays, mainly when common operations are done to these
+representations. What is the product of the filter with numerator
+``[1, 7, 2]`` and denominator ``[1, 0.5, 0.2]`` as its system equation with
+the one that has the arrays reversed like ``[2, 7, 1]``? That might be simple,
+and the reversed would avoid questions like "what comes first, the zero or the
+[minus] two exponent?", but maybe we could get more efficient ourselves if we
+had something easier: multiplication could be written once and for all and
+with a representation programmers are used to see. This would be even more
+expressive if we could get rid from the assymetry of a method call like
+``filt1.multiply_by(filt2)``, since multiplication in this case should be
+commutative. The use of natural operators is possible in a language that
+allows operator overloading, but for such we need to describe
+those equations and structures as objects and object relationships.
+
+The name ``Hz`` can be a number that would allow conversion to a default DSP
+internal rad/samples unit, so one can write things like ``freq = 440 * Hz``.
+This isn't difficult in probably any language, but can help in expressivity,
+already. If (almost) everything would need data in "samples" or "rad/sample"
+units, constants for converting these from "second" and "hertz" would help
+with the code expressivity. A comb filter ``comb.tau(delay=30*s, tau=40*s)``
+can represent a comb filter with the given delay and time constant, both in
+samples, but with a more clear meaning for the reader than it would have with
+a expression like ``[1] + [0] * 239999 + [alpha]`` or something like. Would
+it be needed to store all those zeros while just using the filter to get a
+frequency response plot?
+
+It's possible to avoid some of these problems with well-chosen constants,
+duck typing, overloaded operators, functions as first-class citizens, object
+oriented together with functional style programming, etc.. These are resources
+that the Python language gives us for free.
 
 What does it do?
 ----------------
@@ -58,7 +114,7 @@ Installing
 ----------
 
 The package works both on Linux and on Windows. You can find the last stable
-version at `http://pypi.python.org/pypi/audiolazy` and install it with
+version at `PyPI <http://pypi.python.org/pypi/audiolazy>`_ and install it with
 the usual Python installing mechanism::
 
   python setup.py install
@@ -91,16 +147,15 @@ itself and its standard library, but you might need:
   coverage status;
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;
-- Music21 (example only): there's one example that gets the Bach chorals from that package
-  corpora for synthesizing and playing.
+- Music21 (example only): there's one example that gets the Bach chorals from
+  that package corpora for synthesizing and playing.
 
-Beside examples and tests, only the LinearFilter and CascadeFilter plotting
-with ``plot`` and ``zplot`` methods needs MatPlotLib. Also, the routines that
-needs NumPy up to now are:
+Beside examples and tests, only the filter plotting with ``plot`` and
+``zplot`` methods needs MatPlotLib. Also, the routines that needs NumPy up to
+now are:
 
-- LinearFilter and CascadeFilter root finding with ``zeros`` and ``poles``
-  properties;
-- Poly ``roots`` property;
+- Root finding with ``zeros`` and ``poles`` properties (filter classes) or
+  with ``roots`` property (Poly class);
 - Some Linear Predictive Coding (``lpc``) strategies: ``nautocor``,
   ``autocor`` and ``covar``;
 - Line Spectral Frequencies ``lsf`` and ``lsf_stable`` functions.
