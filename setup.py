@@ -39,8 +39,15 @@ with open(os.path.join(path, pkgname, metadata_file), "r") as f:
 
 # Description is all from README.rst, but the ending copyright message
 with open(os.path.join(path, "README.rst"), "r") as fr:
-  readme_data = fr.read()
-readme_data = readme_data.replace("\r\n", "\n")
+  readme_data = fr.read().splitlines()
+
+# First cuts the copyright message
+for idx, el in enumerate(readme_data[1:]):
+  if el.strip() != "" and not el.startswith(" "):
+    readme_data = "\n".join(readme_data[idx:])
+    break
+
+# Then gets the data
 title, descr, ldescr = readme_data.split("\n\n", 2)
 ldescr = "\n\n".join([title, ldescr]).rsplit("----", 1)[0].strip()
 metadata["description"] = descr
