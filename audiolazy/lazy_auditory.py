@@ -31,7 +31,6 @@ __all__ = ["erb", "gammatone", "gammatone_erb_constants"]
 
 
 erb = StrategyDict("erb")
-gammatone = StrategyDict("gammatone")
 
 
 @erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
@@ -133,6 +132,9 @@ def gammatone_erb_constants(n):
   return (factorial(n - 1) ** 2 / (pi * factorial(tnt) * 2 ** -tnt),
           2 * (2 ** (1. / n) - 1) ** .5
          )
+
+
+gammatone = StrategyDict("gammatone")
 
 
 @gammatone.strategy("sampled")

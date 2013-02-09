@@ -23,8 +23,10 @@ Core classes module
 import operator
 from collections import defaultdict
 from abc import ABCMeta, abstractproperty
+import itertools as it
 
-__all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict", "StrategyDict"]
+__all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict",
+           "MutableDocstringMeta", "StrategyDict"]
 
 
 class AbstractOperatorOverloaderMeta(ABCMeta):
@@ -196,10 +198,25 @@ class MultiKeyDict(dict):
     return iter(self._inv_dict)
 
 
+class MutableDocstringMeta(type):
+  """
+  Docstrings are immutable, this metaclass gets the way around via the
+  property interface, and with a lazy docstring (i.e., docstring is
+  created only when asked for).
+
+  All instances of this class should implement a ``_doc`` class method or
+  static method, returning the docstring.
+
+  """
+  @property
+  def __doc__(cls):
+    return cls._doc()
+
+
 class StrategyDict(MultiKeyDict):
   """
-  Strategy dictionary manager with default, mainly done for callables and
-  multiple implementation algorithms / models.
+  Strategy dictionary manager creator with default, mainly done for callables
+  and multiple implementation algorithms / models.
 
   Each strategy might have multiple names. The names can be any hashable.
   The "strategy" method creates a decorator for the given strategy names.
@@ -230,12 +247,80 @@ class StrategyDict(MultiKeyDict):
   >>> sd(-19, 1e18, 0)
   -19
 
-  """
-  default = lambda: NotImplemented
+  Note
+  ----
+  The StrategyDict constructor creates a new class inheriting from
+  StrategyDict, and then instantiates it before returning the requested
+  instance. This singleton subclassing is needed for docstring
+  personalization.
 
-  def __init__(self, name="strategy_dict_unnamed_instance"):
-    self.__name__ = name
-    super(StrategyDict, self).__init__()
+  """
+  def __new__(self, name="strategy_dict_unnamed_instance"):
+    """
+    Creates a new StrategyDict class and returns an instance of it.
+    The new class is needed to ensure it'll have a personalized docstring.
+
+    """
+    class StrategyDictInstance(StrategyDict):
+      __metaclass__ = MutableDocstringMeta
+      __docbase__ = "Callable object ``{0}``.\n"\
+                    "This is a StrategyDict instance with {1} strategies."
+
+      def __new__(cls, name=name):
+        del StrategyDictInstance.__new__ # Should be called only once
+        StrategyDictInstance._singleton = MultiKeyDict.__new__(
+                                            StrategyDictInstance
+                                          )
+        return StrategyDictInstance._singleton
+
+      def __init__(self, name=name):
+        self.__name__ = name
+        super(StrategyDict, self).__init__()
+
+      @classmethod
+      def _doc(cls):
+        self = cls._singleton
+        doc = [cls.__docbase__.format(self.__name__, len(self))]
+
+        pairs = sorted(self.iteritems())
+        if self.default not in self.itervalues():
+          pairs = it.chain(pairs, [(tuple(), self.default)])
+
+        for key_tuple, value in pairs:
+
+          # First find the part of the docstring related to the keys
+          sinit = "\nStrategy "
+          snext = "\n" + " " * (len(sinit) - 1) # -1 due to the "\n"
+          strategies = ["``{0}.{1}``".format(self.__name__, name)
+                        for name in key_tuple]
+          if len(strategies) == 0:
+            strategies = ["\nDefault unnamed strategy"]
+          else:
+            if value == self.default:
+              strategies[0] += " (*Default*)"
+            strategies = [sinit + strategies[0]] \
+                       + [snext + st for st in strategies[1:]]
+          doc.extend(strategies)
+          doc[-1] += ":"
+
+          # Get first description paragraph as the docstring related to value
+          split_descr = value.__doc__.strip().splitlines() if value.__doc__ \
+                        else ["* * * * ...no docstring... * * * *"]
+          cut_idx = len(split_descr)
+          for idx, el in enumerate(split_descr):
+            if el.strip() == "":
+              cut_idx = idx
+              break
+          description = " ".join(line.strip()
+                                 for line in split_descr[:cut_idx]).strip()
+          doc.append("\n  " + description)
+          doc.append("\n")
+
+        return "".join(doc)
+
+    return StrategyDictInstance(name)
+
+  default = lambda: NotImplemented
 
   def strategy(self, *names):
     def decorator(func):
