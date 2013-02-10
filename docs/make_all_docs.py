@@ -20,30 +20,51 @@
 """
 AudioLazy documentation creator via Sphinx
 
+Note
+----
 You should call rst_creator first!
 
 """
 
+import shlex
 from subprocess import call
 
+# Call string templates
 sphinx_template = "sphinx-build -b {out_type} -d {build_dir}/doctrees "\
                   "-D latex_paper_size=a4 . {build_dir}/{out_type}"
 make_template = "make -C {build_dir}/{out_type} {make_param}"
 
-make_after = {"latex": "all-pdf",
-              "texinfo": "info"}
+# Make targets given the output type
+make_target = {"latex": "all-pdf",
+               "texinfo": "info"}
 
-out_types = ["text", "html", "latex", "man", "texinfo", "epub"]
-build_dir = "build"
+def call_sphinx(out_type, build_dir = "build"):
+  """
+  Call the ``sphinx-build`` for the given output type and the ``make`` when
+  the target has this possibility.
 
-for out_type in out_types:
-  call_string = sphinx_template.format(build_dir=build_dir,
-                                       out_type=out_type)
-  if call(call_string.split()) != 0:
-    break
-  if out_type in make_after:
+  Parameters
+  ----------
+  out_type :
+    A builder name for ``sphinx-build``. See the full list at
+    `<http://sphinx-doc.org/invocation.html>`_.
+  build_dir :
+    Directory for storing the output. Defaults to "build".
+
+  """
+  sphinx_string = sphinx_template.format(build_dir=build_dir,
+                                         out_type=out_type)
+  if call(shlex.split(sphinx_string)) != 0:
+    raise RuntimeError("Something went wrong while building '{0}'"
+                       .format(out_type))
+  if out_type in make_target:
     make_string = make_template.format(build_dir=build_dir,
                                        out_type=out_type,
-                                       make_param=make_after[out_type])
-    call(make_string.split())
+                                       make_param=make_target[out_type])
+    call(shlex.split(make_string)) # Errors here don't need to stop anything
 
+# Calling this as a script builds/makes all targets in the list below
+if __name__ == "__main__":
+  out_types = ["text", "html", "latex", "man", "texinfo", "epub"]
+  for out_type in out_types:
+    call_sphinx(out_type)

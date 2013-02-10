@@ -60,7 +60,9 @@ def levinson_durbin(acdata, order=None):
     R . a = r
 
   where :math:`R` is a simmetric Toeplitz matrix where each element are lags
-  from the given autocorrelation list. :math:`R` and :math:`r` are defined:
+  from the given autocorrelation list. :math:`R` and :math:`r` are defined
+  (Python indexing starts with zero and slices don't include the last
+  element):
 
   .. math::
 

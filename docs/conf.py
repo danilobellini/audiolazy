@@ -17,15 +17,17 @@
 # Created on Fri Feb 08 2013
 # danilo [dot] bellini [at] gmail [dot] com
 """
-AudioLazy documentation build configuration file
+AudioLazy documentation configuration file for Sphinx
 
 """
 
 import sys, os
 import audiolazy
+import shlex
 from subprocess import Popen, PIPE
 import time
 from collections import OrderedDict
+import types
 
 
 def splitter(lines, sep="-=", keep_idx=False):
@@ -47,12 +49,13 @@ def splitter(lines, sep="-=", keep_idx=False):
   Returns
   -------
   A collections.OrderedDict instance where a block with underlined key like
-  "Key\n===" and a list of lines following will have the item (key, list of
-  lines), in the order that they appeared in the lists input. Empty keys gets
-  an order numbering, and might happen for example after a "----" separator.
-  The values (lists of lines) don't include the key nor its underline, and is
-  also stripped/trimmed (i.e., there's no empty line as the first and last
-  list items).
+  ``"Key\\n==="`` and a list of lines following will have the item (key, list
+  of lines), in the order that they appeared in the lists input. Empty keys
+  gets an order numbering, and might happen for example after a ``"----"``
+  separator. The values (lists of lines) don't include the key nor its
+  underline, and is also stripped/trimmed as lines (i.e., there's no empty
+  line as the first and last list items, but first and last line may start/end
+  with whitespaces).
 
   """
   separators = audiolazy.Stream(
@@ -83,7 +86,65 @@ def splitter(lines, sep="-=", keep_idx=False):
   return blk_data
 
 
-def pre_processor(app, what, name, obj, options, lines):
+def audiolazy_namer(name):
+  """
+  Process a name to get Sphinx reStructuredText internal references like
+  ``:obj:`name <audiolazy.lazy_something.name>``` for a given name string,
+  specific for AudioLazy.
+
+  """
+  sp_name = name.split(".")
+  try:
+
+    # Find the audiolazy module name
+    data = getattr(audiolazy, sp_name[0])
+    if isinstance(data, audiolazy.StrategyDict):
+      module_name = data.default.__module__
+    else:
+      module_name = data.__module__
+      if not module_name.startswith("audiolazy"): # Decorated math, cmath, ...
+        del module_name
+        for mname in dir(audiolazy):
+          if mname.startswith("lazy_"): # A module
+            if sp_name[0] in getattr(audiolazy, mname).__all__:
+              module_name = "audiolazy." + mname
+              break
+
+    # Now gets the referenced item
+    location = ".".join([module_name] + sp_name)
+    for sub_name in sp_name[1:]:
+      data = getattr(data, sub_name)
+
+    # Finds the role to be used for referencing
+    type_dict = OrderedDict([
+      (audiolazy.StrategyDict, "obj"),
+      (Exception, "exc"),
+      (types.MethodType, "meth"),
+      (types.FunctionType, "func"),
+      (types.ModuleType, "mod"),
+      (property, "attr"),
+      (type, "class"),
+    ])
+    role = [v for k, v in type_dict.iteritems() if isinstance(data, k)][0]
+
+  # Not found
+  except AttributeError:
+    return ":obj:`{0}`".format(name)
+
+  # Found!
+  else:
+    return ":{0}:`{1} <{2}>`".format(role, name, location)
+
+
+def pre_processor(app, what, name, obj, options, lines,
+                  namer=lambda name: ":obj:`{0}`".format(name)):
+  """
+  Callback preprocessor function for docstrings.
+  Converts data from Spyder pattern to Sphinx, using a ``namer`` function
+  that defaults to ``lambda name: ":obj:`{0}`".format(name)`` (specific for
+  ``.. seealso::``).
+
+  """
   result = []
   for name, blk in splitter(lines).iteritems():
     nlower =  name.lower()
@@ -108,8 +169,8 @@ def pre_processor(app, what, name, obj, options, lines):
     elif nlower == "returns":
       result.append(":returns: " + " ".join(blk))
 
-    elif nlower == "note":
-      result.append(".. note::")
+    elif nlower in ("note", "warning"):
+      result.append(".. {0}::".format(nlower))
       result.extend("  " + el for el in blk)
 
     elif nlower == "examples":
@@ -121,18 +182,9 @@ def pre_processor(app, what, name, obj, options, lines):
       for el in blk:
         if el.endswith(":"):
           result.append("") # Skip a line
-           # Sphinx needs help here to find some object locations
-          funcs = [":obj:`{0}`".format(f.strip()) 
-                     .replace("sHz","sHz <audiolazy.lazy_misc.sHz>")
-                     .replace("dB10","dB10 <audiolazy.lazy_math.dB10>")
-                     .replace("dB20","dB20 <audiolazy.lazy_math.dB20>")
-                     .replace("phase","phase <audiolazy.lazy_math.phase>")
-                     .replace("acorr","acorr <audiolazy.lazy_analysis.acorr>")
-                     .replace("thub","thub <audiolazy.lazy_stream.thub>")
-                     .replace("levinson_durbin",
-                       "levinson_durbin <audiolazy.lazy_lpc.levinson_durbin>")
-                   for f in el[:-1].strip().split(",")]
-          result.append("  " + ", ".join(funcs))
+           # Sphinx may need help here to find some object locations
+          refs = [namer(f.strip()) for f in el[:-1].split(",")]
+          result.append("  " + ", ".join(refs))
         else:
           result.append("  " + el)
 
@@ -148,6 +200,10 @@ def pre_processor(app, what, name, obj, options, lines):
 
 
 def should_skip(app, what, name, obj, skip, options):
+  """
+  Callback object chooser function for docstring documentation.
+
+  """
   if name in ["__doc__", "__module__", "__dict__", "__weakref__",
                "_not_implemented", "__operator_inputs__",
                "__abstractmethods__"
@@ -162,7 +218,8 @@ def setup(app):
   applied on all docstrings.
 
   """
-  app.connect('autodoc-process-docstring', pre_processor)
+  app.connect('autodoc-process-docstring',
+              lambda *args: pre_processor(*args, namer=audiolazy_namer))
   app.connect('autodoc-skip-member', should_skip)
 
 
@@ -189,13 +246,21 @@ def older_file(file_iterable):
   return max(file_iterable, key=lambda fname: os.path.getmtime(fname))
 
 
-# Description (needed for Texinfo) from README.rst, and file location from git
-git_command_location = "git rev-parse --show-cdup".split()
+#
+# README.rst file loading
+#
+
+# Gets README.rst file location from git (it's on the repository root)
+git_command_location = shlex.split("git rev-parse --show-cdup")
 file_location = Popen(git_command_location, stdout=PIPE).stdout.read().strip()
-with open(os.path.join(file_location, "README.rst"), "r") as readme_file:
-  readme_file_contents = readme_file.read().replace("\r\n", "\n")
-  description = "\n".join(splitter(readme_file_contents.splitlines()
-                                  ).values()[1])
+readme_file_name = os.path.join(file_location, "README.rst")
+
+# Opens the file (this should be importable!)
+with open(readme_file_name, "r") as readme_file:
+  readme_file_contents = readme_file.read().splitlines()
+
+# Loads the description
+description = "\n".join(splitter(readme_file_contents)["AudioLazy"])
 
 
 #
@@ -246,17 +311,13 @@ add_module_names = False
 pygments_style = "sphinx"
 
 
-#
 # HTML output configuration
-#
 html_theme = "default"
 html_static_path = ["_static"]
 htmlhelp_basename = project + "doc"
 
 
-#
 # LaTeX output configuration
-#
 latex_elements = {
   "papersize": "a4paper",
   "pointsize": "10pt", # Font size
@@ -276,9 +337,7 @@ latex_show_urls = True
 latex_domain_indices = False
 
 
-#
 # Man (manual page) output configuration
-#
 man_pages = [(
   master_doc,
   project.lower(), # Name
@@ -288,23 +347,19 @@ man_pages = [(
 )]
 
 
-#
 # Texinfo output configuration
-#
 texinfo_documents = [(
   master_doc,
   project, # Target
   title,
   author,
   project, # Dir menu entry
-  description,
+  description, # From README.rst
   "Miscellanous", # Category
 )]
 
 
-#
 # Epub output configuration
-#
 epub_title = project
 epub_author = author
 epub_publisher = author
@@ -312,11 +367,10 @@ epub_copyright = copyright
 
 
 #
-# Bizarre changes to StrategyDict instances (it works, though...)
+# Item in sys.modules for StrategyDict instances (needed for automodule)
 #
 for name, sdict in audiolazy.__dict__.iteritems():
   if isinstance(sdict, audiolazy.StrategyDict):
     fname = ".".join([sdict.default.__module__, name])
     sdict.__all__ = tuple(x[0] for x in sdict.keys())
     sys.modules[fname] = sdict
-
