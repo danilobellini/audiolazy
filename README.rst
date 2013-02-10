@@ -166,7 +166,9 @@ itself and its standard library, but you might need:
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;
 - Music21 (example only): there's one example that gets the Bach chorals from
-  that package corpora for synthesizing and playing.
+  that package corpora for synthesizing and playing;
+- Sphinx (documentation only): it can create the software documentation in
+  several different file formats.
 
 Beside examples and tests, only the filter plotting with ``plot`` and
 ``zplot`` methods needs MatPlotLib. Also, the routines that needs NumPy up to
