@@ -37,7 +37,7 @@ erb = StrategyDict("erb")
 @elementwise("freq", 0)
 def erb(freq, Hz=None):
   """
-  ERB model from Glasberg and Moore in 1990:
+  ERB model from Glasberg and Moore in 1990.
 
     ``B. R. Glasberg and B. C. J. Moore, "Derivation of auditory filter
     shapes from notched-noise data". Hearing Research, vol. 47, 1990, pp.
@@ -70,7 +70,7 @@ def erb(freq, Hz=None):
 @elementwise("freq", 0)
 def erb(freq, Hz=None):
   """
-  ERB model from Moore and Glasberg in 1983:
+  ERB model from Moore and Glasberg in 1983.
 
     ``B. C. J. Moore and B. R. Glasberg, "Suggested formulae for calculating
     auditory filter bandwidths and excitation patterns". J. Acoust. Soc.
@@ -102,7 +102,9 @@ def erb(freq, Hz=None):
 def gammatone_erb_constants(n):
   """
   Constants for using the real bandwidth in the gammatone filter, given its
-  order. Returns a pair ``(x, y) = (1/a_n, c_n)``, based on equations from:
+  order. Returns a pair ``(x, y) = (1/a_n, c_n)``.
+
+  Based on equations from:
 
     ``Holdsworth, J.; Patterson, R.; Nimmo-Smith I.; Rice, P. Implementing a
     GammaTone Filter Bank. In: SVOS Final Report, Annex C, Part A: The
@@ -111,21 +113,21 @@ def gammatone_erb_constants(n):
   First returned value is a bandwidth compensation for direct use in the
   gammatone formula:
 
-    >>> x, y = gammatone_erb_constants(4)
-    >>> central_frequency = 1000
-    >>> round(x, 3)
-    1.019
-    >>> bandwidth = x * erb["moore_glasberg_83"](central_frequency)
-    >>> round(bandwidth, 2)
-    130.52
+  >>> x, y = gammatone_erb_constants(4)
+  >>> central_frequency = 1000
+  >>> round(x, 3)
+  1.019
+  >>> bandwidth = x * erb["moore_glasberg_83"](central_frequency)
+  >>> round(bandwidth, 2)
+  130.52
 
   Second returned value helps us find the ``3 dB`` bandwidth as:
 
-    >>> x, y = gammatone_erb_constants(4)
-    >>> central_frequency = 1000
-    >>> bandwidth3dB = x * y * erb["moore_glasberg_83"](central_frequency)
-    >>> round(bandwidth3dB, 2)
-    113.55
+  >>> x, y = gammatone_erb_constants(4)
+  >>> central_frequency = 1000
+  >>> bandwidth3dB = x * y * erb["moore_glasberg_83"](central_frequency)
+  >>> round(bandwidth3dB, 2)
+  113.55
 
   """
   tnt = 2 * n - 2
@@ -183,8 +185,9 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
 @gammatone.strategy("slaney")
 def gammatone(freq, bandwidth):
   """
-  Gammatone filter based on Malcolm Slaney's IIR cascading filter model
-  described in:
+  Gammatone filter based on Malcolm Slaney's IIR cascading filter model.
+
+  Model is described in:
 
     ``Slaney, M. "An Efficient Implementation of the Patterson-Holdsworth
     Auditory Filter Bank", Apple Computer Technical Report #35, 1993.``
@@ -221,8 +224,9 @@ def gammatone(freq, bandwidth):
 @gammatone.strategy("klapuri")
 def gammatone(freq, bandwidth):
   """
-  Gammatone filter based on Anssi Klapuri's IIR cascading filter model
-  described in:
+  Gammatone filter based on Anssi Klapuri's IIR cascading filter model.
+
+  Model is described in:
 
     ``A. Klapuri, "Multipich Analysis of Polyphonic Music and Speech Signals
     Using an Auditory Model". IEEE Transactions on Audio, Speech and Language

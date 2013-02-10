@@ -48,7 +48,6 @@ AudioLazy changes history
 
 + lazy_core:
 
-  - New MutableDocstringMeta allows classes to have lazy docstrings
   - StrategyDict instances now are singletons of a new class, which have
     lazy non-memoized docstrings based on their contents
 

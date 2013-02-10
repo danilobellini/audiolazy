@@ -76,6 +76,7 @@ class LinearFilterProperties(object):
     Like numpoly, the linear filter numerator (or forward coefficients) as a
     Poly instance based on ``x = z`` instead of numpoly's ``x = z ** -1``,
     useful for taking roots.
+
     """
     return Poly(self.numerator[::-1])
 
@@ -85,6 +86,7 @@ class LinearFilterProperties(object):
     Like denpoly, the linear filter denominator (or backward coefficients) as
     a Poly instance based on ``x = z`` instead of denpoly's ``x = z ** -1``,
     useful for taking roots.
+
     """
     return Poly(self.denominator[::-1])
 
@@ -588,10 +590,14 @@ class LinearFilter(LinearFilterProperties):
 
     See Also
     --------
-    LinearFilter.numpoly, LinearFilter.denpoly:
-      Numerator and denominator polynomials where *x* is ``z ** -1``.
-    LinearFilter.numpolyz, LinearFilter.denpolyz:
-      Numerator and denominator polynomials where *x* is ``z``.
+    LinearFilterProperties.numpoly:
+      Numerator polynomials where *x* is ``z ** -1``.
+    LinearFilterProperties.denpoly:
+      Denominator polynomials where *x* is ``z ** -1``.
+    LinearFilterProperties.numpolyz:
+      Numerator polynomials where *x* is ``z``.
+    LinearFilterProperties.denpolyz:
+      Denominator polynomials where *x* is ``z``.
 
     """
     return self.denpolyz.roots
@@ -606,10 +612,14 @@ class LinearFilter(LinearFilterProperties):
 
     See Also
     --------
-    LinearFilter.numpoly, LinearFilter.denpoly:
-      Numerator and denominator polynomials where *x* is ``z ** -1``.
-    LinearFilter.numpolyz, LinearFilter.denpolyz:
-      Numerator and denominator polynomials where *x* is ``z``.
+    LinearFilterProperties.numpoly:
+      Numerator polynomials where *x* is ``z ** -1``.
+    LinearFilterProperties.denpoly:
+      Denominator polynomials where *x* is ``z ** -1``.
+    LinearFilterProperties.numpolyz:
+      Numerator polynomials where *x* is ``z``.
+    LinearFilterProperties.denpolyz:
+      Denominator polynomials where *x* is ``z``.
 
     """
     return self.numpolyz.roots
@@ -841,7 +851,9 @@ class FilterListMeta(AbstractOperatorOverloaderMeta):
   __operators__ = ("add mul rmul lt le gt ge")
 
   def __binary__(cls, op_func):
+    "Binary dunder factory."
     def dunder(self, other):
+      "This operator acts just like it would do with lists."
       return cls(getattr(super(cls, self), dunder.__name__)(other))
     return dunder
 

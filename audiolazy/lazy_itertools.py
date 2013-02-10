@@ -54,7 +54,8 @@ def tee(data, n=2):
 
   See Also
   --------
-  thub : use Stream instances *almost* like constants in your equations.
+  thub :
+    use Stream instances *almost* like constants in your equations.
 
   """
   if isinstance(data, (Stream, Iterator)):

@@ -57,21 +57,30 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
 class Poly(object):
   """
   Model for a polynomial.
+
   That's not a dict and not a list but behaves like something in between.
   The "values" method allows casting to list with list(Poly.values())
   The "terms" method allows casting to dict with dict(Poly.terms()), and give
   the terms sorted by their power value.
+
   """
   __metaclass__ = PolyMeta
 
   def __init__(self, data=None, zero=0):
     """
     Inits a polynomial from given data, which can be a list or a dict.
-    A list [a_0, a_1, a_2, a_3, ...] inits a polynomial like
-      a_0 + a_1 * x + a_2 * x**2 + a_3 * x**3 + ...
-    If data is a dictionary, powers are the keys and the a_i factors are the
-    values, so negative powers are allowed and you can neglect the zeros in
-    between, i.e., a dict vith terms like {power: value} can also be used.
+
+    A list :math:`[a_0, a_1, a_2, a_3, ...]` inits a polynomial like
+
+    .. math::
+
+      a_0 + a_1 . x + a_2 . x^2 + a_3 . x^3 + ...
+
+    If data is a dictionary, powers are the keys and the :math:`a_i` factors
+    are the values, so negative powers are allowed and you can neglect the
+    zeros in between, i.e., a dict vith terms like ``{power: value}`` can also
+    be used.
+
     """
     self.zero = zero
     if isinstance(data, list):
@@ -102,7 +111,7 @@ class Poly(object):
     Array values generator for powers from zero to upper power. Useful to cast
     as list/tuple and for numpy/scipy integration (be careful: numpy use the
     reversed from the output of this function used as input to a list or a
-    tuple constructor)
+    tuple constructor).
     """
     max_key = max(key for key in self.data) if self.data else -1
     return (self.data[key] if key in self.data else self.zero

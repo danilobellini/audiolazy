@@ -140,11 +140,12 @@ class Stream(Iterable):
 
     Parameters
     ----------
-    The parameters should be iterables that will be chained together. If
-    they're not iterables, the stream will be an endless repeat of the
-    given elements. If any parameter is a generator and its contents is
-    used elsewhere, you should use the "tee" (Stream method or itertools
-    function) before.
+    *dargs:
+      The parameters should be iterables that will be chained together. If
+      they're not iterables, the stream will be an endless repeat of the
+      given elements. If any parameter is a generator and its contents is
+      used elsewhere, you should use the "tee" (Stream method or itertools
+      function) before.
 
     Notes
     -----

@@ -55,13 +55,18 @@ def levinson_durbin(acdata, order=None):
   """
   Solve the Yule-Walker linear system of equations:
 
-    ``R * a = r``
+  .. math::
 
-  where ``R`` is a simmetric Toeplitz matrix where each element are lags from
-  the given autocorrelation list. ``R`` and ``r`` are defined:
+    R . a = r
 
-    ``R[i][j] = acdata[abs(j - i)]``
-    ``r = acdata[1 : order + 1]``
+  where :math:`R` is a simmetric Toeplitz matrix where each element are lags
+  from the given autocorrelation list. :math:`R` and :math:`r` are defined:
+
+  .. math::
+
+    R[i][j] = acdata[abs(j - i)]
+
+    r = acdata[1 : order + 1]
 
   Parameters
   ----------
@@ -102,7 +107,7 @@ def levinson_durbin(acdata, order=None):
   Notes
   -----
   The Levinson-Durbin algorithm used to solve the equations needs
-  ``O(order ** 2)`` floating point operations.
+  :math:`O(order^2)` floating point operations.
 
   """
   if order is None:

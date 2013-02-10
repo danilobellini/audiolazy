@@ -25,8 +25,7 @@ from collections import defaultdict
 from abc import ABCMeta, abstractproperty
 import itertools as it
 
-__all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict",
-           "MutableDocstringMeta", "StrategyDict"]
+__all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict", "StrategyDict"]
 
 
 class AbstractOperatorOverloaderMeta(ABCMeta):
@@ -107,11 +106,29 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
 
   def new_dunder(cls, op_func, is_reversed, ninputs):
     """
-    Return a function to be used as a dunder for the operator op_func (a
-    function from the operator module). If is_reversed, it means that besides
-    op_func might be operator.add, what we need as return value is a __radd__
-    dunder as a function. The ninputs tells us if is the dunder is
-    unary(self) or binary(self, other).
+    Insert a new dunder (double underscore method) to the class.
+
+    Parameters
+    ----------
+    op_func :
+      A function from the operator module.
+    is_reversed :
+      If true, reverses the operands order. For example, it means that
+      besides op_func being perhaps ``operator.add``, what is being asked
+      as return value is a ``__radd__`` method dunder, as a function.
+    ninputs :
+      An int (1 or 2) telling if is the dunder is ``unary(self)`` or
+      ``binary(self, other)``, respectively.
+
+    Returns
+    -------
+    A function to be used as a dunder for the given operator.
+
+    Note
+    ----
+    Commonly you don't need to worry with this, since this is done by the
+    ``__new__`` constructor when you implement the operator dunder templates
+    as said in the class docstring.
 
     """
     return {(False, 1): cls.__unary__,
@@ -198,26 +215,6 @@ class MultiKeyDict(dict):
     return iter(self._inv_dict)
 
 
-class MutableDocstringMeta(type):
-  """
-  Docstrings are immutable, this metaclass gets the way around via the
-  property interface, and with a lazy docstring (i.e., docstring is
-  created only when asked for).
-
-  All instances of this class should implement a ``_doc`` class method or
-  static method, returning the docstring.
-
-  """
-  def __new__(mcs, name, bases, namespace):
-
-    class MutableDocstringMetaInstance(MutableDocstringMeta):
-      @property
-      def __doc__(cls):
-        return cls._doc()
-
-    return type.__new__(MutableDocstringMetaInstance, name, bases, namespace)
-
-
 class StrategyDict(MultiKeyDict):
   """
   Strategy dictionary manager creator with default, mainly done for callables
@@ -267,48 +264,43 @@ class StrategyDict(MultiKeyDict):
 
     """
     class StrategyDictInstance(StrategyDict):
-      __metaclass__ = MutableDocstringMeta
-      __docbase__ = "Callable object ``{0}``.\n"\
-                    "This is a StrategyDict instance with {1} strategies."
 
       def __new__(cls, name=name):
         del StrategyDictInstance.__new__ # Should be called only once
-        StrategyDictInstance._singleton = MultiKeyDict.__new__(
-                                            StrategyDictInstance
-                                          )
-        return StrategyDictInstance._singleton
+        return MultiKeyDict.__new__(StrategyDictInstance)
 
       def __init__(self, name=name):
         self.__name__ = name
         super(StrategyDict, self).__init__()
 
-      @classmethod
-      def _doc(cls):
-        self = cls._singleton
-        doc = [cls.__docbase__.format(self.__name__, len(self))]
+      @property
+      def __doc__(self):
+        docbase = "This is a StrategyDict instance object called\n" \
+                  "``{0}``. Strategies stored: {1}.\n"
+        doc = [docbase.format(self.__name__, len(self))]
 
         pairs = sorted(self.iteritems())
         if self.default not in self.itervalues():
           pairs = it.chain(pairs, [(tuple(), self.default)])
 
         for key_tuple, value in pairs:
-
           # First find the part of the docstring related to the keys
-          sinit = "\nStrategy "
-          snext = "\n" + " " * (len(sinit) - 1) # -1 due to the "\n"
-          strategies = ["``{0}.{1}``".format(self.__name__, name)
+          strategies = ["{0}.{1}".format(self.__name__, name)
                         for name in key_tuple]
           if len(strategies) == 0:
-            strategies = ["\nDefault unnamed strategy"]
+            doc.extend("\nDefault unnamed strategy")
           else:
             if value == self.default:
-              strategies[0] += " (*Default*)"
-            strategies = [sinit + strategies[0]] \
-                       + [snext + st for st in strategies[1:]]
-          doc.extend(strategies)
-          doc[-1] += ":"
+              strategies[0] += " (Default)"
+            doc.extend(["\n**Strategy ", strategies[0], "**.\n"]),
+            if len(strategies) == 2:
+              doc.extend(["An alias for it is ``", strategies[1], "``.\n"])
+            elif len(strategies) > 2:
+              doc.extend(["Aliases available are ``",
+                          "``, ``".join(strategies[1:]), "``.\n"])
 
           # Get first description paragraph as the docstring related to value
+          doc.append("Docstring starts with:\n")
           split_descr = value.__doc__.strip().splitlines() if value.__doc__ \
                         else ["* * * * ...no docstring... * * * *"]
           cut_idx = len(split_descr)
@@ -321,6 +313,17 @@ class StrategyDict(MultiKeyDict):
           doc.append("\n  " + description)
           doc.append("\n")
 
+        doc.append("\nNote"
+                   "\n----\n"
+                   "StrategyDict instances like this one have lazy\n"
+                   "self-generated docstrings. If you change something in\n"
+                   "the dict, the next docstrings will follow the change.\n"
+                   "Calling this instance directly will have the same\n"
+                   "effect as calling the default strategy.\n"
+                   "You can see the full strategies docstrings for more\n"
+                   "details, as well as the StrategyDict class\n"
+                   "documentation.\n"
+                  )
         return "".join(doc)
 
     return StrategyDictInstance(name)

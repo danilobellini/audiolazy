@@ -44,15 +44,20 @@ LATEX_PI_SYMBOL = r"$\pi$"
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
   """
-  Generator that gets -size- elements from -seq-, and outputs them in a
+  Generator that gets ``size`` elements from ``seq``, and outputs them in a
   collections.deque (mutable circular queue) sequence container. Next output
-  starts -hop- elements after the first element in last output block. Last
-  block may be appended with -padval-, if needed to get the desired size.\n
-  Note: when the hop is less than size, changing the returned contents
-        will keep the new changed value in the next yielded container.
-  Seq can have hybrid / hetherogeneous data, it just need to be an iterable.
-  You can use other type content as padval (e.g. None) to help segregate the
-  padding at the end, if desired.\n
+  starts ``hop`` elements after the first element in last output block. Last
+  block may be appended with ``padval``, if needed to get the desired size.
+
+  The ``seq`` can have hybrid / hetherogeneous data, it just need to be an
+  iterable. You can use other type content as padval (e.g. None) to help
+  segregate the padding at the end, if desired.
+
+  Note
+  ----
+  When hop is less than size, changing the returned contents will keep the
+  new changed value in the next yielded container.
+
   """
   # Initialization
   res = deque(maxlen=size) # Circular queue
@@ -98,18 +103,26 @@ def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
   """
   Chunk generator to write any iterable directly in a file.
   The dfmt should be one char, chosen from the ones in link:
-    http://docs.python.org/library/struct.html#format-characters
+
+    `<http://docs.python.org/library/struct.html#format-characters>`_
+
   Useful examples (integer are signed, use upper case for unsigned ones):
-    "b" for 8 bits (1 byte) integer
-    "h" for 16 bits (2 bytes) integer
-    "i" for 32 bits (4 bytes) integer
-    "f" for 32 bits (4 bytes) float (default)
-    "d" for 64 bits (8 bytes) float (double)
+
+  - "b" for 8 bits (1 byte) integer
+  - "h" for 16 bits (2 bytes) integer
+  - "i" for 32 bits (4 bytes) integer
+  - "f" for 32 bits (4 bytes) float (default)
+  - "d" for 64 bits (8 bytes) float (double)
+
   Byte order follows native system defaults. Other options are in the site:
-    http://docs.python.org/library/struct.html#struct-alignment
+
+    `<http://docs.python.org/library/struct.html#struct-alignment>`_
+
   They are:
-    "<" means little-endian
-    ">" means big-endian
+
+  - "<" means little-endian
+  - ">" means big-endian
+
   """
   dfmt = str(size) + dfmt
   if byte_order is None:
@@ -128,7 +141,11 @@ def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
   an audiolazy.chunks(...) clone using array.array (random access by
   indexing management) instead of struct.Struct and blocks/deque (circular
   queue appending). Try before to find the faster one for your machine.
-  Be careful: dfmt symbols for arrays might differ from structs' defaults.
+
+  Note
+  ----
+  The ``dfmt`` symbols for arrays might differ from structs' defaults.
+
   """
   counter = range(size)
   chunk = array.array(dfmt, counter)
@@ -185,6 +202,7 @@ def elementwise(name="", pos=None):
   "pos" (input as a positional argument). Without a name, only the
   positional argument will be used. Without both name and position, the
   first positional argument will be used.
+
   """
   if (name == "") and (pos is None):
     pos = 0
@@ -194,6 +212,7 @@ def elementwise(name="", pos=None):
     output be applied directly on iterables. When made to work with more
     than 1 input, all "secondary" parameters will the same in all
     function calls (i.e., they will not even be a copy).
+
     """
     @wraps(func)
     def wrapper(*args, **kwargs):
@@ -245,10 +264,17 @@ def elementwise(name="", pos=None):
 def almost_eq_diff(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
   """
   Alternative to "a == b" for float numbers and iterables with float numbers.
-  See almost_eq for more information. This version based on the non-normalized
-  absolute diff, similar to what unittest does.
-  If a and b sizes differ, at least one will be padded with the pad input
-  value to keep going with the comparison. Be careful with endless generators!
+  See almost_eq for more information.
+
+  This version based on the non-normalized absolute diff, similar to what
+  unittest does with its assertAlmostEquals. If a and b sizes differ, at least
+  one will be padded with the pad input value to keep going with the
+  comparison.
+
+  Note
+  ----
+  Be careful with endless generators!
+
   """
   if not (ignore_type or type(a) == type(b)):
     return False
@@ -291,6 +317,11 @@ def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
 
 
 def multiplication_formatter(power, value, symbol):
+  """
+  Formats a number ``value * symbol ** power`` as a string, where symbol is
+  already a string and both other inputs are numbers.
+
+  """
   if isinstance(value, float):
     if value.is_integer():
       value = int(value) # Hides ".0" when possible
@@ -307,7 +338,9 @@ def multiplication_formatter(power, value, symbol):
 
 def pair_strings_sum_formatter(a, b):
   """
-  Formats the sum of a and b, where both are already strings.
+  Formats the sum of a and b, where both are numbers already converted
+  to strings.
+
   """
   if b[:1] == "-":
     return "{0} - {1}".format(a, b[1:])
@@ -470,9 +503,22 @@ def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
 
 def sHz(rate):
   """
-  Creates a tuple (s, Hz), where "s" is the second unit and "Hz" is the hertz
-  unit. Useful for casting to/from the default package units (number of
-  samples and rad per second). You can use 440*Hz to tell a frequency value,
-  or assign kHz = 1e3 * Hz to use other unit, as you wish.
+  Unit conversion constants.
+
+  Useful for casting to/from the default package units (number of samples for
+  time and rad/second for frequency). You can use expressions like
+  ``440 * Hz`` to get a frequency value, or assign like ``kHz = 1e3 * Hz`` to
+  get other unit, as you wish.
+
+  Parameters
+  ----------
+  rate :
+    Sample rate in samples per second
+
+  Results
+  -------
+  A tuple ``(s, Hz)``, where ``s`` is the second unit and ``Hz`` is the hertz
+  unit, as the number of samples and radians per sample, respectively.
+
   """
   return float(rate), 2 * pi / rate
