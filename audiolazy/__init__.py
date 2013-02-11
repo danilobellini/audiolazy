@@ -44,16 +44,16 @@ package contents:
   >>> delay_a4 = freq_to_lag(440 * Hz)
   >>> filt = ParallelFilter(comb.tau(delay_a4, 20 * s),
   ...                       resonator(440 * Hz, bandwidth=100 * Hz)
-  ...                       )
+  ...                      )
   >>> len(filt)
   2
 
 There's documentation inside the package classes and functions docstrings.
-If you try ``dir(audiolazy)`` or ``dir(lz)`` after importing it with the
-suggested alias, you'll see all the package contents, and the names starting
-with ``lazy`` and an underscore are modules. If you're starting now, try to
-see the docstring from the Stream and ZFilter classes with the
-``help(lz.Stream)`` and ``help(lz.ZFilter) commands, and then the help from
+If you try ``dir(audiolazy)`` [or ``dir(lz)``] after importing it [with the
+suggested alias], you'll see all the package contents, and the names starting
+with ``lazy`` followed by an underscore are modules. If you're starting now,
+try to see the docstring from the Stream and ZFilter classes with the
+``help(lz.Stream)`` and ``help(lz.ZFilter)`` commands, and then the help from
 the other functionalities used above. If you didn't know the ``dir`` and
 ``help`` built-ins before reading this, it's strongly suggested you to read
 first a Python documentation or tutorial, at least enough for you to
@@ -65,21 +65,37 @@ under the terms of the GPLv3.
 
 """
 
-from .lazy_misc import *
-from .lazy_core import *
-from .lazy_math import *
-from .lazy_stream import *
-from .lazy_itertools import *
-from .lazy_poly import *
-from .lazy_filters import *
-from .lazy_io import *
-from .lazy_synth import *
-from .lazy_midi import *
-from .lazy_auditory import *
-from .lazy_analysis import *
-from .lazy_lpc import *
+import os
+import sys
 
+# Find all module names
+if "__path__" not in locals(): # Happens with Sphinx
+  __path__ = os.path.split(__file__)[0]
+__modules_prefix__ = "lazy_"
+__modules__ = sorted({_mname.split(".")[0]
+                      for _mname in os.listdir(__path__[0])
+                      if _mname.startswith(__modules_prefix__)
+                     })
+
+# Imports all modules to the main namespace
+__all__ = []
+for _mname in __modules__:
+  exec "from .{0} import *".format(_mname)
+  __all__ += sys.modules[
+               ".".join([__name__, _mname])
+             ].__all__ # With that, __all__ don't include the module names
+
+# Remove references just for namespace clean-up
+if "_mname" in locals(): # Not all interpreters keep the for loop variable
+  del _mname
+del os
+del sys
+
+#
+# <SETUP.PY> #
 # Metadata (see setup.py for more information about these)
+# This section should not reference anything from before!
+#
 __version__ = "0.04dev"
 __author__ = "Danilo de Jesus da Silva Bellini"
 __author_email__  = "danilo [dot] bellini [at] gmail [dot] com"

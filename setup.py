@@ -30,12 +30,12 @@ pkgname = "audiolazy"
 metadata_file = "__init__.py"
 
 # Get metadata from the package file without actually importing it
-metadata = {}
 with open(os.path.join(path, pkgname, metadata_file), "r") as f:
-  for line in f:
-    if line.startswith("__"):
-      assignment = [side.strip() for side in line.split("=")]
-      metadata[assignment[0].strip("_")] = eval(assignment[1])
+  package_metadata_src = f.read()
+ns = {}
+exec package_metadata_src.split("# <SETUP.PY> #", 1)[1] in ns
+metadata = {k.strip("_"): v for k, v in ns.iteritems()
+                            if k != "__builtins__"}
 
 # Description is all from README.rst, but the ending copyright message
 with open(os.path.join(path, "README.rst"), "r") as fr:
