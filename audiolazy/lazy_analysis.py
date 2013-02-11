@@ -159,7 +159,7 @@ def acorr(blk, max_lag=None):
     objects!
   max_lag :
     The size of the result, the lags you'd need. Defaults to ``len(blk) - 1``,
-    since any lag beyond would be zero.
+    since any lag beyond would result in zero.
 
   Returns
   -------

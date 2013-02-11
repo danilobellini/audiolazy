@@ -34,7 +34,7 @@ __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
            "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
-           "pi_formatter", "auto_formatter", "sHz"]
+           "pi_formatter", "auto_formatter", "rst_table", "sHz"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -499,6 +499,40 @@ def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
     if sizes[char] <= max_size:
       return str_data[char]
   return str_data["f"]
+
+
+def rst_table(data, schema=None):
+  """
+  Creates a reStructuredText simple table (list of strings) from a list of
+  lists.
+  """
+  # Process multi-rows (replaced by rows with empty columns when needed)
+  pdata = []
+  for row in data:
+    prow = [el if isinstance(el, list) else [el] for el in row]
+    pdata.extend(pr for pr in it.izip_longest(*prow, fillvalue=""))
+
+  # Find the columns sizes
+  sizes = [max(len("{0}".format(el)) for el in column)
+           for column in it.izip(*pdata)]
+  sizes[-1] = 1
+  sizes = [max(size, len(sch)) for size, sch in it.izip(sizes, schema)]
+
+  # Creates the title and border rows
+  if schema is None:
+    schema = pdata[0]
+    pdata = pdata[1:]
+  border = " ".join("=" * size for size in sizes)
+  titles = " ".join("{1:^{0}}".format(*pair)
+                    for pair in it.izip(sizes, schema))
+
+  # Creates the full table and returns
+  rows = [border, titles, border]
+  rows.extend(" ".join("{1:<{0}}".format(*pair)
+                       for pair in it.izip(sizes, row))
+              for row in pdata)
+  rows.append(border)
+  return rows
 
 
 def sHz(rate):

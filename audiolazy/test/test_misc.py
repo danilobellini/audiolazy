@@ -27,7 +27,8 @@ import struct
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import (chunks, array_chunks, elementwise, almost_eq)
+from ..lazy_misc import (chunks, array_chunks, elementwise, almost_eq,
+                         rst_table)
 
 
 class TestChunks(object):
@@ -73,3 +74,24 @@ class TestElementwise(object):
     assert type(fg) == type(gen)
     assert list(fx) == range(0,42*2,2)
     assert list(fg) == list(gen)
+
+
+class TestRSTTable(object):
+
+  simple_input = [
+    [1, 2, 3, "hybrid"],
+    [3, "mixed", .5, 123123]
+  ]
+
+  def test_simple_input_table(self):
+    assert rst_table(
+             self.simple_input,
+             "this is_ a test".split()
+           ) == [
+             "==== ===== === ====",
+             "this  is_   a  test",
+             "==== ===== === ====",
+             "1    2     3   hybrid",
+             "3    mixed 0.5 123123",
+             "==== ===== === ====",
+           ]

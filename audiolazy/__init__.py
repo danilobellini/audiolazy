@@ -70,7 +70,7 @@ import sys
 
 # Find all module names
 if "__path__" not in locals(): # Happens with Sphinx
-  __path__ = os.path.split(__file__)[0]
+  __path__ = os.path.split(__file__)[:1]
 __modules_prefix__ = "lazy_"
 __modules__ = sorted({_mname.split(".")[0]
                       for _mname in os.listdir(__path__[0])
@@ -78,18 +78,37 @@ __modules__ = sorted({_mname.split(".")[0]
                      })
 
 # Imports all modules to the main namespace
+_mdocs_pairs = []
+_pkg_name = os.path.split(__path__[0])[1]
 __all__ = []
 for _mname in __modules__:
   exec "from .{0} import *".format(_mname)
-  __all__ += sys.modules[
-               ".".join([__name__, _mname])
-             ].__all__ # With that, __all__ don't include the module names
+  _mref = sys.modules[".".join([_pkg_name, _mname])] # The module, actually
+  __all__ += _mref.__all__ # __all__ don't include module names
+
+  # Creates a table with the docstring data from each module
+  _mdoc = [_row.strip() for _row in _mref.__doc__
+                                         .split("\n\n")[0] # First paragraph
+                                         .strip() # No empty lines
+                                         .splitlines() # As a list of strings
+          ]
+  _mdocs_pairs.append((_mname, _mdoc))
+
+# Edits the package docstring (with audiolazy.lazy_misc.rst_table)
+__doc__ += "\n".join(rst_table(_mdocs_pairs, ("Module", "Description")))
 
 # Remove references just for namespace clean-up
 if "_mname" in locals(): # Not all interpreters keep the for loop variable
   del _mname
+del _mdocs_pairs
+del _pkg_name
+del _mref # At least one module should exist, so this should have existed
+del _mdoc
+if "_row" in locals():
+  del _row
 del os
 del sys
+
 
 #
 # <SETUP.PY> #

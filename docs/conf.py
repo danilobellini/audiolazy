@@ -104,11 +104,10 @@ def audiolazy_namer(name):
       module_name = data.__module__
       if not module_name.startswith("audiolazy"): # Decorated math, cmath, ...
         del module_name
-        for mname in dir(audiolazy):
-          if mname.startswith("lazy_"): # A module
-            if sp_name[0] in getattr(audiolazy, mname).__all__:
-              module_name = "audiolazy." + mname
-              break
+        for mname in audiolazy.__modules__:
+          if sp_name[0] in getattr(audiolazy, mname).__all__:
+            module_name = "audiolazy." + mname
+            break
 
     # Now gets the referenced item
     location = ".".join([module_name] + sp_name)
