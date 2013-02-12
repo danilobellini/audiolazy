@@ -45,6 +45,8 @@ LATEX_PI_SYMBOL = r"$\pi$"
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
   """
+  General iterable blockenizer.
+
   Generator that gets ``size`` elements from ``seq``, and outputs them in a
   collections.deque (mutable circular queue) sequence container. Next output
   starts ``hop`` elements after the first element in last output block. Last
@@ -102,7 +104,9 @@ def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
 def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
            padval=0.):
   """
-  Chunk generator to write any iterable directly in a file.
+  Chunk generator, or a blockenizer for homogeneous data, to help writing an
+  iterable into a file. This implementation is based on the struct module.
+
   The dfmt should be one char, chosen from the ones in link:
 
     `<http://docs.python.org/library/struct.html#format-characters>`_
@@ -138,6 +142,8 @@ def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
 def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
                  padval=0.):
   """
+  Chunk generator based on the array module (Python standard library).
+
   Generator: Another Repetitive Replacement Again Yielding chunks, this is
   an audiolazy.chunks(...) clone using array.array (random access by
   indexing management) instead of struct.Struct and blocks/deque (circular
@@ -198,7 +204,9 @@ def zero_pad(seq, left=0, right=0, zero=0.):
 
 def elementwise(name="", pos=None):
   """
-  Creates an elementwise decorator for one input parameter. To create such,
+  Function auto-map decorator broadcaster.
+
+  Creates an "elementwise" decorator for one input parameter. To create such,
   it should know the name (for use as a keyword argument and the position
   "pos" (input as a positional argument). Without a name, only the
   positional argument will be used. Without both name and position, the
@@ -264,6 +272,8 @@ def elementwise(name="", pos=None):
 
 def almost_eq_diff(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
   """
+  Almost equal, based on the :math:`|a - b|` value.
+
   Alternative to "a == b" for float numbers and iterables with float numbers.
   See almost_eq for more information.
 
@@ -291,6 +301,8 @@ def almost_eq_diff(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
 
 def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
   """
+  Almost equal, based on the amount of floating point significand bits.
+
   Alternative to "a == b" for float numbers and iterables with float numbers,
   and tests for sequence contents (i.e., an elementwise a == b, that also
   works with generators, nested lists, nested generators, etc.). If the type
@@ -428,6 +440,8 @@ def rational_formatter(value, symbol_str="", symbol_value=1, after=False,
 
 def pi_formatter(value, after=False, max_denominator=1000000):
   """
+  String formatter for fractions of :math:`\pi`.
+
   Alike the rational_formatter, but fixed to the symbol string
   LATEX_PI_SYMBOL and symbol value ``pi``, for direct use with MatPlotLib
   labels.
@@ -446,6 +460,9 @@ def pi_formatter(value, after=False, max_denominator=1000000):
 def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
                    after=False, max_denominator=1000000):
   """
+  Automatic string formatter for integer fractions, fractions of :math:`\pi`
+  and float numbers with small number of digits.
+
   Chooses between pi_formatter, rational_formatter without a symbol and
   a float representation by counting each digit, the "pi" symbol and the
   slash as one char each, trying in the given ``order`` until one gets at

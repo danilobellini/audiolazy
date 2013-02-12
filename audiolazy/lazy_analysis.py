@@ -216,10 +216,12 @@ def lag_matrix(blk, max_lag=None):
           ] for j in xrange(max_lag + 1)]
 
 
-def dft(blk, freqs):
+def dft(blk, freqs, normalize=True):
   """
-  Finds the complex DFT values for the given frequency list, in order, over
-  the data block as periodic.
+  Complex non-optimized Discrete Fourier Transform
+
+  Finds the DFT for values in a given frequency list, in order, over the data
+  block seen as periodic.
 
   Parameters
   ----------
@@ -229,23 +231,33 @@ def dft(blk, freqs):
   freqs :
     List of frequencies to find the DFT, in rad/sample. FFT implementations
     like numpy.fft.ftt finds the coefficients for N frequencies equally
-    spaced as ``line(N, 0, 2 * pi, finish=True)`` for N frequencies.
+    spaced as ``line(N, 0, 2 * pi, finish=False)`` for N frequencies.
+  normalize :
+    If True (default), the coefficient sums are divided by ``len(blk)``,
+    and the coefficient for the DC level (frequency equals to zero) is the
+    mean of the block. If False, that coefficient would be the sum of the
+    data in the block.
 
   Returns
   -------
   A list of DFT values for each frequency, in the same order that they appear
-  in the freqs input. The coefficient sums are divided by ``len(blk)``.
+  in the freqs input.
 
   Note
   ----
-  This isn't a FFT implementation. This function can find the DFT for any
-  specific frequency, with no need for zero padding or finding all frequencies
-  in a linearly spaced band grid with N frequency bins at once.
+  This isn't a FFT implementation, and performs :math:`O(M . N)` float
+  pointing operations, with :math:`M` and :math:`N` equals to the length of
+  the inputs. This function can find the DFT for any specific frequency, with
+  no need for zero padding or finding all frequencies in a linearly spaced
+  band grid with N frequency bins at once.
 
   """
-  lblk = len(blk)
-  return [sum(xn * cexp(-1j * n * f) for n, xn in enumerate(blk)) / lblk
-          for f in freqs]
+  dft_data = (sum(xn * cexp(-1j * n * f) for n, xn in enumerate(blk))
+                                         for f in freqs)
+  if normalize:
+    lblk = len(blk)
+    return map(lambda v: v / lblk, dft_data)
+  return list(dft_data)
 
 
 @tostream
@@ -510,29 +522,44 @@ def clip(sig, low=-1., high=1.):
 
 
 @tostream
-def unwrap(data, max_delta=pi, change=2*pi):
+def unwrap(sig, max_delta=pi, step=2*pi):
   """
-  Unwraps data, minimizing the step difference when any adjacency step in
-  ``data`` is higher than ``max_delta`` by summing/subtracting ``change``.
+  Parametrized signal unwrapping.
+
+  Parameters
+  ----------
+  sig :
+    An iterable seen as an input signal.
+  max_delta :
+    Maximum value of :math:`\Delta = sig_i - sig_{i-1}` to keep output
+    without another minimizing step change. Defaults to :math:`\pi`.
+  step :
+    The change in order to minimize the delta is an integer multiple of this
+    value. Defaults to :math:`2 . \pi`.
+
+  Returns
+  -------
+  The signal unwrapped as a Stream, minimizing the step difference when any
+  adjacency step in the input signal is higher than ``max_delta`` by
+  summing/subtracting ``step``.
 
   """
-  idata = iter(data)
+  idata = iter(sig)
   d0 = idata.next()
   yield d0
   delta = d0 - d0 # Get the zero (e.g., integer, float) from data
   for d1 in idata:
     d_diff = d1 - d0
     if abs(d_diff) > max_delta:
-      delta += - d_diff + min((d_diff) % change,
-                              (d_diff) % -change, key=lambda x: abs(x))
+      delta += - d_diff + min((d_diff) % step,
+                              (d_diff) % -step, key=lambda x: abs(x))
     yield d1 + delta
     d0 = d1
 
 
 def freq_to_lag(x):
   """
-  Frequency to lag and lag to frequency converter. Frequency should be in
-  rad/sample and lag should be in number of samples.
+  Converts between frequency (rad/sample) and lag (number of samples).
 
   """
   return 2 * pi / x
@@ -542,8 +569,8 @@ lag_to_freq = freq_to_lag
 
 def amdf(lag, size):
   """
-  Average Magnitude Difference Function as a non-linear filter for a given
-  signal and a fixed lag.
+  Average Magnitude Difference Function non-linear filter for a given
+  size and a fixed lag.
 
   Parameters
   ----------

@@ -49,6 +49,7 @@ __all__ = ["AudioIO", "AudioThread"]
 class AudioIO(object):
   """
   Multi-thread stream manager wrapper for PyAudio.
+
   """
 
   def __init__(self, wait=False):
@@ -181,9 +182,12 @@ class AudioIO(object):
 
 class AudioThread(threading.Thread):
   """
+  Audio output thread.
+
   This class is a wrapper to ease the use of PyAudio using iterables of
-  numbers (lists, tuples, NumPy 1D arrays or, better, generators) as audio
-  data streams.
+  numbers (Stream instances, lists, tuples, NumPy 1D arrays, generators) as
+  audio data streams.
+
   """
   def __init__(self, device_manager, audio,
                      chunk_size = DEFAULT_CHUNK_SIZE,

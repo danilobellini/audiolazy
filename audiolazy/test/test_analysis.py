@@ -124,8 +124,8 @@ class TestUnwrap(object):
     ([0, 10, -10, 20, -20, 30, -30, 40, -40, 50], [0] * 10),
     ([-55, -49, -40, -38, -29, -17, -25], [-55, -49, -50, -48, -49, -47, -55]),
   ])
-  def test_max_delta_8_change_10(self, data, out_data):
-    assert list(unwrap(data, max_delta=8, change=10)) == out_data
+  def test_max_delta_8_step_10(self, data, out_data):
+    assert list(unwrap(data, max_delta=8, step=10)) == out_data
 
 
 class TestAMDF(object):

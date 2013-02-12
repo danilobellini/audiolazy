@@ -864,6 +864,7 @@ class FilterList(list, LinearFilterProperties):
   """
   Class from which CascadeFilter and ParallelFilter inherits the common part
   of their contents. You probably won't need to use this directly.
+
   """
   __metaclass__ = FilterListMeta
 
@@ -927,6 +928,9 @@ class FilterList(list, LinearFilterProperties):
 class CascadeFilter(FilterList):
   """
   Filter cascade as a list of filters.
+
+  Note
+  ----
   A filter is any callable that receives an iterable as input and returns a
   Stream.
 
@@ -977,9 +981,14 @@ class CascadeFilter(FilterList):
 @avoid_stream
 class ParallelFilter(FilterList):
   """
-  List of filters that behaves as a filter, returning the sum of all signals
-  that results from applying the the same given input into all filters.
-  Besides the name, the data processing done isn't parallel.
+  Filters in parallel as a list of filters.
+
+  This list of filters that behaves as a filter, returning the sum of all
+  signals that results from applying the the same given input into all
+  filters. Besides the name, the data processing done isn't parallel.
+
+  Note
+  ----
   A filter is any callable that receives an iterable as input and returns a
   Stream.
 

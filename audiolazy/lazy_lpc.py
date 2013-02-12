@@ -53,7 +53,9 @@ def toeplitz(vect):
 
 def levinson_durbin(acdata, order=None):
   """
-  Solve the Yule-Walker linear system of equations:
+  Solve the Yule-Walker linear system of equations.
+
+  They're given by:
 
   .. math::
 

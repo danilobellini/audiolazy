@@ -148,7 +148,14 @@ def pre_processor(app, what, name, obj, options, lines,
   if what == "module": # For some reason, summary appears twice
     idxs = [idx for idx, el in enumerate(lines) if el.startswith("Summary")]
     if len(idxs) >= 2:
-      del lines[idxs[-1]:] # Remove the last summary
+      del lines[idxs.pop():] # Remove the last summary
+    if len(idxs) >= 1:
+      lines.insert(idxs[-1] + 1, "")
+      if obj == audiolazy.lazy_math:
+        lines.insert(idxs[-1] + 1, ".. tabularcolumns:: cl")
+      else:
+        lines.insert(idxs[-1] + 1, ".. tabularcolumns:: CJ")
+      lines.insert(idxs[-1] + 1, "")
 
   # Real docstring format pre-processing
   result = []
@@ -327,7 +334,7 @@ htmlhelp_basename = project + "doc"
 latex_elements = {
   "papersize": "a4paper",
   "pointsize": "10pt", # Font size
-  "preamble": "",
+  "preamble": r"  \setlength{\tymax}{330pt}",
 }
 
 latex_documents = [(

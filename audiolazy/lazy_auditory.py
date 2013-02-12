@@ -102,7 +102,7 @@ def erb(freq, Hz=None):
 def gammatone_erb_constants(n):
   """
   Constants for using the real bandwidth in the gammatone filter, given its
-  order. Returns a pair ``(x, y) = (1/a_n, c_n)``.
+  order. Returns a pair :math:`(x, y) = (1/a_n, c_n)`.
 
   Based on equations from:
 
