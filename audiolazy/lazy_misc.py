@@ -30,11 +30,12 @@ import sys
 from math import pi
 from fractions import Fraction
 
+
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
            "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
-           "pi_formatter", "auto_formatter", "rst_table", "sHz"]
+           "pi_formatter", "auto_formatter", "rst_table", "small_doc", "sHz"]
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
@@ -515,7 +516,6 @@ def rst_table(data, schema=None):
   # Find the columns sizes
   sizes = [max(len("{0}".format(el)) for el in column)
            for column in it.izip(*pdata)]
-  sizes[-1] = 1
   sizes = [max(size, len(sch)) for size, sch in it.izip(sizes, schema)]
 
   # Creates the title and border rows
@@ -533,6 +533,67 @@ def rst_table(data, schema=None):
               for row in pdata)
   rows.append(border)
   return rows
+
+
+def small_doc(obj, indent="", max_width=80):
+  """
+  Finds a useful small doc representation of an object.
+
+  Parameters
+  ----------
+  obj :
+    Any object, which the documentation representation should be taken from.
+  indent :
+    Result indentation string to be insert in front of all lines.
+  max_width :
+    Each line of the result may have at most this length.
+
+  Returns
+  -------
+  For classes, modules, functions, methods, properties and StrategyDict
+  instances, returns the first paragraph in the doctring of the given object,
+  as a list of strings, stripped at right and with indent at left.
+  For other inputs, it will use themselves cast to string as their docstring.
+
+  """
+  # Not something that normally have a docstring
+  from .lazy_core import StrategyDict
+  if not isinstance(obj, (StrategyDict, types.FunctionType, types.MethodType,
+                          types.ModuleType, type, property)):
+    data = [el.strip() for el in str(obj).splitlines()]
+    if len(data) == 1:
+      if data[0].startswith("<audiolazy.lazy_"): # Instance
+        data = data[0].split("0x", -1)[0] + "0x...>" # Hide its address
+      else:
+        data = "".join(["``", data[0], "``"])
+    else:
+      data == " ".join(data)
+
+  # No docstring
+  elif (not obj.__doc__) or (obj.__doc__.strip() == ""):
+    data = "\ * * * * ...no docstring... * * * * \ "
+
+  # Docstring
+  else:
+    data = (el.strip() for el in obj.__doc__.strip().splitlines())
+    data = " ".join(it.takewhile(lambda el: el != "", data))
+
+  # Ensure max_width (word wrap)
+  max_width -= len(indent)
+  result = []
+  for word in data.split():
+    if len(word) <= max_width:
+      if result:
+        if len(result[-1]) + len(word) + 1 <= max_width:
+          word = " ".join([result.pop(), word])
+        result.append(word)
+      else:
+        result = [word]
+    else: # Splits big words
+      result.extend("".join(w) for w in blocks(word, max_width, padval=""))
+
+  # Apply indentation and finishes
+  return [indent + el for el in result]
 
 
 def sHz(rate):

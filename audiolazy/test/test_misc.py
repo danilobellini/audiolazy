@@ -88,10 +88,10 @@ class TestRSTTable(object):
              self.simple_input,
              "this is_ a test".split()
            ) == [
-             "==== ===== === ====",
-             "this  is_   a  test",
-             "==== ===== === ====",
+             "==== ===== === ======",
+             "this  is_   a   test ",
+             "==== ===== === ======",
              "1    2     3   hybrid",
              "3    mixed 0.5 123123",
-             "==== ===== === ====",
+             "==== ===== === ======",
            ]

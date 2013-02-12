@@ -25,6 +25,9 @@ from collections import defaultdict
 from abc import ABCMeta, abstractproperty
 import itertools as it
 
+# Audiolazy internal imports
+from .lazy_misc import small_doc
+
 __all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict", "StrategyDict"]
 
 
@@ -301,16 +304,7 @@ class StrategyDict(MultiKeyDict):
 
           # Get first description paragraph as the docstring related to value
           doc.append("Docstring starts with:\n")
-          split_descr = value.__doc__.strip().splitlines() if value.__doc__ \
-                        else ["* * * * ...no docstring... * * * *"]
-          cut_idx = len(split_descr)
-          for idx, el in enumerate(split_descr):
-            if el.strip() == "":
-              cut_idx = idx
-              break
-          description = " ".join(line.strip()
-                                 for line in split_descr[:cut_idx]).strip()
-          doc.append("\n  " + description)
+          doc.extend(small_doc(value, indent="\n  "))
           doc.append("\n")
 
         doc.append("\nNote"

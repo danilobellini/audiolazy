@@ -144,6 +144,13 @@ def pre_processor(app, what, name, obj, options, lines,
   ``.. seealso::``).
 
   """
+  # Duplication removal
+  if what == "module": # For some reason, summary appears twice
+    idxs = [idx for idx, el in enumerate(lines) if el.startswith("Summary")]
+    if len(idxs) >= 2:
+      del lines[idxs[-1]:] # Remove the last summary
+
+  # Real docstring format pre-processing
   result = []
   for name, blk in splitter(lines).iteritems():
     nlower =  name.lower()

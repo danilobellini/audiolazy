@@ -27,7 +27,8 @@ AudioLazy changes history
 
 + general:
 
-  - Sphinx documentation
+  - Sphinx documentation!
+  - Self-generated package and module summary at the docstring
   - Integration with NumPy (tested on 1.5.0, 1.6.1 and 1.6.2) and MatPlotLib
     (tested on 1.0.1 and 1.2.0)
   - More docstrings and doctests
