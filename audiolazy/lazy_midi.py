@@ -24,6 +24,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from .lazy_misc import elementwise
+from .lazy_math import log2
 
 __all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "midi2freq", "str2midi",
            "str2freq"]
@@ -56,3 +57,32 @@ def str2midi(note_string):
 
 def str2freq(note_string):
   return midi2freq(str2midi(note_string))
+
+
+@elementwise("freq", 0)
+def freq2midi(freq):
+  return 12 * (log2(freq) - log2(FREQ_A4)) + MIDI_A4
+
+
+@elementwise("midi_number", 0)
+def midi2str(midi_number, sharp=True):
+  num = midi_number - (MIDI_A4 - 4 * 12 - 9)
+  note = (num + .5) % 12 - .5
+  rnote = int(round(note))
+  error = note - rnote
+  octave = str(int(num // 12))
+  if sharp:
+    names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+  else:
+    names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
+  names = names[rnote] + octave
+  if error < 1e-4:
+    return names
+  else:
+    err_sig = "+" if error > 0 else "-"
+    err_str = err_sig + str(round(100 * abs(error), 2)) + "%"
+    return names + err_str
+
+
+def freq2str(freq):
+  return midi2str(freq2midi(freq))

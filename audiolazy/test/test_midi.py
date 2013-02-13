@@ -24,7 +24,8 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_midi import MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq, str2midi
+from ..lazy_midi import (MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq,
+                         str2midi, freq2midi, midi2str)
 from ..lazy_misc import almost_eq
 
 
@@ -52,6 +53,12 @@ class TestMIDI2Freq(object):
     assert almost_eq(midi2freq(data_type(notes)), data_type(freqs))
 
 
+class TestFreq2MIDI(object):
+  @p(("note", "freq"), TestMIDI2Freq.table)
+  def test_single_note(self, note, freq):
+    assert almost_eq(freq2midi(freq), note)
+
+
 class TestStr2MIDI(object):
   table = [("A4", MIDI_A4),
            ("A5", MIDI_A4 + 12),
@@ -74,3 +81,9 @@ class TestStr2MIDI(object):
   def test_name_list_tuple(self, data_type):
     names, notes = zip(*self.table)
     assert str2midi(data_type(names)) == data_type(notes)
+
+
+class TestMIDI2Str(object):
+  @p(("name", "note"), TestStr2MIDI.table)
+  def test_single_name(self, name, note):
+    assert midi2str(note, sharp="#" in name) == name
