@@ -26,8 +26,8 @@ import itertools as it
 from .lazy_misc import elementwise
 from .lazy_math import log2
 
-__all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "midi2freq", "str2midi",
-           "str2freq"]
+__all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "str2freq",
+           "str2midi", "freq2str", "freq2midi", "midi2freq", "midi2str"]
 
 # Useful constants
 MIDI_A4 = 69   # MIDI Pitch number
@@ -37,12 +37,17 @@ SEMITONE_RATIO = 2.**(1./12.) # Ascending
 
 @elementwise("midi_number", 0)
 def midi2freq(midi_number):
-  """ Given a MIDI pitch number, returns its frequency in Hz. """
+  """
+  Given a MIDI pitch number, returns its frequency in Hz.
+  """
   return FREQ_A4 * 2 ** ((midi_number - MIDI_A4) * (1./12.))
 
 
 @elementwise("note_string", 0)
 def str2midi(note_string):
+  """
+  Given a note string name (e.g. "Bb4"), returns its MIDI pitch number.
+  """
   data = note_string.strip().lower()
   name2delta = {"c": -9, "d": -7, "e": -5, "f": -4, "g": -2, "a": 0, "b": 2}
   accident2delta = {"b": -1, "#": 1, "x": 2}
@@ -56,16 +61,25 @@ def str2midi(note_string):
 
 
 def str2freq(note_string):
+  """
+  Given a note string name (e.g. "F#2"), returns its frequency in Hz.
+  """
   return midi2freq(str2midi(note_string))
 
 
 @elementwise("freq", 0)
 def freq2midi(freq):
+  """
+  Given a frequency in Hz, returns its MIDI pitch number.
+  """
   return 12 * (log2(freq) - log2(FREQ_A4)) + MIDI_A4
 
 
 @elementwise("midi_number", 0)
 def midi2str(midi_number, sharp=True):
+  """
+  Given a MIDI pitch number, returns its note string name (e.g. "C3").
+  """
   num = midi_number - (MIDI_A4 - 4 * 12 - 9)
   note = (num + .5) % 12 - .5
   rnote = int(round(note))
@@ -85,4 +99,7 @@ def midi2str(midi_number, sharp=True):
 
 
 def freq2str(freq):
+  """
+  Given a frequency in Hz, returns its note string name (e.g. "D7").
+  """
   return midi2str(freq2midi(freq))

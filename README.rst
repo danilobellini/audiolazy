@@ -78,13 +78,13 @@ units, constants for converting these from "second" and "hertz" would help
 with the code expressivity. A comb filter ``comb.tau(delay=30*s, tau=40*s)``
 can represent a comb filter with the given delay and time constant, both in
 samples, but with a more clear meaning for the reader than it would have with
-a expression like ``[1] + [0] * 239999 + [alpha]`` or something like. Would
-it be needed to store all those zeros while just using the filter to get a
-frequency response plot?
+an expression like ``[1] + [0] * 239999 + [alpha]``. Would it be needed to
+store all those zeros while just using the filter to get a frequency response
+plot?
 
 It's possible to avoid some of these problems with well-chosen constants,
 duck typing, overloaded operators, functions as first-class citizens, object
-oriented together with functional style programming, etc.. These are resources
+oriented together with functional style programming, etc.., resources
 that the Python language gives us for free.
 
 What does it do?
@@ -97,8 +97,8 @@ AudioLazy is a package written in pure Python proposing digital audio signal
 processing (DSP), featuring:
 
 - A ``Stream`` class for finite and endless signals representation with
-  elementwise operators (auto-broadcast with non-Stream) in a common Python
-  iterable container accepting heterogeneous data;
+  elementwise operators (auto-broadcast with non-iterables) in a common
+  Python iterable container accepting heterogeneous data;
 - Strongly sample-based representation (Stream class) with easy conversion
   to block representation using the ``Stream.blocks(size, hop)`` method;
 - Sample-based interactive processing with ``ControlStream``;
@@ -113,9 +113,9 @@ processing (DSP), featuring:
   MatPlotLib;
 - Linear Predictive Coding (LPC) directly to ``ZFilter`` instances, from
   which you can find PARCOR coeffs and LSFs;
-- Both sample-based (Zero-cross rate, envelope, moving average, clipping,
-  unwrapping) and block-based (Window functions, DFT, autocorrelation, lag
-  matrix) analysis and processing tools;
+- Both sample-based (e.g., zero-cross rate, envelope, moving average,
+  clipping, unwrapping) and block-based (e.g., window functions, DFT,
+  autocorrelation, lag matrix) analysis and processing tools;
 - A simple synthesizer (Table lookup, Karplus-Strong) with processing tools
   (Linear ADSR envelope, fade in/out, fixed duration line stream) and basic
   wave data generation (sinusoid, white noise, impulse);
@@ -137,9 +137,16 @@ the usual Python installing mechanism::
 
   python setup.py install
 
-If you have pip, you can go directly::
+If you have pip, you can go directly (use ``-U`` for update or reinstall)::
 
   pip install audiolazy
+
+for downloading (from PyPI) and installing the package for you, or
+
+  pip install .
+
+To install from a path that has the ``setup.py`` file and the package data
+uncompressed previously.
 
 For the *bleeding-edge* version, you can install directly from the github
 repository (requires ``git`` for cloning)::

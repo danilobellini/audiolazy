@@ -31,10 +31,10 @@ AudioLazy changes history
   - Self-generated package and module summary at the docstring
   - Integration with NumPy (tested on 1.5.0, 1.6.1 and 1.6.2) and MatPlotLib
     (tested on 1.0.1 and 1.2.0)
-  - More docstrings and doctests
+  - More docstrings and doctests, besides lots of corrections
   - Itemized package description, installation instructions and getting
     started examples with plots in README.rst
-  - Now with 5400+ tests and 73% code coverage
+  - Now with 5400+ tests and 75% code coverage
 
 + lazy_analysis:
 

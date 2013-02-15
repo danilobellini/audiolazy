@@ -106,7 +106,7 @@ def gammatone_erb_constants(n):
 
   Based on equations from:
 
-    ``Holdsworth, J.; Patterson, R.; Nimmo-Smith I.; Rice, P. Implementing a
+    ``Holdsworth, J.; Patterson, R.; Nimmo-Smith, I.; Rice, P. Implementing a
     GammaTone Filter Bank. In: SVOS Final Report, Annex C, Part A: The
     Auditory Filter Bank. 1988.``
 
