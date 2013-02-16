@@ -113,6 +113,13 @@ AudioLazy changes history
 
   - New ``sign`` gets the sign of a given sequence.
 
++ lazy_midi:
+
+  - Completed converters between frequency (in hertz), string and MIDI pitch
+    numbers
+  - New ``octaves`` for finding all octaves in a frequency range given one
+    frequency
+
 + lazy_misc:
 
   - New ``rational_formatter``: casts floats to strings, perhaps with a symbol

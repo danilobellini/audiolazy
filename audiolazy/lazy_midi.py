@@ -27,7 +27,8 @@ from .lazy_misc import elementwise
 from .lazy_math import log2
 
 __all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "str2freq",
-           "str2midi", "freq2str", "freq2midi", "midi2freq", "midi2str"]
+           "str2midi", "freq2str", "freq2midi", "midi2freq", "midi2str",
+           "octaves"]
 
 # Useful constants
 MIDI_A4 = 69   # MIDI Pitch number
@@ -103,3 +104,58 @@ def freq2str(freq):
   Given a frequency in Hz, returns its note string name (e.g. "D7").
   """
   return midi2str(freq2midi(freq))
+
+
+def octaves(freq, fmin=20., fmax=2e4):
+  """
+  Given a frequency and a frequency range, returns all frequencies in that
+  range that is an integer number of octaves related to the given frequency.
+
+  Parameters
+  ----------
+  freq :
+    Frequency, in any (linear) unit.
+  fmin, fmax :
+    Frequency range, in the same unit of ``freq``. Defaults to 20.0 and
+    20,000.0, respectively.
+
+  Returns
+  -------
+  A list of frequencies, in the same unit of ``freq`` and in ascending order.
+
+  Examples
+  --------
+  >>> from audiolazy import octaves, sHz
+  >>> octaves(440.)
+  [27.5, 55.0, 110.0, 220.0, 440.0, 880.0, 1760.0, 3520.0, 7040.0, 14080.0]
+  >>> octaves(440., fmin=3000)
+  [3520.0, 7040.0, 14080.0]
+  >>> Hz = sHz(44100)[1] # Conversion unit from sample rate
+  >>> freqs = octaves(440 * Hz, fmin=300 * Hz, fmax = 1000 * Hz) # rad/sample
+  >>> len(freqs) # Number of octaves
+  2
+  >>> [round(f, 6) for f in freqs] # Values in rad/sample
+  [0.062689, 0.125379]
+  >>> [round(f / Hz, 6) for f in freqs] # Values in Hz
+  [440.0, 880.0]
+
+  """
+  # Input validation
+  if any(f <= 0 for f in (freq, fmin, fmax)):
+    raise ValueError("Frequencies have to be positive")
+
+  # If freq is out of range, avoid range extension
+  while freq < fmin:
+    freq *= 2
+  while freq > fmax:
+    freq /= 2
+  if freq < fmin: # Gone back and forth
+    return []
+
+  # Finds the range for a valid input
+  return list(it.takewhile(lambda x: x > fmin,
+                           (freq * 2 ** harm for harm in it.count(0, -1))
+                          ))[::-1] \
+       + list(it.takewhile(lambda x: x < fmax,
+                           (freq * 2 ** harm for harm in it.count(1))
+                          ))
