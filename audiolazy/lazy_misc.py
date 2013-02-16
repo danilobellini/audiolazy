@@ -312,7 +312,12 @@ def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
   Could use 64 bits (52 bits significand) but needs a
   native float type with at least that size in bits.
   If a and b sizes differ, at least one will be padded with the pad input
-  value to keep going with the comparison. Be careful with endless generators!
+  value to keep going with the comparison.
+
+  Note
+  ----
+  Be careful with endless generators!
+
   """
   if not (ignore_type or type(a) == type(b)):
     return False
@@ -627,7 +632,7 @@ def sHz(rate):
   rate :
     Sample rate in samples per second
 
-  Results
+  Returns
   -------
   A tuple ``(s, Hz)``, where ``s`` is the second unit and ``Hz`` is the hertz
   unit, as the number of samples and radians per sample, respectively.

@@ -157,9 +157,31 @@ class MultiKeyDict(dict):
   Multiple keys dict.
 
   Can be thought as an "inversible" dict where you can ask for the one
-  hashable value from one of the keys. By default it iterates through all
-  keys, so if you need an iterator for all blocks of keys, use iterkeys
-  method instead.
+  hashable value from one of the keys. By default it iterates through the
+  values, if you need an iterator for all tuples of keys,
+  use iterkeys method instead.
+
+  Examples
+  --------
+  >>> mk = MultiKeyDict()
+  >>> mk[1] = 3
+  >>> mk[2] = 3
+  >>> mk
+  {(1, 2): 3}
+  >>> mk[4] = 2
+  >>> mk[1] = 2
+  >>> len(mk)
+  2
+  >>> mk[1]
+  2
+  >>> mk[2]
+  3
+  >>> mk[4]
+  2
+  >>> sorted(el for el in mk)
+  [2, 3]
+  >>> sorted(el for el in mk.iterkeys())
+  [(2,), (4, 1)]
 
   """
   def __init__(self, *args, **kwargs):
@@ -177,10 +199,7 @@ class MultiKeyDict(dict):
     if not isinstance(key, tuple):
       key = (key,)
 
-    # First remove the overwritten data
-    for k in key:
-      if k in self._keys_dict:
-        del self[k]
+    # Finds the full new tuple keys
     if value in self._inv_dict:
       key = self._inv_dict[value] + key
 
@@ -190,6 +209,11 @@ class MultiKeyDict(dict):
       if k not in key_list:
         key_list.append(k)
     key = tuple(key_list)
+
+    # Remove the overwritten data
+    for k in key:
+      if k in self._keys_dict:
+        del self[k]
 
     # Do the assignment
     for k in key:
@@ -332,7 +356,7 @@ class StrategyDict(MultiKeyDict):
     return decorator
 
   def __setitem__(self, key, value):
-    if "default" not in self.__dict__:
+    if "default" not in self.__dict__: # Avoiding hasattr due to __getattr__
       self.default = value
     super(StrategyDict, self).__setitem__(key, value)
 
