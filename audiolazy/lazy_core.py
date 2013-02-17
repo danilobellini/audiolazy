@@ -163,6 +163,8 @@ class MultiKeyDict(dict):
 
   Examples
   --------
+  Assignments one by one:
+
   >>> mk = MultiKeyDict()
   >>> mk[1] = 3
   >>> mk[2] = 3
@@ -178,16 +180,31 @@ class MultiKeyDict(dict):
   3
   >>> mk[4]
   2
-  >>> sorted(el for el in mk)
+  >>> sorted(mk)
   [2, 3]
-  >>> sorted(el for el in mk.iterkeys())
+  >>> sorted(mk.iterkeys())
   [(2,), (4, 1)]
+
+  Casting from another dict:
+
+  >>> mkd = MultiKeyDict({1:4, 2:5, -7:4})
+  >>> len(mkd)
+  2
+  >>> sorted(mkd)
+  [4, 5]
+  >>> del mkd[2]
+  >>> len(mkd)
+  1
+  >>> sorted(mkd.keys()[0]) # Sorts the only key tuple
+  [-7, 1]
 
   """
   def __init__(self, *args, **kwargs):
     self._keys_dict = {}
     self._inv_dict = {}
-    super(MultiKeyDict, self).__init__(*args, **kwargs)
+    super(MultiKeyDict, self).__init__()
+    for key, value in dict(*args, **kwargs).iteritems():
+      self[key] = value
 
   def __getitem__(self, key):
     if isinstance(key, tuple): # Avoid errors with IPython
