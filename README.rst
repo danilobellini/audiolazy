@@ -64,7 +64,7 @@ and the reversed would avoid questions like "what comes first, the zero or the
 [minus] two exponent?", but maybe we could get more efficient ourselves if we
 had something easier: multiplication could be written once and for all and
 with a representation programmers are used to see. This would be even more
-expressive if we could get rid from the assymetry of a method call like
+expressive if we could get rid from the asymmetry of a method call like
 ``filt1.multiply_by(filt2)``, since multiplication in this case should be
 commutative. The use of natural operators is possible in a language that
 allows operator overloading, but for such we need to describe
@@ -72,10 +72,10 @@ those equations and structures as objects and object relationships.
 
 The name ``Hz`` can be a number that would allow conversion to a default DSP
 internal rad/samples unit, so one can write things like ``freq = 440 * Hz``.
-This isn't difficult in probably any language, but can help in expressivity,
+This isn't difficult in probably any language, but can help in expressiveness,
 already. If (almost) everything would need data in "samples" or "rad/sample"
 units, constants for converting these from "second" and "hertz" would help
-with the code expressivity. A comb filter ``comb.tau(delay=30*s, tau=40*s)``
+with the code expressiveness. A comb filter ``comb.tau(delay=30*s, tau=40*s)``
 can represent a comb filter with the given delay and time constant, both in
 samples, but with a more clear meaning for the reader than it would have with
 an expression like ``[1] + [0] * 239999 + [alpha]``. Would it be needed to
@@ -141,9 +141,9 @@ If you have pip, you can go directly (use ``-U`` for update or reinstall)::
 
   pip install audiolazy
 
-for downloading (from PyPI) and installing the package for you, or
+for downloading (from PyPI) and installing the package for you, or::
 
-  pip install .
+  pip install -U .
 
 To install from a path that has the ``setup.py`` file and the package data
 uncompressed previously.
@@ -273,7 +273,7 @@ On the other hand, you can always show the figure using MatPlotLib directly:
   plt.show()
 
 CascadeFilter instances and ParallelFilter instances are lists of filters with
-the same operator behaviour as a list, and also works for plotting linear
+the same operator behavior as a list, and also works for plotting linear
 filters. Constructors accepts both a filter and an iterable with filters.
 For example, a zeros and poles plot (needs MatPlotLib):
 

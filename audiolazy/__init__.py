@@ -127,7 +127,7 @@ del sys
 # Metadata (see setup.py for more information about these)
 # This section should not reference anything from before!
 #
-__version__ = "0.04dev"
+__version__ = "0.04"
 __author__ = "Danilo de Jesus da Silva Bellini"
 __author_email__  = "danilo [dot] bellini [at] gmail [dot] com"
 __url__ = "http://github.com/danilobellini/audiolazy"
