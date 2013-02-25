@@ -24,7 +24,8 @@ import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_analysis import window, zcross, maverage, clip, unwrap, amdf
+from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
+                             unwrap, amdf)
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq
 from ..lazy_synth import line, white_noise
@@ -80,6 +81,19 @@ class TestZCross(object):
     assert isinstance(output, Stream)
     expected = list(zcross([sign] + data))[1:] # Skip first "zero" sample
     assert list(output) == expected
+
+
+class TestEnvelope(object):
+  sig = [-5, -2.2, -1, 2, 4., 5., -1., -1.8, -22, -57., 1., 12.]
+
+  @p("env", envelope)
+  def test_always_positive_and_keep_size(self, env):
+    out_stream = env(self.sig)
+    assert isinstance(out_stream, Stream)
+    out_list = list(out_stream)
+    assert len(out_list) == len(self.sig)
+    for el in out_list:
+      assert el >= 0.
 
 
 class TestMAverage(object):

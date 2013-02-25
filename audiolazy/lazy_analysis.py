@@ -364,7 +364,7 @@ def envelope(sig, cutoff=pi/512):
     Moving average linear filter.
 
   """
-  return lowpass(cutoff)(abs(thub(sig, 1)))
+  return lowpass(cutoff)(lzabs(thub(sig, 1)))
 
 
 @envelope.strategy("squared")
