@@ -19,7 +19,7 @@
 AudioLazy
 =========
 
-Expressive Digital Signal Processing (DSP) package for Python.
+Real-Time Expressive Digital Signal Processing (DSP) Package for Python!
 
 Lazyness and object representation
 ----------------------------------

@@ -19,6 +19,8 @@
 AudioLazy changes history
 -------------------------
 
+*** Development ***
+
 *** Version 0.04 (Documentation, LPC, Plots!) ***
 
 + examples:
