@@ -31,6 +31,7 @@ from ..lazy_lpc import (toeplitz, levinson_durbin, lpc, parcor,
                         parcor_stable, lsf, lsf_stable)
 from ..lazy_misc import almost_eq, almost_eq_diff
 from ..lazy_filters import z, ZFilter
+from ..lazy_math import abs as lzabs
 
 
 class TestLPCParcorLSFAndStability(object):
@@ -187,8 +188,15 @@ class TestLPC(object):
   def test_kcovar_value_error_scenario_invalid_coeffs(self, blk, order):
     with pytest.raises(ValueError):
       lpc.kcovar(blk, order)
+
+    # Filter should not be stable
     filt = lpc.covar(blk, order)
-    assert not parcor_stable(1 / filt)
+    try:
+      assert not parcor_stable(1 / filt)
+
+    # See if a PARCOR is "almost one" (stability test isn't "stable")
+    except AssertionError:
+      assert max(lzabs(parcor(filt))) + 1e-7 > 1.
 
   @p(("blk", "order"), kcovar_valid_cases)
   def test_equalness_covar_kcovar_valid_scenario(self, blk, order):
