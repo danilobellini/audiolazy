@@ -23,6 +23,8 @@ Testing module for the lazy_midi module
 import pytest
 p = pytest.mark.parametrize
 
+from random import random
+
 # Audiolazy internal imports
 from ..lazy_midi import (MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq,
                          str2midi, freq2midi, midi2str)
@@ -64,8 +66,8 @@ class TestStr2MIDI(object):
            ("A5", MIDI_A4 + 12),
            ("A3", MIDI_A4 - 12),
            ("Bb4", MIDI_A4 + 1),
-           ("B4", MIDI_A4 + 2),
-           ("C5", MIDI_A4 + 3),
+           ("B4", MIDI_A4 + 2), # TestMIDI2Str.test_name_with_errors:
+           ("C5", MIDI_A4 + 3), # These "go beyond" octave by a small amount
            ("C#5", MIDI_A4 + 4),
            ("Db3", MIDI_A4 - 20),
           ]
@@ -87,3 +89,13 @@ class TestMIDI2Str(object):
   @p(("name", "note"), TestStr2MIDI.table)
   def test_single_name(self, name, note):
     assert midi2str(note, sharp="#" in name) == name
+
+  @p(("name", "note"), TestStr2MIDI.table)
+  def test_name_with_errors(self, name, note):
+    error = round(random() / 3 + .1, 3) # Minimum is greater than tolerance
+
+    full_name = name + "+{}%".format(error * 100)
+    assert midi2str(note + error, sharp="#" in name) == full_name
+
+    full_name = name + "-{}%".format(error * 100)
+    assert midi2str(note - error, sharp="#" in name) == full_name

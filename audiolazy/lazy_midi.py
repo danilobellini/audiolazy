@@ -85,13 +85,13 @@ def midi2str(midi_number, sharp=True):
   note = (num + .5) % 12 - .5
   rnote = int(round(note))
   error = note - rnote
-  octave = str(int(num // 12))
+  octave = str(int(round((num - note) / 12.)))
   if sharp:
     names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
   else:
     names = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"]
   names = names[rnote] + octave
-  if error < 1e-4:
+  if abs(error) < 1e-4:
     return names
   else:
     err_sig = "+" if error > 0 else "-"
