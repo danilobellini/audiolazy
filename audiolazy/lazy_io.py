@@ -42,6 +42,7 @@ import struct
 # Audiolazy internal imports
 from .lazy_stream import Stream
 from .lazy_misc import chunks, DEFAULT_CHUNK_SIZE, DEFAULT_SAMPLE_RATE
+from .lazy_math import inf
 
 __all__ = ["RecStream", "AudioIO", "AudioThread"]
 
@@ -53,7 +54,7 @@ class RecStream(Stream):
   A common Stream class with a ``stop`` method for input data recording
   and a ``recording`` read-only property for status.
   """
-  def __init__(self, file_obj, chunk_size, dfmt):
+  def __init__(self, device_manager, file_obj, chunk_size, dfmt):
     s = struct.Struct("{0}{1}".format(chunk_size, dfmt))
 
     def rec():
@@ -64,9 +65,11 @@ class RecStream(Stream):
       finally:
         file_obj.close()
         self._recording = False # Loop can be broken by StopIteration
+        self.device_manager.recording_finished(self)
 
     super(RecStream, self).__init__(rec())
     self._recording = True
+    self.device_manager = device_manager
 
   def stop(self):
     """ Finishes the recording stream, so it can raise StopIteration """
@@ -94,6 +97,7 @@ class AudioIO(object):
     self._pa = pyaudio.PyAudio()
     self._threads = []
     self.wait = wait # Wait threads to finish at end (constructor parameter)
+    self._recordings = []
 
     # Lockers
     self.halting = threading.Lock() # Only for "close" method
@@ -129,6 +133,7 @@ class AudioIO(object):
       if not self.finished:  # Ignore all "close" calls, but the first,
         self.finished = True # and any call to play would raise ThreadError
 
+        # Closes all playing AudioThread instances
         while True:
           with self.lock: # Ensure there's no other thread messing around
             try:
@@ -140,7 +145,14 @@ class AudioIO(object):
             thread.stop()
           thread.join()
 
-        assert not self._pa._streams # No stream should survive.
+        # Closes all recording RecStream instances
+        while self._recordings:
+          recst = self._recordings[-1]
+          recst.stop()
+          recst.take(inf) # Ensure it'll be closed
+
+        # Finishes
+        assert not self._pa._streams # No stream should survive
         self._pa.terminate()
 
   def terminate(self):
@@ -169,10 +181,17 @@ class AudioIO(object):
   def thread_finished(self, thread):
     """
     Updates internal status about open threads. Should be called only by
-    the internal closing mechanism of children threads.
+    the internal closing mechanism of AudioThread instances.
     """
     with self.lock:
       self._threads.remove(thread)
+
+  def recording_finished(self, recst):
+    """
+    Updates internal status about open recording streams. Should be called
+    only by the internal closing mechanism of children RecStream instances.
+    """
+    self._recordings.remove(recst)
 
   def record(self, chunk_size = DEFAULT_CHUNK_SIZE,
                    dfmt = "f",
@@ -198,15 +217,17 @@ class AudioIO(object):
     Endless Stream instance that gather data from the audio input device.
 
     """
-    # Open a new audio input stream
-    return RecStream(self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
-                                   channels=nchannels,
-                                   rate=rate,
-                                   frames_per_buffer=chunk_size,
-                                   input=True),
-                     chunk_size,
-                     dfmt
-                    )
+    input_stream = RecStream(self,
+                             self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
+                                           channels=nchannels,
+                                           rate=rate,
+                                           frames_per_buffer=chunk_size,
+                                           input=True),
+                             chunk_size,
+                             dfmt
+                            )
+    self._recordings.append(input_stream)
+    return input_stream
 
 
 class AudioThread(threading.Thread):
