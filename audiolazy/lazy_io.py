@@ -40,10 +40,41 @@ import threading
 import struct
 
 # Audiolazy internal imports
-from .lazy_stream import tostream
+from .lazy_stream import Stream
 from .lazy_misc import chunks, DEFAULT_CHUNK_SIZE, DEFAULT_SAMPLE_RATE
 
-__all__ = ["AudioIO", "AudioThread"]
+__all__ = ["RecStream", "AudioIO", "AudioThread"]
+
+
+class RecStream(Stream):
+  """
+  Recording Stream
+
+  A common Stream class with a ``stop`` method for input data recording
+  and a ``recording`` read-only property for status.
+  """
+  def __init__(self, file_obj, chunk_size, dfmt):
+    s = struct.Struct("{0}{1}".format(chunk_size, dfmt))
+
+    def rec():
+      try:
+        while self._recording:
+          for k in s.unpack(file_obj.read(chunk_size)):
+            yield k
+      finally:
+        file_obj.close()
+        self._recording = False # Loop can be broken by StopIteration
+
+    super(RecStream, self).__init__(rec())
+    self._recording = True
+
+  def stop(self):
+    """ Finishes the recording stream, so it can raise StopIteration """
+    self._recording = False
+
+  @property
+  def recording(self):
+    return self._recording
 
 
 class AudioIO(object):
@@ -143,7 +174,6 @@ class AudioIO(object):
     with self.lock:
       self._threads.remove(thread)
 
-  @tostream
   def record(self, chunk_size = DEFAULT_CHUNK_SIZE,
                    dfmt = "f",
                    nchannels = 1,
@@ -169,15 +199,14 @@ class AudioIO(object):
 
     """
     # Open a new audio input stream
-    s = struct.Struct("{0}{1}".format(chunk_size, dfmt))
-    input_stream = self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
-                                 channels=nchannels,
-                                 rate=rate,
-                                 frames_per_buffer=chunk_size,
-                                 input=True)
-    while True:
-      for k in s.unpack(input_stream.read(chunk_size)):
-        yield k
+    return RecStream(self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
+                                   channels=nchannels,
+                                   rate=rate,
+                                   frames_per_buffer=chunk_size,
+                                   input=True),
+                     chunk_size,
+                     dfmt
+                    )
 
 
 class AudioThread(threading.Thread):
