@@ -28,6 +28,7 @@ from warnings import warn
 # Audiolazy internal imports
 from .lazy_misc import blocks
 from .lazy_core import AbstractOperatorOverloaderMeta
+from .lazy_math import inf
 
 __all__ = ["StreamMeta", "Stream", "avoid_stream", "tostream",
            "ControlStream", "MemoryLeakWarning", "StreamTeeHub", "thub",
@@ -227,6 +228,7 @@ class Stream(Iterable):
     ----------
     n :
       Number of elements to be taken. Defaults to None.
+      Rounded when it's a float, and this can be ``inf'' for taking all.
     constructor :
       Container constructor function that can receie a generator as input.
       Defaults to ``list``.
@@ -256,6 +258,16 @@ class Stream(Iterable):
       ...
     StopIteration
 
+    Taking rounded float quantities and "up to infinity" elements
+    (don't try using ``inf'' with endless Stream instances):
+
+    >>> Stream([4, 3, 2, 3, 2]).take(3.4)
+    [4, 3, 2]
+    >>> Stream([4, 3, 2, 3, 2]).take(3.6)
+    [4, 3, 2, 3]
+    >>> Stream([4, 3, 2, 3, 2]).take(inf)
+    [4, 3, 2, 3, 2]
+
     Note
     ----
     You should avoid using take() as if this would be an iterator. Streams
@@ -267,6 +279,10 @@ class Stream(Iterable):
     """
     if n is None:
       return next(self._data)
+    if n is inf:
+      return constructor(self._data)
+    if isinstance(n, float):
+      n = int(round(n))
     return constructor(next(self._data) for _ in xrange(n))
 
   def tee(self):
