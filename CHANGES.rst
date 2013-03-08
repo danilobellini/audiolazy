@@ -21,6 +21,21 @@ AudioLazy changes history
 
 *** Development ***
 
++ general:
+
+  - Bugfixes (``envelope.abs``, ``midi2str``, etc.)
+
++ lazy_io:
+
+  - New RecStream class for recording Stream instances with a ``stop`` method
+
++ lazy_stream:
+
+  - Stream.take now accepts floats, so with first ``sHz`` output as
+    ``s`` (for second) you can now use ``my_stream.take(20 * s)`` directly,
+    as well as a "take all" feature ``my_stream.take(inf)``
+
+
 *** Version 0.04 (Documentation, LPC, Plots!) ***
 
 + examples:

@@ -155,9 +155,9 @@ repository (requires ``git`` for cloning)::
 
 For older versions, you can install from the PyPI link or directly from the
 github repository, based on the repository tags. For example, to install the
-version 0.03 (requires ``git`` for cloning)::
+version 0.04 (requires ``git`` for cloning)::
 
-  pip install -U git+git://github.com/danilobellini/audiolazy.git@v0.03
+  pip install -U git+git://github.com/danilobellini/audiolazy.git@v0.04
 
 The package doesn't have any strong dependency for its core besides the Python
 itself and its standard library, but you might need:
@@ -210,11 +210,11 @@ iterator!):
 
 .. code-block:: python
 
-  >>> a = Stream(2) # Periodic
+  >>> a = Stream(2, -2, -1) # Periodic
   >>> b = Stream(3, 7, 5, 4) # Periodic
   >>> c = a + b # Elementwise sum, periodic
   >>> c.take(15) # First 15 elements from the Stream object
-  [5, 9, 7, 6, 5, 9, 7, 6, 5, 9, 7, 6, 5, 9, 7]
+  [5, 5, 4, 6, 1, 6, 7, 2, 2, 9, 3, 3, 5, 5, 4]
 
 And also finite iterators (you can think on any Stream as a generator with
 elementwise operators):

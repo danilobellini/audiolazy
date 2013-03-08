@@ -228,7 +228,7 @@ class Stream(Iterable):
     ----------
     n :
       Number of elements to be taken. Defaults to None.
-      Rounded when it's a float, and this can be ``inf'' for taking all.
+      Rounded when it's a float, and this can be ``inf`` for taking all.
     constructor :
       Container constructor function that can receie a generator as input.
       Defaults to ``list``.
@@ -259,7 +259,7 @@ class Stream(Iterable):
     StopIteration
 
     Taking rounded float quantities and "up to infinity" elements
-    (don't try using ``inf'' with endless Stream instances):
+    (don't try using ``inf`` with endless Stream instances):
 
     >>> Stream([4, 3, 2, 3, 2]).take(3.4)
     [4, 3, 2]
