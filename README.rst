@@ -168,8 +168,8 @@ itself and its standard library, but you might need:
 - MatPlotLib: needed for all default plotting, like in ``LinearFilter.plot``
   method and several examples;
 - SciPy (testing only): used as an oracle for LTI filter testing;
-- pytest and pytest-cov (testing only): runs test suite and shows code
-  coverage status;
+- pytest, pytest-cov and pytest-timeout (testing only): runs test suite and
+  shows code coverage status;
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;
 - Music21 (example only): there's one example that gets the Bach chorals from

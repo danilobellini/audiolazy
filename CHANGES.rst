@@ -23,7 +23,9 @@ AudioLazy changes history
 
 + general:
 
+  - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, etc.)
+  - Now with 5400+ tests and 77% code coverage
 
 + lazy_io:
 
