@@ -21,6 +21,10 @@ AudioLazy changes history
 
 *** Development ***
 
++ examples:
+
+  - Pitch follower via zero-crossing rate with Tkinter GUI
+
 + general:
 
   - Mock testing for audio output

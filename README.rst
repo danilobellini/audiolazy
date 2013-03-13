@@ -172,6 +172,8 @@ itself and its standard library, but you might need:
   shows code coverage status;
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;
+- Tkinter (example only): needed for the pitch follower based on the
+  zero-crossing rate example GUI;
 - Music21 (example only): there's one example that gets the Bach chorals from
   that package corpora for synthesizing and playing;
 - Sphinx (documentation only): it can create the software documentation in
