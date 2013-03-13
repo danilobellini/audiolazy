@@ -24,7 +24,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from .lazy_misc import elementwise
-from .lazy_math import log2
+from .lazy_math import log2, nan, isinf, isnan
 
 __all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "str2freq",
            "str2midi", "freq2str", "freq2midi", "midi2freq", "midi2str",
@@ -33,7 +33,7 @@ __all__ = ["MIDI_A4", "FREQ_A4", "SEMITONE_RATIO", "str2freq",
 # Useful constants
 MIDI_A4 = 69   # MIDI Pitch number
 FREQ_A4 = 440. # Hz
-SEMITONE_RATIO = 2.**(1./12.) # Ascending
+SEMITONE_RATIO = 2. ** (1. / 12.) # Ascending
 
 
 @elementwise("midi_number", 0)
@@ -49,6 +49,8 @@ def str2midi(note_string):
   """
   Given a note string name (e.g. "Bb4"), returns its MIDI pitch number.
   """
+  if note_string == "?":
+    return nan
   data = note_string.strip().lower()
   name2delta = {"c": -9, "d": -7, "e": -5, "f": -4, "g": -2, "a": 0, "b": 2}
   accident2delta = {"b": -1, "#": 1, "x": 2}
@@ -73,7 +75,8 @@ def freq2midi(freq):
   """
   Given a frequency in Hz, returns its MIDI pitch number.
   """
-  return 12 * (log2(freq) - log2(FREQ_A4)) + MIDI_A4
+  result = 12 * (log2(freq) - log2(FREQ_A4)) + MIDI_A4
+  return nan if isinstance(result, complex) else result
 
 
 @elementwise("midi_number", 0)
@@ -81,6 +84,8 @@ def midi2str(midi_number, sharp=True):
   """
   Given a MIDI pitch number, returns its note string name (e.g. "C3").
   """
+  if isinf(midi_number) or isnan(midi_number):
+    return "?"
   num = midi_number - (MIDI_A4 - 4 * 12 - 9)
   note = (num + .5) % 12 - .5
   rnote = int(round(note))
