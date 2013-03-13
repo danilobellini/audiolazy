@@ -23,8 +23,43 @@ Testing module for the lazy_math module
 import pytest
 p = pytest.mark.parametrize
 
+import itertools as it
+
 # Audiolazy internal imports
-from ..lazy_math import factorial, dB10, dB20, inf
+from ..lazy_math import (factorial, dB10, dB20, inf, ln, log, log2, log10,
+                         log1p, pi, e)
+from ..lazy_misc import almost_eq
+
+
+class TestLog(object):
+
+  funcs = {ln: e, log2: 2, log10: 10,
+           (lambda x: log1p(x - 1)): e}
+
+  @p("func", list(funcs))
+  def test_zero(self, func):
+    assert func(0) == func(0.) == func(0 + 0.j) == -inf
+
+  @p("func", list(funcs))
+  def test_one(self, func):
+    assert func(1) == func(1.) == func(1. + 0j) == 0
+
+  @p(("func", "base"), funcs.items())
+  def test_minus_one(self, func, base):
+    radius = func(e)
+    tp = 2 * pi * radius
+    for pair in it.combinations([func(-1) % tp,
+                                 func(-1.) % tp,
+                                 func(-1. + 0j) % tp,
+                                 -tp / 2j,
+                                ], 2):
+      assert almost_eq(*pair)
+
+  @p("base", [-1, -.5, 0., 1.])
+  def test_invalid_bases(self, base):
+    for val in [-10, 0, 10, base, base*base]:
+      with pytest.raises(ValueError):
+        log(val, base=base)
 
 
 class TestFactorial(object):

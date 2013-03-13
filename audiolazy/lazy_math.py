@@ -28,15 +28,15 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_misc import elementwise
 
-__all__ = ["abs", "pi", "e", "cexp", "ln", "log2", "factorial", "dB10",
-           "dB20", "inf", "nan", "phase", "sign"]
+__all__ = ["abs", "pi", "e", "cexp", "ln", "log", "log1p", "log10", "log2",
+           "factorial", "dB10", "dB20", "inf", "nan", "phase", "sign"]
 
 # All functions from math with one numeric input
 math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
               "cos", "cosh", "degrees", "erf", "erfc", "exp", "expm1",
               "fabs", "floor", "frexp", "gamma", "isinf", "isnan", "lgamma",
-              "log", "log10", "log1p", "modf", "radians", "sin", "sinh",
-              "sqrt", "tan", "tanh", "trunc"]
+              "modf", "radians", "sin", "sinh", "sqrt", "tan", "tanh",
+              "trunc"]
 __all__.extend(math_names)
 
 
@@ -44,19 +44,52 @@ for func in [getattr(math, name) for name in math_names]:
   locals()[func.__name__] = elementwise("x", 0)(func)
 
 
+@elementwise("x", 0)
+def log(x, base=None):
+  if base is None:
+    if x == 0:
+      return -inf
+    elif isinstance(x, complex) or x < 0:
+      return cmath.log(x)
+    else:
+      return math.log(x)
+  else: # base is given
+    if base <= 0 or base == 1:
+      raise ValueError("Not a valid logarithm base")
+    elif x == 0:
+      return -inf
+    elif isinstance(x, complex) or x < 0:
+      return cmath.log(x, base)
+    else:
+      return math.log(x, base)
+
+
+@elementwise("x", 0)
+def log1p(x):
+  if x == -1:
+    return -inf
+  elif isinstance(x, complex) or x < -1:
+    return cmath.log(1 + x)
+  else:
+    return math.log1p(x)
+
+
+def log10(x):
+  return log(x, 10)
+
+
+def log2(x):
+  return log(x, 2)
+
+
+ln = log
 abs = elementwise("number", 0)(abs)
 pi = math.pi
 e = math.e
 cexp = elementwise("x", 0)(cmath.exp)
-ln = elementwise("x", 0)(math.log)
 inf = float("inf")
 nan = float("nan")
 phase = elementwise("z", 0)(cmath.phase)
-
-
-@elementwise("x", 0)
-def log2(x):
-  return math.log(x, 2)
 
 
 @elementwise("n", 0)
