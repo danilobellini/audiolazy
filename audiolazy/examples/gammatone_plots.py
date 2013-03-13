@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of AudioLazy, the signal processing Python package.
-# Copyright (C) 2012 Danilo de Jesus da Silva Bellini
+# Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
 #
 # AudioLazy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
