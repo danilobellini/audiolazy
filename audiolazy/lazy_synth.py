@@ -543,8 +543,7 @@ class TableLookup(object):
 DEFAULT_TABLE_SIZE = 2**16
 sin_table = TableLookup([sin(x * 2 * pi / DEFAULT_TABLE_SIZE)
                          for x in xrange(DEFAULT_TABLE_SIZE)])
-saw_table = TableLookup([x * (1./(DEFAULT_TABLE_SIZE-1))
-                         for x in xrange(DEFAULT_TABLE_SIZE)])
+saw_table = TableLookup(list(line(DEFAULT_TABLE_SIZE, -1, 1, finish=True)))
 
 
 @tostream

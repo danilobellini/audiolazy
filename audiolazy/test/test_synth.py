@@ -27,10 +27,13 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
-                          white_noise, TableLookup, fadein, fadeout)
+                          white_noise, TableLookup, fadein, fadeout,
+                          sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, sHz
+from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff
 from ..lazy_itertools import count
+from ..lazy_analysis import lag_to_freq
+from ..lazy_math import pi
 
 
 class TestLineFadeInFadeOut(object):
@@ -178,6 +181,27 @@ class TestTableLookup(object):
     assert (-b).table == [-1, 0, 1]
     assert c.table == [3, 0, -3]
     assert (a + b - c).table == [-2, 1, 4]
+
+  def test_sin_basics(self):
+    assert sin_table[0] == 0
+    assert almost_eq(sin_table(pi, phase=pi/2).take(6), [1, -1] * 3)
+    s30 = .5 * 2 ** .5 # sin(30 degrees)
+    assert almost_eq(sin_table(pi/2, phase=pi/4).take(12),
+                     [s30, s30, -s30, -s30] * 3)
+    expected_pi_over_2 = [0., s30, 1., s30, 0., -s30, -1., -s30]
+    # Assert with "diff" since it has zeros
+    assert almost_eq_diff(sin_table(pi/4).take(32), expected_pi_over_2 * 4)
+
+  def test_saw_basics(self):
+    assert saw_table[0] == -1
+    assert saw_table[-1] == 1
+    assert saw_table[1] - saw_table[0] > 0
+    data = saw_table(lag_to_freq(30)).take(30)
+    first_step = data[1] - data[0]
+    assert first_step > 0
+    for d0, d1 in blocks(data, size=2, hop=1):
+      assert d1 - d0 > 0 # Should be monotonically increasing
+      assert almost_eq(d1 - d0, first_step) # Should have constant derivative
 
 
 class TestImpulse(object):
