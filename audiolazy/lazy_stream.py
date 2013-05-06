@@ -341,6 +341,14 @@ class Stream(Iterable):
     self._data = skipper(self._data)
     return self
 
+  def limit(self, n):
+    """
+    Enforces the Stream to finish after ``n`` items.
+    """
+    data = self._data
+    self._data = (data.next() for _ in xrange(int(round(n))))
+    return self
+
   def __getattr__(self, name):
     """
     Returns a Stream of attributes or methods, got in an elementwise fashion.

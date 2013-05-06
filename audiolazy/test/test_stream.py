@@ -269,6 +269,23 @@ class TestStream(object):
     assert data.take() == 11
     assert memory["last"] == 11
 
+  def test_limit_from_beginning_from_finite_stream(self):
+    assert Stream(xrange(25)).limit(10).take(inf) == range(10)
+    assert Stream(xrange(25)).limit(40).take(inf) == range(25)
+    assert Stream(xrange(25)).limit(24).take(inf) == range(24)
+    assert Stream(xrange(25)).limit(25).take(inf) == range(25)
+    assert Stream(xrange(25)).limit(26).take(inf) == range(25)
+
+  def test_limit_with_skip_from_finite_stream(self):
+    assert Stream(xrange(45)).skip(2).limit(13).take(inf) == range(2, 15)
+    assert Stream(xrange(45)).limit(13).skip(3).take(inf) == range(3, 13)
+
+  @p("noise", [-.3, 0, .1])
+  def test_limit_from_periodic_stream(self, noise):
+    assert Stream(0, 1, 2).limit(7 + noise).peek(10) == [0, 1, 2, 0, 1, 2, 0]
+    data = Stream(-1, .2, it)
+    assert data.skip(2).limit(9 + noise).peek(15) == [it, -1, .2] * 3
+
 
 class TestThub(object):
 
