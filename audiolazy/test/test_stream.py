@@ -184,15 +184,16 @@ class TestStream(object):
     sum_data = data.copy().real + data.copy().imag
     assert sum_data.take(6) == (real + imag).take(6)
 
-  @p("data", [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
-              range(20,40,3)])
+  map_filter_data = [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
+                     range(20,40,3)]
+
+  @p("data", map_filter_data)
   @p("func", [lambda x: x ** 2, lambda x: x // 2, lambda x: 18])
   def test_map(self, data, func):
     assert map(func, data) == list(Stream(data).map(func))
     assert map(func, data) == list(imap(func, data))
 
-  @p("data", [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
-              range(20,40,3)])
+  @p("data", map_filter_data)
   @p("func", [lambda x: x > 0, lambda x: x % 2 == 0, lambda x: False])
   def test_filter(self, data, func):
     assert filter(func, data) == list(Stream(data).filter(func))
@@ -214,6 +215,24 @@ class TestStream(object):
   def test_next(self):
     """ Streams should have no "next" method! """
     assert not hasattr(Stream(2), "next")
+
+  def test_peek_take(self):
+    data = Stream([1, 4, 3, 2])
+    assert data.peek(3) == [1, 4, 3]
+    assert data.peek() == 1
+    assert data.take() == 1
+    assert data.peek() == 4
+    assert data.peek(3) == [4, 3, 2]
+    assert data.peek() == 4
+    assert data.take() == 4
+    assert data.peek(3) == [3, 2]
+    assert data.peek(3, tuple) == (3, 2)
+    assert data.take(3, tuple) == (3, 2)
+    assert data.peek(1) == []
+    with pytest.raises(StopIteration):
+      data.peek()
+    with pytest.raises(StopIteration):
+      data.take()
 
 
 class TestThub(object):

@@ -41,6 +41,8 @@ AudioLazy changes history
   - Stream.take now accepts floats, so with first ``sHz`` output as
     ``s`` (for second) you can now use ``my_stream.take(20 * s)`` directly,
     as well as a "take all" feature ``my_stream.take(inf)``
+  - New ``Stream.peek()`` method, allowing taking items while keeping them
+    as the next to be yielded by the Stream
 
 + lazy_synth:
 

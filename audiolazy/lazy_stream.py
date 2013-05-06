@@ -268,6 +268,11 @@ class Stream(Iterable):
     >>> Stream([4, 3, 2, 3, 2]).take(inf)
     [4, 3, 2, 3, 2]
 
+    See Also
+    --------
+    Stream.peek :
+      Returns the n first elements from the Stream, without removing them.
+
     Note
     ----
     You should avoid using take() as if this would be an iterator. Streams
@@ -296,6 +301,26 @@ class Stream(Iterable):
 
   # Copy is just another useful common name for "tee"
   copy = tee
+
+  def peek(self, n=None, constructor=list):
+    """
+    Sees/peeks the next few items in the Stream, without removing them.
+
+    Besides that this functions keeps the Stream items, it's the same to the
+    ``Stream.take()`` method.
+
+    See Also
+    --------
+    Stream.take :
+      Returns the n first elements from the Stream, removing them.
+
+    Note
+    ----
+    Data evaluation is done only once, i.e., after peeking the data is simply
+    stored to be yielded again when asked for.
+
+    """
+    return self.copy().take(n=n, constructor=constructor)
 
   def __getattr__(self, name):
     """
