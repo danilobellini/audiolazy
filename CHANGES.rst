@@ -42,6 +42,12 @@ AudioLazy changes history
     ``s`` (for second) you can now use ``my_stream.take(20 * s)`` directly,
     as well as a "take all" feature ``my_stream.take(inf)``
 
++ lazy_synth:
+
+  - Input "dur" in ``ones()``, ``zeros()``, ``white_noise()`` and
+    ``impulse()`` now can be inf (besides None)
+  - Impulse now have ``one=1.`` and ``zero=0.`` arguments
+
 
 *** Version 0.04 (Documentation, LPC, Plots!) ***
 

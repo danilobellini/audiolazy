@@ -33,7 +33,7 @@ from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
-from ..lazy_math import pi
+from ..lazy_math import pi, inf
 
 
 class TestLineFadeInFadeOut(object):
@@ -135,21 +135,22 @@ class TestModuloCounter(object):
    ])
 class TestOnesZerosZeroes(object):
 
-  def __init__(self, func, data):
-    self.func = func
-    self.data = data
-
-  def test_no_input(self):
-    my_stream = self.func()
+  def test_no_input(self, func, data):
+    my_stream = func()
     assert isinstance(my_stream, Stream)
-    assert my_stream.take(25) == [self.data] * 25
+    assert my_stream.take(25) == [data] * 25
+
+  def test_inf_input(self, func, data):
+    my_stream = func(inf)
+    assert isinstance(my_stream, Stream)
+    assert my_stream.take(30) == [data] * 30
 
   @p("dur", [-1, 0, .4, .5, 1, 2, 10])
-  def test_finite_duration(self, dur):
-    my_stream = self.func(dur)
+  def test_finite_duration(self, func, data, dur):
+    my_stream = func(dur)
     assert isinstance(my_stream, Stream)
     dur_int = max(int(round(dur)), 0)
-    assert list(my_stream) == [self.data] * dur_int
+    assert list(my_stream) == [data] * dur_int
 
 
 class TestWhiteNoise(object):
@@ -157,7 +158,13 @@ class TestWhiteNoise(object):
   def test_no_input(self):
     my_stream = white_noise()
     assert isinstance(my_stream, Stream)
-    for el in my_stream.take(25):
+    for el in my_stream.take(27):
+      assert -1 <= el <= 1
+
+  def test_inf_input(self):
+    my_stream = white_noise(inf)
+    assert isinstance(my_stream, Stream)
+    for el in my_stream.take(32):
       assert -1 <= el <= 1
 
   @p("dur", [-1, 0, .4, .5, 1, 2, 10])
@@ -210,6 +217,16 @@ class TestImpulse(object):
     delta = impulse()
     assert isinstance(delta, Stream)
     assert delta.take(25) == [1.] + list(zeros(24))
+
+  def test_inf_input(self):
+    delta = impulse(inf)
+    assert isinstance(delta, Stream)
+    assert delta.take(17) == [1.] + list(zeros(16))
+
+  def test_integer(self):
+    delta = impulse(one=1, zero=0)
+    assert isinstance(delta, Stream)
+    assert delta.take(22) == [1] + [0] * 21
 
   @p("dur", [-1, 0, .4, .5, 1, 2, 10])
   def test_finite_duration(self, dur):

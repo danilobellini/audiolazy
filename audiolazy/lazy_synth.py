@@ -20,7 +20,7 @@
 Simple audio/stream synthesis module
 """
 
-from math import sin, pi, ceil
+from math import sin, pi, ceil, isinf
 import collections
 import random
 import itertools as it
@@ -316,7 +316,7 @@ def ones(dur=None):
   endlessly.
 
   """
-  if dur is None:
+  if dur is None or (isinf(dur) and dur > 0):
     while True:
       yield 1.0
   for x in xrange(int(.5 + dur)):
@@ -340,7 +340,7 @@ def zeros(dur=None):
   endlessly.
 
   """
-  if dur is None:
+  if dur is None or (isinf(dur) and dur > 0):
     while True:
       yield 0.0
   for x in xrange(int(.5 + dur)):
@@ -405,7 +405,7 @@ def white_noise(dur=None):
   Stream yielding random numbers between -1 and 1.
 
   """
-  if dur is None:
+  if dur is None or (isinf(dur) and dur > 0):
     while True:
       yield random.uniform(-1.,1.)
   for x in xrange(int(.5 + dur)):
@@ -558,7 +558,7 @@ def sinusoid(freq, phase=0.):
 
 
 @tostream
-def impulse(dur=None):
+def impulse(dur=None, one=1., zero=0.):
   """
   Impulse stream generator.
 
@@ -573,15 +573,15 @@ def impulse(dur=None):
   endlessly, but starts with one (and only one) "1.0".
 
   """
-  if dur is None:
-    yield 1.
+  if dur is None or (isinf(dur) and dur > 0):
+    yield one
     while True:
-      yield 0.
+      yield zero
   elif dur >= .5:
     num_samples = int(dur - .5)
-    yield 1.
+    yield one
     for x in xrange(num_samples):
-      yield 0.
+      yield zero
 
 
 def karplus_strong(freq, tau=2e4, memory=white_noise):
