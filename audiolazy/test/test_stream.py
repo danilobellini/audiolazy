@@ -31,6 +31,7 @@ import warnings
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
 from ..lazy_misc import almost_eq
 from ..lazy_itertools import imap, ifilter
+from ..lazy_math import inf
 
 
 class TestStream(object):
@@ -227,12 +228,46 @@ class TestStream(object):
     assert data.take() == 4
     assert data.peek(3) == [3, 2]
     assert data.peek(3, tuple) == (3, 2)
-    assert data.take(3, tuple) == (3, 2)
+    assert data.peek(inf, tuple) == (3, 2)
+    assert data.take(inf, tuple) == (3, 2)
     assert data.peek(1) == []
+    assert data.take(1) == []
+    assert data.take(inf) == []
+    assert Stream([1, 4, 3, 2]).take(inf) == [1, 4, 3, 2]
     with pytest.raises(StopIteration):
       data.peek()
     with pytest.raises(StopIteration):
       data.take()
+
+  def test_skip_periodic_data(self):
+    data = Stream(5, Stream, .2)
+    assert data.skip(1).peek(4) == [Stream, .2, 5, Stream]
+    assert data.peek(4) == [Stream, .2, 5, Stream]
+    assert data.skip(3).peek(4) == [Stream, .2, 5, Stream]
+    assert data.peek(4) == [Stream, .2, 5, Stream]
+    assert data.skip(2).peek(4) == [5, Stream, .2, 5]
+    assert data.peek(4) == [5, Stream, .2, 5]
+
+  def test_skip_finite_data(self):
+    data = Stream(xrange(25))
+    data2 = data.copy()
+    assert data.skip(4).peek(4) == [4, 5, 6, 7]
+    assert data2.peek(4) == [0, 1, 2, 3]
+    assert data2.skip(30).peek(4) == []
+
+  def test_skip_laziness(self):
+    memory = {"last": 0}
+    def tg():
+      while True:
+        memory["last"] += 1
+        yield memory["last"]
+
+    data = Stream(tg())
+    assert data.take(3) == [1, 2, 3]
+    data.skip(7)
+    assert memory["last"] == 3
+    assert data.take() == 11
+    assert memory["last"] == 11
 
 
 class TestThub(object):

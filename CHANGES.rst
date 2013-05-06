@@ -30,7 +30,7 @@ AudioLazy changes history
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5500+ tests and 77% code coverage
+  - Now with 5500+ tests and 78% code coverage
 
 + lazy_io:
 
@@ -43,6 +43,8 @@ AudioLazy changes history
     as well as a "take all" feature ``my_stream.take(inf)``
   - New ``Stream.peek()`` method, allowing taking items while keeping them
     as the next to be yielded by the Stream
+  - New ``Stream.skip()`` method for neglecting the leading items without
+    storing them
 
 + lazy_synth:
 

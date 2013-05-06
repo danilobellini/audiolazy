@@ -322,6 +322,25 @@ class Stream(Iterable):
     """
     return self.copy().take(n=n, constructor=constructor)
 
+  def skip(self, n):
+    """
+    Throws away the first ``n`` values from the Stream.
+
+    Note
+    ----
+    Performs the evaluation lazily, i.e., the values are thrown away only
+    after requesting the next value.
+
+    """
+    def skipper(data):
+      for _ in xrange(int(round(n))):
+        data.next()
+      for el in data:
+        yield el
+
+    self._data = skipper(self._data)
+    return self
+
   def __getattr__(self, name):
     """
     Returns a Stream of attributes or methods, got in an elementwise fashion.
