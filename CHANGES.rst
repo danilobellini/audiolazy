@@ -28,9 +28,10 @@ AudioLazy changes history
 + general:
 
   - Mock testing for audio output
-  - Bugfixes (``envelope.abs``, ``midi2str``, etc.)
+  - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
   - Now with 5500+ tests and 79% code coverage
+  - Removed deprecated ``Stream.tee()`` method
 
 + lazy_io:
 
@@ -42,10 +43,13 @@ AudioLazy changes history
     ``s`` (for second) you can now use ``my_stream.take(20 * s)`` directly,
     as well as a "take all" feature ``my_stream.take(inf)``
   - New ``Stream.peek()`` method, allowing taking items while keeping them
-    as the next to be yielded by the Stream
+    as the next to be yielded by the Stream or StreamTeeHub
   - New ``Stream.skip()`` method for neglecting the leading items without
     storing them
   - New ``Stream.limit()`` method, to enforce a maximum "length"
+  - StreamTeeHub methods ``skip()``, ``limit()``, ``append()``, ``map()`` and
+    ``filter()`` returns the modified copy as a Stream instance (i.e., works
+    like ``Stream(my_stream_tee_hub).method_name()``)
 
 + lazy_synth:
 

@@ -216,7 +216,7 @@ class Stream(Iterable):
     Interface to apply audiolazy.blocks directly in a stream, returning
     another stream. Use keyword args.
     """
-    return Stream(blocks(self, *args, **kwargs))
+    return Stream(blocks(iter(self), *args, **kwargs))
 
   def take(self, n=None, constructor=list):
     """
@@ -290,7 +290,7 @@ class Stream(Iterable):
       n = int(round(n))
     return constructor(next(self._data) for _ in xrange(n))
 
-  def tee(self):
+  def copy(self):
     """
     Returns a "T" (tee) copy of the given stream, allowing the calling
     stream to continue being used.
@@ -298,9 +298,6 @@ class Stream(Iterable):
     a, b = it.tee(self._data) # 2 generators, not thread-safe
     self._data = a
     return Stream(b)
-
-  # Copy is just another useful common name for "tee"
-  copy = tee
 
   def peek(self, n=None, constructor=list):
     """
@@ -316,6 +313,7 @@ class Stream(Iterable):
 
     Note
     ----
+    When applied in a StreamTeeHub, this method doesn't consume a copy.
     Data evaluation is done only once, i.e., after peeking the data is simply
     stored to be yielded again when asked for.
 
@@ -481,6 +479,81 @@ class StreamTeeHub(Stream):
     if self._iters != []:
       warn("StreamTeeHub requesting {0} more copies than "
            "needed".format(len(self._iters)), MemoryLeakWarning)
+
+  def take(self, *args, **kwargs):
+    """
+    Fake function just to avoid using inherited Stream.take implicitly.
+
+    Warning
+    -------
+    You shouldn't need to call this method directly.
+    If you need a Stream instance to work progressively changing it, try:
+
+    >>> data = thub([1, 2, 3], 2) # A StreamTeeHub instance
+    >>> first_copy = Stream(data)
+    >>> first_copy.take(2)
+    [1, 2]
+    >>> list(data) # Gets the second copy
+    [1, 2, 3]
+    >>> first_copy.take()
+    3
+
+    If you just want to see the first few values, try
+    ``self.peek(*args, **kwargs)`` instead.
+
+    >>> data = thub((9, -1, 0, 4), 2) # StreamTeeHub instance
+    >>> data.peek()
+    9
+    >>> data.peek(3)
+    [9, -1, 0]
+    >>> list(data) # First copy
+    [9, -1, 0, 4]
+    >>> data.peek(1)
+    [9]
+    >>> second_copy = Stream(data)
+    >>> second_copy.peek(2)
+    [9, -1]
+    >>> data.peek() # There's no third copy
+    Traceback (most recent call last):
+        ...
+    IndexError: StreamTeeHub has no more copies left to use.
+
+    If you want to consume from every StreamTeeHub copy, you probably
+    should change your code before calling the ``thub()``,
+    but you still might use:
+
+    >>> data = thub(Stream(1, 2, 3), 2)
+    >>> Stream.take(data, n=2)
+    [1, 2]
+    >>> Stream(data).take() # First copy
+    3
+    >>> Stream(data).take(1) # Second copy
+    [3]
+    >>> Stream(data)
+    Traceback (most recent call last):
+        ...
+    IndexError: StreamTeeHub has no more copies left to use.
+
+    """
+    raise AttributeError("Use peek or cast to Stream.")
+
+  def copy(self):
+    """
+    Returns a new "T" (tee) copy of this StreamTeeHub without consuming
+    any of the copies done with the constructor.
+    """
+    if self._iters:
+      a, b = it.tee(self._iters[0])
+      self._iters[0] = a
+      return Stream(b)
+    iter(self) # Try to consume (so it'll raise the same error as usual)
+
+  limit = wraps(Stream.limit)(lambda self, n: Stream(self).limit(n))
+  skip = wraps(Stream.skip)(lambda self, n: Stream(self).skip(n))
+  append = wraps(Stream.append)( lambda self, *other:
+                                   Stream(self).append(*other) )
+  map = wraps(Stream.map)(lambda self, func: Stream(self).map(func))
+  filter = wraps(Stream.filter)(lambda self, func: Stream(self).filter(func))
 
 
 def thub(data, n):

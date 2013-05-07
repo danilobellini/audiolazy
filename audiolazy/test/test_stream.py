@@ -100,10 +100,10 @@ class TestStream(object):
     assert x.take(5) == [6, 10, 8, 9, 7]
     assert x.take(15) == [11, 6, 10, 8, 9, 7, 11, 6, 10, 8, 9, 7, 11, 6, 10]
 
-  def test_tee_copy(self):
+  def test_copy(self):
     a = Stream([1,2,3])
     b = Stream([8,5])
-    c = a.tee()
+    c = a.copy()
     d = b.copy()
     assert type(a) == type(c)
     assert type(b) == type(d)
@@ -132,7 +132,7 @@ class TestStream(object):
     )
   def test_blocks(self, stream_size, hop, block_size):
     data = Stream(xrange(stream_size))
-    data_copy = data.tee()
+    data_copy = data.copy()
     myblocks = data.blocks(size=block_size,
                            hop=hop) # Shouldn't use "data" anymore
     myblocks_rev = Stream(reversed(list(data_copy))).blocks(size=block_size,
@@ -184,21 +184,6 @@ class TestStream(object):
     assert data.copy().imag.take(6) == imag.copy().take(6)
     sum_data = data.copy().real + data.copy().imag
     assert sum_data.take(6) == (real + imag).take(6)
-
-  map_filter_data = [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
-                     range(20,40,3)]
-
-  @p("data", map_filter_data)
-  @p("func", [lambda x: x ** 2, lambda x: x // 2, lambda x: 18])
-  def test_map(self, data, func):
-    assert map(func, data) == list(Stream(data).map(func))
-    assert map(func, data) == list(imap(func, data))
-
-  @p("data", map_filter_data)
-  @p("func", [lambda x: x > 0, lambda x: x % 2 == 0, lambda x: False])
-  def test_filter(self, data, func):
-    assert filter(func, data) == list(Stream(data).filter(func))
-    assert filter(func, data) == list(ifilter(func, data))
 
   def test_no_boolean(self):
     with pytest.raises(TypeError):
@@ -286,6 +271,62 @@ class TestStream(object):
     data = Stream(-1, .2, it)
     assert data.skip(2).limit(9 + noise).peek(15) == [it, -1, .2] * 3
 
+  @p("noise", [-.3, 0., .1])
+  def test_take_peek_skip_with_float(self, noise):
+    data = [1.2, 7.7, 1e-3, 1e-17, 2e8, 27.1, 14.003, 1.0001, 7.3e5, 0.]
+    ds = Stream(data)
+    assert ds.limit(5 + noise).peek(10 - noise) == data[:5]
+    assert ds.skip(1 + noise).limit(3 - noise).peek(10 + noise) == data[1:4]
+    ds = Stream(data)
+    assert ds.skip(2 + noise).peek(20 + noise) == data[2:]
+    assert ds.skip(3 - noise).peek(20 - noise) == data[5:]
+    assert ds.skip(4 + noise).peek(1 + noise) == [data[9]]
+    ds = Stream(data)
+    assert ds.skip(4 - noise).peek(2 - noise) == data[4:6]
+    assert ds.skip(1 - noise).take(2 + noise) == data[5:7]
+    assert ds.peek(inf) == data[7:]
+    assert ds.take(inf) == data[7:]
+
+
+class TestEveryMapFilter(object):
+  """
+  Tests Stream.map, Stream.filter, StreamTeeHub.map, StreamTeeHub.filter,
+  lazy_itertools.imap and lazy_itertools.ifilter
+  """
+
+  map_filter_data = [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
+                     range(20,40,3)]
+
+  @p("data", map_filter_data)
+  @p("func", [lambda x: x ** 2, lambda x: x // 2, lambda x: 18])
+  def test_map(self, data, func):
+    expected = map(func, data)
+    assert list(Stream(data).map(func)) == expected
+    assert list(imap(func, data)) == expected
+    dt = thub(data, 2)
+    assert isinstance(dt, StreamTeeHub)
+    dt_data = dt.map(func)
+    assert isinstance(dt_data, Stream)
+    assert dt_data.take(inf) == expected
+    assert list(dt.map(func)) == expected # Second copy
+    with pytest.raises(IndexError):
+      dt.map(func)
+
+  @p("data", map_filter_data)
+  @p("func", [lambda x: x > 0, lambda x: x % 2 == 0, lambda x: False])
+  def test_filter(self, data, func):
+    expected = filter(func, data)
+    assert list(Stream(data).filter(func)) == expected
+    assert list(ifilter(func, data)) == expected
+    dt = thub(data, 2)
+    assert isinstance(dt, StreamTeeHub)
+    dt_data = dt.filter(func)
+    assert isinstance(dt_data, Stream)
+    assert dt_data.take(inf) == expected
+    assert list(dt.filter(func)) == expected # Second copy
+    with pytest.raises(IndexError):
+      dt.filter(func)
+
 
 class TestThub(object):
 
@@ -309,3 +350,86 @@ class TestThub(object):
         assert issubclass(w.category, MemoryLeakWarning)
         assert str(copies - used_copies) in str(w.message)
       assert warnings_list == []
+
+  def test_take_peek(self):
+    data = Stream(1, 2, 3).limit(50)
+    data = thub(data, 2)
+    assert data.peek() == 1
+    assert data.peek(.2) == []
+    assert data.peek(1) == [1]
+    with pytest.raises(AttributeError):
+      data.take()
+    assert data.peek(22) == Stream(1, 2, 3).take(22)
+    assert data.peek(42.2) == Stream(1, 2, 3).take(42)
+    with pytest.raises(AttributeError):
+      data.take(2)
+    assert data.peek(57.8) == Stream(1, 2, 3).take(50)
+    assert data.peek(inf) == Stream(1, 2, 3).take(50)
+
+  @p("noise", [-.3, 0, .1])
+  def test_limit(self, noise):
+    source = [.1, -.2, 18, it, Stream]
+    length = len(source)
+    data = Stream(*source).limit(4 * length)
+    data = thub(data, 3)
+
+    # First copy
+    first_copy = data.limit(length + noise)
+    assert isinstance(first_copy, Stream)
+    assert not isinstance(first_copy, StreamTeeHub)
+    assert list(first_copy) == source
+
+    # Second copy
+    assert data.peek(3 - noise) == source[:3]
+    assert Stream(data).take(inf) == 4 * source
+
+    # Third copy
+    third_copy = data.limit(5 * length + noise)
+    assert isinstance(third_copy, Stream)
+    assert not isinstance(third_copy, StreamTeeHub)
+    assert third_copy.take(inf) == 4 * source
+
+    # No more copies
+    assert isinstance(data, StreamTeeHub)
+    with pytest.raises(IndexError):
+      data.limit(3)
+
+  @p("noise", [-.3, 0, .1])
+  def test_skip_append(self, noise):
+    source = [9, 14, -7, noise]
+    length = len(source)
+    data = Stream(*source).limit(7 * length)
+    data = thub(data, 3)
+
+    # First copy
+    first_copy = data.skip(length + 1)
+    assert isinstance(first_copy, Stream)
+    assert not isinstance(first_copy, StreamTeeHub)
+    assert first_copy is first_copy.append([8])
+    assert list(first_copy) == source[1:] + 5 * source + [8]
+
+    # Second and third copies
+    assert data.skip(1 + noise).peek(3 - noise) == source[1:4]
+    assert data.append([1]).skip(length - noise).take(inf) == 6 * source + [1]
+
+    # No more copies
+    assert isinstance(data, StreamTeeHub)
+    with pytest.raises(IndexError):
+      data.skip(1)
+    with pytest.raises(IndexError):
+      data.append(3)
+
+  @p("size", [4, 5, 6])
+  @p("hop", [None, 1, 5])
+  def test_blocks(self, size, hop):
+    copies = 8 - size
+    source = Stream(7, 8, 9, -1, -1, -1, -1).take(40)
+    data = thub(source, copies)
+    expected = list(Stream(source).blocks(size=size, hop=hop).map(list))
+    for _ in xrange(copies):
+      blks = data.blocks(size=size, hop=hop).map(list)
+      assert isinstance(blks, Stream)
+      assert not isinstance(blks, StreamTeeHub)
+      assert blks.take(inf) == expected
+    with pytest.raises(IndexError):
+      data.blocks(size=size, hop=hop)
