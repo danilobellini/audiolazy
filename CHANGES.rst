@@ -24,6 +24,7 @@ AudioLazy changes history
 + examples:
 
   - Pitch follower via zero-crossing rate with Tkinter GUI
+  - Pi with Madhava-Gregory-Leibniz series and Machin formula using Stream
 
 + general:
 
