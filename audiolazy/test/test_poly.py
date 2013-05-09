@@ -23,6 +23,8 @@ Testing module for the lazy_poly module
 import pytest
 p = pytest.mark.parametrize
 
+import operator
+
 # Audiolazy internal imports
 from ..lazy_poly import Poly
 from ..lazy_misc import almost_eq
@@ -67,3 +69,23 @@ class TestPoly(object):
     poly_obj = Poly([.3, 4]) - Poly() - Poly([0, 4, -4]) + Poly([.7, 0, -4])
     assert len(poly_obj) == 1
     assert almost_eq(poly_obj[0], 1)
+
+  instances = [
+    Poly([1.7, 2, 3.3]),
+    Poly({-2: 1, -1: 5.1, 3: 2}),
+    Poly({-1.1: 1, 1.1: .5}),
+  ]
+
+  @p("val", instances)
+  @p("div", [operator.div, operator.truediv])
+  @p("den", [.1, -4e-3, 2])
+  def test_int_float_div(self, val, div, den):
+    assert almost_eq(div(den * val, den).terms(), val.terms())
+    assert almost_eq(div(den * val, -den).terms(), (-val).terms())
+    assert almost_eq(div(den * -val, den).terms(), (-val).terms())
+    assert almost_eq(div(-den * val, den).terms(), (-val).terms())
+    expected = Poly({k: operator.truediv(v, den) for k, v in val.terms()})
+    assert almost_eq(div(val, den).terms(), expected.terms())
+    assert almost_eq(div(val, -den).terms(), (-expected).terms())
+    assert almost_eq(div(-val, den).terms(), (-expected).terms())
+    assert almost_eq(div(-val, -den).terms(), expected.terms())

@@ -636,17 +636,18 @@ class LinearFilter(LinearFilterProperties):
 
 
 class ZFilterMeta(AbstractOperatorOverloaderMeta):
-  __operators__ = ("pos neg add radd sub rsub mul rmul div rdiv "
-                   "truediv rtruediv pow ")
+  __operators__ = "+ - * / **"
 
-  def __rbinary__(cls, op_func):
+  def __rbinary__(cls, op):
+    op_func = op.func
     def dunder(self, other):
       if isinstance(other, cls):
         raise ValueError("Filter equations have different domains")
       return op_func(cls([other]), self) # The "other" is probably a number
     return dunder
 
-  def __unary__(cls, op_func):
+  def __unary__(cls, op):
+    op_func = op.func
     def dunder(self):
       return cls(op_func(self.numpoly), self.denpoly)
     return dunder
@@ -848,13 +849,13 @@ z = ZFilter({-1: 1})
 
 
 class FilterListMeta(AbstractOperatorOverloaderMeta):
-  __operators__ = ("add mul rmul lt le gt ge")
+  __operators__ = "add * > >= < <="
 
-  def __binary__(cls, op_func):
-    "Binary dunder factory."
+  def __binary__(cls, op):
+    op_dname = op.dname
     def dunder(self, other):
       "This operator acts just like it would do with lists."
-      return cls(getattr(super(cls, self), dunder.__name__)(other))
+      return cls(getattr(super(cls, self), op_dname)(other))
     return dunder
 
   __rbinary__ = __binary__

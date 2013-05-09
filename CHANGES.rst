@@ -31,8 +31,15 @@ AudioLazy changes history
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5500+ tests and 79% code coverage
+  - Now with 5500+ tests and 80% code coverage
   - Removed deprecated ``Stream.tee()`` method
+  - No more distinction between ``__div__`` and ``__truediv__``
+
++ lazy_core:
+
+  - New ``OpMethod`` class with 33 operator method instances and querying
+  - Changed ``AbstractOperatorOverloaderMeta`` to the new OpMethod-based
+    interface
 
 + lazy_io:
 

@@ -36,19 +36,19 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   Poly metaclass. This class overloads few operators to the Poly class.
   All binary dunders (non reverse) should be implemented on the Poly class
   """
-  __operators__ = ("add radd sub rsub " # elementwise
-                   "mul rmul " # cross
-                   "pow div truediv " # to mul, only when other is not Poly
-                   "eq ne " # comparison of Poly terms
-                   "pos neg " # simple unary elementwise
-                  )
+  __operators__ = ["+ -", # elementwise
+                   "*", # cross
+                   "pow truediv ", # when other is not Poly (no reverse)
+                   "eq ne "] # comparison of Poly terms
 
-  def __rbinary__(cls, op_func):
+  def __rbinary__(cls, op):
+    op_func = op.func
     def dunder(self, other):
       return op_func(cls(other), self) # The "other" is probably a number
     return dunder
 
-  def __unary__(cls, op_func):
+  def __unary__(cls, op):
+    op_func = op.func
     def dunder(self):
       return cls({k: op_func(v) for k, v in self.data.iteritems()})
     return dunder
@@ -227,16 +227,6 @@ class Poly(object):
       return Poly({k * other: v for k, v in self.data.iteritems()})
     return reduce(operator.mul, [self] * other)
 
-  def __div__(self, other):
-    if isinstance(other, Poly):
-      if len(other) == 1:
-        delta, value = other.data.items()[0]
-        return Poly({(k - delta): operator.div(v, other)
-                     for k, v in self.data.iteritems()})
-      raise NotImplementedError("Can't divide general Poly instances")
-    return Poly({k: operator.div(v, other)
-                 for k, v in self.data.iteritems()})
-
   def __truediv__(self, other):
     if isinstance(other, Poly):
       if len(other) == 1:
@@ -246,6 +236,8 @@ class Poly(object):
       raise NotImplementedError("Can't divide general Poly instances")
     return Poly({k: operator.truediv(v, other)
                  for k, v in self.data.iteritems()})
+
+  __div__ = __truediv__
 
   # ---------------------
   # String representation

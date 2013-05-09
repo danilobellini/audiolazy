@@ -194,7 +194,7 @@ class TestStream(object):
     input1 = [1, 5, 7., 3.3]
     input2 = [9.2, 10, 11, 4.9]
     data = op(Stream(input1), Stream(input2))
-    expected = [op(x, y) for x, y in zip(input1, input2)]
+    expected = [operator.truediv(x, y) for x, y in zip(input1, input2)]
     assert isinstance(data, Stream)
     assert list(data) == expected
 

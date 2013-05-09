@@ -20,15 +20,181 @@
 Core classes module
 """
 
+import sys
 import operator
-from collections import defaultdict
-from abc import ABCMeta, abstractproperty
+from collections import Iterable
+from abc import ABCMeta
 import itertools as it
 
 # Audiolazy internal imports
 from .lazy_misc import small_doc
 
-__all__ = ["AbstractOperatorOverloaderMeta", "MultiKeyDict", "StrategyDict"]
+__all__ = ["OpMethod", "AbstractOperatorOverloaderMeta", "MultiKeyDict",
+           "StrategyDict"]
+
+
+class OpMethod(object):
+  """
+  Internal class to represent an operator method metadata.
+
+  You can acess operator methods directly by using the OpMethod.get() class
+  method, which always returns a list from a query.
+  This might be helpful if you need to acess the operator module from
+  symbols. Given an instance "op", it has the following data:
+
+  ========= ===========================================================
+  Attribute Contents (and an example with OpMethod.get("__radd__"))
+  ========= ===========================================================
+  op.name   Operator name string, e.g. ``"radd"``.
+  op.dname  Dunder name string, e.g. ``"__radd__"``.
+  op.func   Function reference, e.g. ``operator.add``.
+  op.symbol Operator symbol if in a code as a string, e.g. ``"+"``.
+  op.rev    Boolean telling if the operator is reversed, e.g. ``True``.
+  op.arity  Number of operands, e.g. ``2``.
+  ========= ===========================================================
+
+  See the OpMethod.get docstring for more information and examples.
+
+  """
+  _all = {}
+
+  @classmethod
+  def get(cls, key=None, without=None):
+    """
+    Returns a list with every OpMethod instance that match the key.
+
+    Parameters
+    ----------
+    key :
+      String with whitespace-separated operator names or symbols, or an
+      iterable with names, symbols or functions from the operator class.
+    without :
+      The same of the key, but used to tell the query something that
+      shouldn't appear in the result.
+
+    Returns
+    -------
+    Generator with all OpMethod instances that matches the query once, keeping
+    the order in which it is asked for. For a given symbol with 3 operator
+    methods (e.g., "+", which yields __add__, __radd__ and __pos__), the
+    yielding order is <binary>, <reversed binary> and <unary>.
+
+    Examples
+    --------
+    >>> list(OpMethod.get("*")) # By symbol
+    [<mul operator method ('*' symbol)>, <rmul operator method ('*' symbol)>]
+    >>> OpMethod.get(">>")
+    <generator object get at 0x...>
+    >>> len(list(_)) # Found __rshift__ and __rrshift__, as a generator
+    2
+    >>> OpMethod.get("__add__").next().func(2, 3) # By name, finds 2 + 3
+    5
+    >>> OpMethod.get("rsub").next().symbol # Name is without underscores
+    '-'
+    >>> mod = list(OpMethod.get("%"))
+    >>> mod[0].rev # Is it reversed? The __mod__ isn't.
+    False
+    >>> mod[1].rev # But the __rmod__ is!
+    True
+    >>> mod[1].arity # Number of operands, the __rmod__ is binary
+    2
+    >>> add = list(OpMethod.get("+"))
+    >>> add[2].arity # Unary "+"
+    1
+    >>> add[2] is OpMethod.get("pos").next()
+    True
+    >>> import operator
+    >>> OpMethod.get(operator.add).next().symbol # Using the operator function
+    '+'
+    >>> len(list(OpMethod.get(operator.add))) # __add__ and __radd__
+    2
+    >>> len(list(OpMethod.get("<< >>"))) # Multiple inputs
+    4
+    >>> len(list(OpMethod.get("<< >>", without="r"))) # Without reversed
+    2
+    >>> list(OpMethod.get(["+", "&"], without=[operator.add, "r"]))
+    [<pos operator method ('+' symbol)>, <and operator method ('&' symbol)>]
+    >>> len(set(OpMethod.get(2, without=["- + *", "%", "r"])))
+    14
+    >>> len(set(OpMethod.get("all"))) # How many operator methods there are?
+    33
+
+    """
+    if key is None:
+      return
+    ignore = set() if without is None else set(cls.get(without))
+    if isinstance(key, (str, unicode)) or not isinstance(key, Iterable):
+      key = [key]
+    key = it.chain(*[el.split() if isinstance(el, (str, unicode)) else [el]
+                     for el in key])
+    for op_descr in key:
+      try:
+        for op in cls._all[op_descr]:
+          if op not in ignore:
+            yield op
+      except KeyError:
+        if op_descr in ["div", "__div__", "rdiv", "__rdiv__"]:
+          raise ValueError("Use only 'truediv' for division")
+        raise ValueError("Operator '{}' not found".format(op_descr))
+
+  @classmethod
+  def _insert(cls, name, symbol):
+    self = cls()
+    self.name = name
+    self.symbol = symbol
+    self.rev = name.startswith("r") and name != "rshift"
+    self.dname = "__{}__".format(name) # Dunder name
+    self.arity = 1 if name in ["pos", "neg", "invert"] else 2
+    self.func = getattr(operator, "__{}__".format(name[self.rev:]))
+
+    # Updates the "all" dictionary
+    keys = ["all", self.symbol, self.name, self.dname, self.func, self.arity]
+    if self.rev:
+      keys.append("r")
+    for key in keys:
+      if key not in cls._all:
+        cls._all[key] = [self]
+      else:
+        cls._all[key].append(self)
+
+  @classmethod
+  def _initialize(cls):
+    """
+    Internal method to initialize the class by creating all
+    the operator metadata to be used afterwards.
+    """
+    op_symbols = """
+      + add radd pos
+      - sub rsub neg
+      * mul rmul
+      / truediv rtruediv
+      // floordiv rfloordiv
+      % mod rmod
+      ** pow rpow
+      >> lshift rlshift
+      << rshift rlshift
+      ~ invert
+      & and rand
+      | or ror
+      ^ xor rxor
+      < lt
+      <= le
+      == eq
+      != ne
+      > gt
+      >= ge
+    """
+    for op_line in op_symbols.strip().splitlines():
+      symbol, names = op_line.split(None, 1)
+      for name in names.split():
+        cls._insert(name, symbol)
+
+  def __repr__(self):
+    return "<{} operator method ('{}' symbol)>".format(self.name, self.symbol)
+
+
+# Creates all operators
+OpMethod._initialize()
 
 
 class AbstractOperatorOverloaderMeta(ABCMeta):
@@ -41,115 +207,81 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
   You need a concrete class inherited from this one, and the "abstract"
   enforcement and specification is:
 
-  - You have to override __operators__ with a string, given the operators
-    to be used by its dunder name "without the dunders" (i.e., "__add__"
-    should be written as "add"), all in a single string separated by spaces
-    and including reversed operators, like "add radd sub rsub eq".
-    Its a good idea to tell all operators that will be used, since the
-    metaclass will enforce their existance.
+  - Override __operators__ and __without__ with a ``OpMethod.get()`` valid
+    query inputs, see that method docstring for more information and examples.
+    Its a good idea to tell all operators that will be used, including the
+    ones that should be defined in the instance namespace, since the
+    metaclass will enforce their existance without overwriting.
+
+    These should be overridden by a string or a list with all operator names,
+    symbols or operator functions (from the `operator` module) to be
+    overloaded (or neglect, in the __without__).
+
+    - When using names, reversed operators should be given explicitly.
+    - When using symbols the reversed operators and the unary are implicit.
+    - When using operator functions, the ooperators and the unary are
+      implicit.
+
+    By default, __operators__ is "all" and __without__ is None.
 
   - All operators should be implemented by the metaclass hierarchy or by
     the class directly, and the class has priority when both exists,
-    neglecting the template in this case.
+    neglecting the method builder in this case.
 
-  - There are three templates: __binary__, __rbinary__, __unary__, all
-    receives 2 parameters (the class being instantiated and the operator
-    function) and should return a function for the specific dunder.
+  - There are three method builders which should be written in the concrete
+    metaclass: ``__binary__``, ``__rbinary__`` and ``__unary__``.
+    All receives 2 parameters (the class being instantiated and a OpMethod
+    instance) and should return a function for the specific dunder, probably
+    doing so based on general-use templates.
+
+  Note
+  ----
+  Don't use "div"! In Python 2.x it'll be a copy of truediv.
 
   """
-  # Operator number of inputs, as a dictionary with default value equals to 2
-  __operator_inputs__ = defaultdict(lambda: 2)
-  for unary in "pos neg invert".split():
-    __operator_inputs__[unary] = 1 # coz' we can't inspect the operator module
+  __operators__ = "all"
+  __without__ = None
 
   def __new__(mcls, name, bases, namespace):
     cls = super(AbstractOperatorOverloaderMeta,
                 mcls).__new__(mcls, name, bases, namespace)
 
-    # Enforce __operators__ as an abstract attribute
-    if getattr(mcls.__operators__, "__isabstractmethod__", False):
-      msg = "Can't instantiate from '{0}' since '__operators__' is abstract"
-      raise TypeError(msg.format(mcls.__name__))
+    # Inserts each operator into the class
+    for op in OpMethod.get(mcls.__operators__, without=mcls.__without__):
+      if op.dname not in namespace: # Added manually shouldn't use template
 
-    # Inserts the operators into the class
-    for op_no_under in cls.__operators__.split():
-      op_under = "__" + op_no_under + "__"
-      if op_under not in namespace: # Added manually shouldn't use template
-
-        # Find the operator
-        op_name = op_no_under.lstrip("r")
-        if op_name == "shift":
-          op_name = "rshift"
-        op_func = getattr(operator, "__" + op_name + "__")
-
-        # Creates the dunder
-        dunder = cls.new_dunder(op_func=op_func,
-                                is_reversed=op_no_under.startswith("r") and
-                                            op_no_under != "rshift",
-                                ninputs=mcls.__operator_inputs__[op_no_under])
+        # Creates the dunder method
+        dunder = {(False, 1): mcls.__unary__,
+                  (False, 2): mcls.__binary__,
+                  (True, 2): mcls.__rbinary__,
+                 }[op.rev, op.arity](cls, op)
 
         # Abstract enforcement
         if not callable(dunder):
-          msg = "Class '{0}' has no operator template for '{1}'"
-          raise TypeError(msg.format(cls.__name__, op_under))
+          msg = "Class '{}' has no builder/template for operator method '{}'"
+          raise TypeError(msg.format(cls.__name__, op.dname))
 
         # Inserts the dunder into the class
-        dunder.__name__ = "__" + op_no_under + "__"
+        dunder.__name__ = op.dname
         setattr(cls, dunder.__name__, dunder)
+        if sys.version_info.major == 2 and op.name in ["truediv", "rtruediv"]:
+          new_name = op.dname.replace("true", "")
+          if new_name not in namespace: # If wasn't insert manually
+            setattr(cls, new_name, dunder)
+
     return cls
-
-  @abstractproperty
-  def __operators__(cls):
-    """
-    Should be overridden by a string with all operator names to be overloaded.
-    Reversed operators should be given explicitly.
-
-    """
-    return ""
-
-  def new_dunder(cls, op_func, is_reversed, ninputs):
-    """
-    Insert a new dunder (double underscore method) to the class.
-
-    Parameters
-    ----------
-    op_func :
-      A function from the operator module.
-    is_reversed :
-      If true, reverses the operands order. For example, it means that
-      besides op_func being perhaps ``operator.add``, what is being asked
-      as return value is a ``__radd__`` method dunder, as a function.
-    ninputs :
-      An int (1 or 2) telling if is the dunder is ``unary(self)`` or
-      ``binary(self, other)``, respectively.
-
-    Returns
-    -------
-    A function to be used as a dunder for the given operator.
-
-    Note
-    ----
-    Commonly you don't need to worry with this, since this is done by the
-    ``__new__`` constructor when you implement the operator dunder templates
-    as said in the class docstring.
-
-    """
-    return {(False, 1): cls.__unary__,
-            (False, 2): cls.__binary__,
-            (True, 2): cls.__rbinary__,
-           }[is_reversed, ninputs](op_func)
 
   # The 3 methods below should be overloaded, but they shouldn't be
   # "abstractmethod" since it's unuseful (and perhaps undesirable)
   # when there could be only one type of operator being massively overloaded.
-  def _not_implemented(cls, op_func):
+  def __binary__(cls, op):
     """
     This method should be overridden to return the dunder for the given
     operator function.
 
     """
     return NotImplemented
-  __unary__ = __binary__ = __rbinary__ = _not_implemented
+  __unary__ = __rbinary__ = __binary__
 
 
 class MultiKeyDict(dict):

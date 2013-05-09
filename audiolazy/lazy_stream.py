@@ -41,13 +41,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
   but cmp/rcmp (deprecated), ternary pow (could be called with Stream.map) as
   well as divmod (same as pow, but this will result in a Stream of tuples).
   """
-  __operators__ = ("add radd sub rsub mul rmul pow rpow div rdiv mod rmod "
-                   "truediv rtruediv floordiv rfloordiv "
-                   "pos neg lshift rshift rlshift rrshift "
-                   "and rand or ror xor rxor invert "
-                   "lt le eq ne gt ge")
-
-  def __binary__(cls, op_func):
+  def __binary__(cls, op):
+    op_func = op.func
     def dunder(self, other):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
@@ -56,7 +51,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       return Stream(it.imap(lambda a: op_func(a, other), iter(self)))
     return dunder
 
-  def __rbinary__(cls, op_func):
+  def __rbinary__(cls, op):
+    op_func = op.func
     def dunder(self, other):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
@@ -65,7 +61,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       return Stream(it.imap(lambda a: op_func(other, a), iter(self)))
     return dunder
 
-  def __unary__(cls, op_func):
+  def __unary__(cls, op):
+    op_func = op.func
     def dunder(self):
       return Stream(it.imap(op_func, iter(self)))
     return dunder

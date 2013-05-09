@@ -133,15 +133,14 @@ class TestZFilter(object):
     assert almost_eq(filt(self.data), [0.] + self.data[:-1])
 
   @p("a", [a for a in alpha if a != 0])
-  def test_z_div_truediv_delay_over_constant(self, a):
-    div_filter = operator.div(z ** -1, a)
-    truediv_filter = operator.truediv(z ** -1, a)
-    div_expected = it.imap(lambda x: operator.div(x, a),
-                           [0.] + self.data[:-1])
-    truediv_expected = it.imap(lambda x: operator.truediv(x, a),
-                               [0.] + self.data[:-1])
-    assert almost_eq(div_filter(self.data), div_expected)
-    assert almost_eq(truediv_filter(self.data), truediv_expected)
+  @p("div", [operator.div, operator.truediv])
+  @p("zero", [0., 0])
+  def test_z_div_truediv_unit_delay_divided_by_constant(self, a, div, zero):
+    for el in [a, int(10 * a)]:
+      div_filter = div(z ** -1, a)
+      div_expected = it.imap(lambda x: operator.truediv(x, a),
+                             [zero] + self.data[:-1])
+      assert almost_eq(div_filter(self.data, zero=zero), div_expected)
 
   @p("a", alpha)
   def test_z_div_truediv_constant_over_delay(self, a):

@@ -29,16 +29,17 @@ from ..lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 
 class TestAbstractOperatorOverloaderMeta(object):
 
-  def test_cant_be_used_directly_as_metaclass(self):
+  def test_empty_directly_as_metaclass(self):
     with pytest.raises(TypeError):
       try:
         class unnamed(object):
           __metaclass__ = AbstractOperatorOverloaderMeta
       except TypeError, excep:
-        assert excep.message.startswith("Can't instantiate")
+        msg = "Class 'unnamed' has no builder/template for operator method '"
+        assert excep.message.startswith(msg)
         raise
 
-  def test_subclass_without_operators_dunder(self):
+  def test_empty_invalid_subclass(self):
     class MyAbstractClass(AbstractOperatorOverloaderMeta):
       pass
     with pytest.raises(TypeError):
@@ -46,7 +47,8 @@ class TestAbstractOperatorOverloaderMeta(object):
         class DummyClass(object):
           __metaclass__ = MyAbstractClass
       except TypeError, excep:
-        assert excep.message.startswith("Can't instantiate")
+        msg = "Class 'DummyClass' has no builder/template for operator method"
+        assert excep.message.startswith(msg)
         raise
 
 
