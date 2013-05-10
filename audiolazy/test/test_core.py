@@ -25,6 +25,7 @@ p = pytest.mark.parametrize
 
 # Audiolazy internal imports
 from ..lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
+from ..lazy_misc import meta
 
 
 class TestAbstractOperatorOverloaderMeta(object):
@@ -32,9 +33,9 @@ class TestAbstractOperatorOverloaderMeta(object):
   def test_empty_directly_as_metaclass(self):
     with pytest.raises(TypeError):
       try:
-        class unnamed(object):
-          __metaclass__ = AbstractOperatorOverloaderMeta
-      except TypeError, excep:
+        class unnamed(meta(metaclass=AbstractOperatorOverloaderMeta)):
+          pass
+      except TypeError as excep:
         msg = "Class 'unnamed' has no builder/template for operator method '"
         assert excep.message.startswith(msg)
         raise
@@ -44,9 +45,9 @@ class TestAbstractOperatorOverloaderMeta(object):
       pass
     with pytest.raises(TypeError):
       try:
-        class DummyClass(object):
-          __metaclass__ = MyAbstractClass
-      except TypeError, excep:
+        class DummyClass(meta(metaclass=MyAbstractClass)):
+          pass
+      except TypeError as excep:
         msg = "Class 'DummyClass' has no builder/template for operator method"
         assert excep.message.startswith(msg)
         raise
@@ -94,8 +95,9 @@ class TestStrategyDict(object):
     assert sd.data()
     assert not sd.only()
     assert not sd.main()
-    assert ("data",) in sd.keys()
-    assert ("only", "main") in sd.keys()
+    sd_keys = list(sd.keys())
+    assert ("data",) in sd_keys
+    assert ("only", "main") in sd_keys
 
 
   @p("add_names", [("t1", "t2"), ("t1", "t2", "t3")])

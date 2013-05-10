@@ -25,11 +25,12 @@ p = pytest.mark.parametrize
 
 import itertools as it
 import operator
+from functools import reduce
 
 # Audiolazy internal imports
 from ..lazy_lpc import (toeplitz, levinson_durbin, lpc, parcor,
                         parcor_stable, lsf, lsf_stable)
-from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_misc import almost_eq, almost_eq_diff, xrange
 from ..lazy_filters import z, ZFilter
 from ..lazy_math import abs as lzabs
 
@@ -137,7 +138,7 @@ class TestLPCParcorLSFAndStability(object):
 class TestLPC(object):
 
   small_block = [-1, 0, 1.2, -1, -2.7, 3, 7.1, 9, 12.3]
-  big_block = list((1 - 2 * z ** -1)(range(150), zero=0))
+  big_block = list((1 - 2 * z ** -1)(xrange(150), zero=0))
   block_list = [
     [1, 5, 3],
     [1, 2, 3, 3, 2, 1],

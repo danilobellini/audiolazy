@@ -24,12 +24,13 @@ import operator
 from cmath import exp as complex_exp
 from collections import Iterable, OrderedDict
 import itertools as it
+from functools import reduce
 
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter, sHz, auto_formatter,
-                        almost_eq)
+                        almost_eq, meta, iteritems, xrange, im_func)
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import (exp, sin, cos, sqrt, pi, nan, dB20, phase,
@@ -89,6 +90,17 @@ class LinearFilterProperties(object):
 
     """
     return Poly(self.denominator[::-1])
+
+
+def _exec_eval(data, expr):
+  """
+  Internal function to isolate an exec. Executes ``data`` and returns the
+  ``expr`` evaluation afterwards.
+
+  """
+  ns = {}
+  exec(data, ns)
+  return eval(expr, ns)
 
 
 @avoid_stream
@@ -161,7 +173,7 @@ class LinearFilter(LinearFilterProperties):
     else: # Get data from iterable
       if not isinstance(memory, Iterable): # Function with 1 parameter: size
         memory = memory(lm)
-      tw = it.takewhile(lambda (idx, data): idx < lm,
+      tw = it.takewhile(lambda pair: pair[0] < lm,
                         enumerate(memory))
       memory = [data for idx, data in tw]
       actual_len = len(memory)
@@ -172,7 +184,7 @@ class LinearFilter(LinearFilterProperties):
     data_sum = []
 
     num_iterables = []
-    for delay, coeff in self.numdict.iteritems():
+    for delay, coeff in iteritems(self.numdict):
       if isinstance(coeff, Iterable):
         num_iterables.append(delay)
         data_sum.append("d{idx} * b{idx}.next()".format(idx=delay))
@@ -184,7 +196,7 @@ class LinearFilter(LinearFilterProperties):
         data_sum.append("d{idx} * {value}".format(idx=delay, value=coeff))
 
     den_iterables = []
-    for delay, coeff in self.dendict.iteritems():
+    for delay, coeff in iteritems(self.dendict):
       if isinstance(coeff, Iterable):
         den_iterables.append(delay)
         data_sum.append("-m{idx} * a{idx}.next()".format(idx=delay))
@@ -227,12 +239,11 @@ class LinearFilter(LinearFilterProperties):
                    for idx in xrange(lb - 1, 0, -1)]
 
     # Uses the generator function to return the desired values
-    ns = {}
-    exec "\n".join(gen_func) in ns
+    gen = _exec_eval("\n".join(gen_func), "gen")
     arguments = [iter(seq)]
     arguments.extend(iter(self.numpoly[idx]) for idx in num_iterables)
     arguments.extend(iter(self.denpoly[idx]) for idx in den_iterables)
-    return Stream(ns["gen"](*arguments))
+    return Stream(gen(*arguments))
 
 
   @elementwise("freq", 1)
@@ -538,7 +549,7 @@ class LinearFilter(LinearFilterProperties):
       Output: dict of pairs {pair: amount_of_repeats}
       """
       result = {idx: {idx} for idx, pair in enumerate(pairs)}
-      for idx1, idx2 in it.combinations(range(len(pairs)), 2):
+      for idx1, idx2 in it.combinations(xrange(len(pairs)), 2):
         p1 = pairs[idx1]
         p2 = pairs[idx2]
         if almost_eq(p1, p2):
@@ -552,7 +563,7 @@ class LinearFilter(LinearFilterProperties):
             if idxeq != idx and idx in result:
               del result[idx]
               to_verify.remove(idx)
-      return {pairs[k]: len(v) for k, v in result.iteritems() if len(v) > 1}
+      return {pairs[k]: len(v) for k, v in iteritems(result) if len(v) > 1}
 
     # Multiple roots text printing
     td = zp_plot.transData
@@ -563,13 +574,13 @@ class LinearFilter(LinearFilterProperties):
                 for zero in zeros]
     pole_pos = [tuple(td.transform((pole.real, pole.imag)))
                 for pole in poles]
-    for zero, zrep in get_repeats(zero_pos).iteritems():
+    for zero, zrep in iteritems(get_repeats(zero_pos)):
       px, py = tdi.transform(zero)
       txt = zp_plot.text(px, py, "{0:d}".format(zrep), color="darkgreen",
                          transform=tzero, ha="center", va="center",
                          fontsize=10)
       txt.set_bbox(dict(facecolor="white", edgecolor="None", alpha=.4))
-    for pole, prep in get_repeats(pole_pos).iteritems():
+    for pole, prep in iteritems(get_repeats(pole_pos)):
       px, py = tdi.transform(pole)
       txt = zp_plot.text(px, py, "{0:d}".format(prep), color="black",
                          transform=tpole, ha="center", va="center",
@@ -654,7 +665,7 @@ class ZFilterMeta(AbstractOperatorOverloaderMeta):
 
 
 @avoid_stream
-class ZFilter(LinearFilter):
+class ZFilter(meta(LinearFilter, metaclass=ZFilterMeta)):
   """
   Linear filters based on Z-transform frequency domain equations.
 
@@ -688,8 +699,6 @@ class ZFilter(LinearFilter):
   [0, 4, 18, 39, 50]
 
   """
-  __metaclass__ = ZFilterMeta
-
   def __add__(self, other):
     if isinstance(other, ZFilter):
       if self.denpoly == other.denpoly:
@@ -766,7 +775,7 @@ class ZFilter(LinearFilter):
         num = centralize_spacer + num
 
     breaks = len(line) // 80
-    slices = [slice(b * 80,(b + 1) * 80) for b in range(breaks + 1)]
+    slices = [slice(b * 80,(b + 1) * 80) for b in xrange(breaks + 1)]
     outputs = ["\n".join([num[s], line[s], den[s]]) for s in slices]
     return "\n\n    ...continue...\n\n".join(outputs)
 
@@ -861,14 +870,12 @@ class FilterListMeta(AbstractOperatorOverloaderMeta):
   __rbinary__ = __binary__
 
 
-class FilterList(list, LinearFilterProperties):
+class FilterList(meta(list, LinearFilterProperties, metaclass=FilterListMeta)):
   """
   Class from which CascadeFilter and ParallelFilter inherits the common part
   of their contents. You probably won't need to use this directly.
 
   """
-  __metaclass__ = FilterListMeta
-
   def __init__(self, *filters):
     if len(filters) == 1 and not callable(filters[0]) \
                          and isinstance(filters[0], Iterable):
@@ -906,8 +913,8 @@ class FilterList(list, LinearFilterProperties):
     return all(filt.is_causal() for filt in self.callables
                                 if hasattr(filt, "is_causal"))
 
-  plot = LinearFilter.plot.im_func
-  zplot = LinearFilter.zplot.im_func
+  plot = im_func(LinearFilter.plot)
+  zplot = im_func(LinearFilter.zplot)
 
   def __eq__(self, other):
     return type(self) == type(other) and list.__eq__(self, other)

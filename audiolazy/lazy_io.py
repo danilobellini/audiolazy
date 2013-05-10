@@ -33,7 +33,7 @@ try:
                      "B": pyaudio.paUInt8,
                     }
 except:
-  print "Info: PyAudio not found. Module imported, but can't use audio I/O"
+  print("Info: PyAudio not found. Module imported, but can't use audio I/O")
   pass
 
 import threading

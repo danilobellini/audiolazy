@@ -44,7 +44,7 @@ class TestLog(object):
   def test_one(self, func):
     assert func(1) == func(1.) == func(1. + 0j) == 0
 
-  @p(("func", "base"), funcs.items())
+  @p(("func", "base"), list(funcs.items()))
   def test_minus_one(self, func, base):
     radius = func(e)
     tp = 2 * pi * radius

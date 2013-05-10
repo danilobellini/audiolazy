@@ -21,11 +21,13 @@
 Random Bach Choral playing example (needs Music21 corpus)
 """
 
+from __future__ import unicode_literals, print_function
 from music21 import corpus
 from music21.expressions import Fermata
 import audiolazy as lz
 import random
 import operator
+from functools import reduce
 
 def ks_mem(freq):
   """ Alternative memory for Karplus-Strong """
@@ -43,7 +45,7 @@ step = 60. / beat * s
 # Open the choral file
 choral_file = corpus.getBachChorales()[random.randint(0, 399)]
 choral = corpus.parse(choral_file)
-print u"Playing", choral.metadata.title
+print("Playing", choral.metadata.title)
 
 # Creates the score from the music21 data
 score = reduce(operator.concat,

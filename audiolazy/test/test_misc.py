@@ -28,7 +28,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_misc import (chunks, array_chunks, elementwise, almost_eq,
-                         rst_table)
+                         rst_table, orange, xrange)
 
 
 class TestChunks(object):
@@ -65,14 +65,14 @@ class TestElementwise(object):
     f = elementwise()(lambda x: x)
     assert f(data) == data
 
-  def test_generator_and_xrange_inputs(self):
+  def test_generator_and_lazy_range_inputs(self):
     f = elementwise()(lambda x: x*2)
     fx = f(xrange(42))
     gen = (x*4 for x in xrange(42))
     fg = f(x*2 for x in xrange(42))
     assert type(fx) == type(gen)
     assert type(fg) == type(gen)
-    assert list(fx) == range(0,42*2,2)
+    assert list(fx) == orange(0,42*2,2)
     assert list(fg) == list(gen)
 
 

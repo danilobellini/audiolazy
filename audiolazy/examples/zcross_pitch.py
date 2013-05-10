@@ -47,22 +47,25 @@ def pitch_from_mic(upd_time_in_ms):
 
 
 # ----------------
-# GUI with Tkinter
+# GUI with tkinter
 # ----------------
 if __name__ == "__main__":
-  import Tkinter
+  try:
+    import tkinter
+  except ImportError:
+    import Tkinter as tkinter
   import threading
   import re
 
   # Window (Tk init), text label and button
-  tk = Tkinter.Tk()
+  tk = tkinter.Tk()
   tk.title(__doc__.strip().splitlines()[0])
-  lbldata = Tkinter.StringVar(tk)
-  lbltext = Tkinter.Label(tk, textvariable=lbldata)
-  lbltext.pack(expand=True, fill=Tkinter.BOTH)
-  btnclose = Tkinter.Button(tk, text="Close", command=tk.destroy,
+  lbldata = tkinter.StringVar(tk)
+  lbltext = tkinter.Label(tk, textvariable=lbldata)
+  lbltext.pack(expand=True, fill=tkinter.BOTH)
+  btnclose = tkinter.Button(tk, text="Close", command=tk.destroy,
                             default="active")
-  btnclose.pack(fill=Tkinter.X)
+  btnclose.pack(fill=tkinter.X)
 
   # Needed data
   regex_note = re.compile(r"^([A-Gb#]*-?[0-9]*)([?+-]?)(.*?%?)$")
@@ -72,7 +75,7 @@ if __name__ == "__main__":
   def upd_value(): # Recording thread
     pitches = iter(pitch_from_mic(upd_time_in_ms))
     while not tk.should_finish:
-      tk.value = pitches.next()
+      tk.value = next(pitches)
 
   def upd_timer(): # GUI mainloop thread
     lbldata.set("\n".join(regex_note.findall(tk.value)[0]))

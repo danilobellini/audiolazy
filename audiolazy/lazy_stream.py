@@ -26,7 +26,7 @@ from functools import wraps
 from warnings import warn
 
 # Audiolazy internal imports
-from .lazy_misc import blocks
+from .lazy_misc import blocks, meta, xrange, xmap, xfilter
 from .lazy_core import AbstractOperatorOverloaderMeta
 from .lazy_math import inf
 
@@ -47,8 +47,8 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
       if isinstance(other, Iterable):
-        return Stream(it.imap(op_func, iter(self), iter(other)))
-      return Stream(it.imap(lambda a: op_func(a, other), iter(self)))
+        return Stream(xmap(op_func, iter(self), iter(other)))
+      return Stream(xmap(lambda a: op_func(a, other), iter(self)))
     return dunder
 
   def __rbinary__(cls, op):
@@ -57,18 +57,18 @@ class StreamMeta(AbstractOperatorOverloaderMeta):
       if isinstance(other, cls.__ignored_classes__):
         return NotImplemented
       if isinstance(other, Iterable):
-        return Stream(it.imap(op_func, iter(other), iter(self)))
-      return Stream(it.imap(lambda a: op_func(other, a), iter(self)))
+        return Stream(xmap(op_func, iter(other), iter(self)))
+      return Stream(xmap(lambda a: op_func(other, a), iter(self)))
     return dunder
 
   def __unary__(cls, op):
     op_func = op.func
     def dunder(self):
-      return Stream(it.imap(op_func, iter(self)))
+      return Stream(xmap(op_func, iter(self)))
     return dunder
 
 
-class Stream(Iterable):
+class Stream(meta(Iterable, metaclass=StreamMeta)):
   """
   Stream class. Stream instances are iterables that can be seem as generators
   with elementwise operators.
@@ -129,7 +129,6 @@ class Stream(Iterable):
   to use x again otherwhere.
 
   """
-  __metaclass__ = StreamMeta
   __ignored_classes__ = tuple()
 
   def __init__(self, *dargs):
@@ -192,7 +191,7 @@ class Stream(Iterable):
     """ Returns the Stream contents iterator. """
     return self._data
 
-  def __nonzero__(self):
+  def __bool__(self):
     """
     Boolean value of a stream, called by the bool() built-in and by "if"
     tests. As boolean operators "and", "or" and "not" couldn't be overloaded,
@@ -207,6 +206,8 @@ class Stream(Iterable):
                     "If you're using it in a 'if' comparison (e.g. for unit "
                     "testing), try to freeze the stream before with "
                     "list(my_stream) or tuple(my_stream).")
+
+  __nonzero__ = __bool__ # For Python 2.x compatibility
 
   def blocks(self, *args, **kwargs):
     """
@@ -329,7 +330,7 @@ class Stream(Iterable):
     """
     def skipper(data):
       for _ in xrange(int(round(n))):
-        data.next()
+        next(data)
       for el in data:
         yield el
 
@@ -341,7 +342,7 @@ class Stream(Iterable):
     Enforces the Stream to finish after ``n`` items.
     """
     data = self._data
-    self._data = (data.next() for _ in xrange(int(round(n))))
+    self._data = (next(data) for _ in xrange(int(round(n))))
     return self
 
   def __getattr__(self, name):
@@ -382,7 +383,7 @@ class Stream(Iterable):
     [0.0, 1.0, 2.0, 3.0, 4.0]
 
     """
-    self._data = it.imap(func, self._data)
+    self._data = xmap(func, self._data)
     return self
 
   def filter(self, func):
@@ -390,7 +391,7 @@ class Stream(Iterable):
     A lazy way to skip elements in the stream that gives False for the given
     function.
     """
-    self._data = it.ifilter(func, self._data)
+    self._data = xfilter(func, self._data)
     return self
 
   @classmethod
@@ -684,7 +685,7 @@ class Streamix(Stream):
         data = zero
         for snd in self._playing:
           try:
-            data += snd.next()
+            data += next(snd)
           except StopIteration:
             to_remove.append(snd)
 

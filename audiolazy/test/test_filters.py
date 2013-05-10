@@ -24,22 +24,24 @@ import pytest
 p = pytest.mark.parametrize
 
 import operator
-import itertools as it
+from itertools import combinations_with_replacement
 from math import pi
+from functools import reduce
 
 # Audiolazy internal imports
 from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
                             resonator, lowpass, highpass)
-from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
+from ..lazy_misc import (almost_eq, almost_eq_diff, zero_pad, orange, xrange,
+                         xzip, xmap)
 from ..lazy_itertools import cycle
 from ..lazy_stream import Stream
 from ..lazy_math import dB10, dB20
 
 
 class TestZFilter(object):
-  data = [-7, 3] + range(10) + [-50, 0] + range(70, -70, -11) # Arbitrary ints
+  data = [-7, 3] + orange(10) + [-50, 0] + orange(70, -70, -11) # Only ints
   alpha = [-.5, -.2, -.1, 0, .1, .2, .5] # Attenuation Value for filters
-  delays = range(1, 5)
+  delays = orange(1, 5)
 
   def test_z_identity(self):
     my_filter = z ** 0
@@ -55,13 +57,13 @@ class TestZFilter(object):
     assert op(list(my_filter2(self.data)), expected)
 
 
-  @p("delay", range(1, 5)) # Slice with zero would make data empty
+  @p("delay", orange(1, 5)) # Slice with zero would make data empty
   def test_z_int_delay(self, delay):
     my_filter = + z ** -delay
     assert list(my_filter(self.data)) == [0] * delay + self.data[:-delay]
 
   @p("amp_factor", [1, -105, 43, 0, .128, 18])
-  @p("delay", range(1, 7)) # Slice with zero would make data empty
+  @p("delay", orange(1, 7)) # Slice with zero would make data empty
   def test_z_int_delay_with_amplification(self, amp_factor, delay):
     my_filter1 = amp_factor * z ** -delay
     my_filter2 = z ** -delay * amp_factor
@@ -72,20 +74,20 @@ class TestZFilter(object):
 
   def test_z_fir_size_2(self):
     my_filter = 1 + z ** -1
-    expected = [a + b for a, b in it.izip(self.data, [0] + self.data[:-1])]
+    expected = [a + b for a, b in xzip(self.data, [0] + self.data[:-1])]
     assert list(my_filter(self.data)) == expected
 
   def test_z_fir_size_2_hybrid_amplification(self):
     my_filter = 2 * (3. - 5 * z ** -1)
-    expected = (6.*a - 10*b for a, b in it.izip(self.data,
-                                                [0.] + self.data[:-1]))
+    expected = (6.*a - 10*b for a, b in xzip(self.data,
+                                             [0.] + self.data[:-1]))
     assert almost_eq(my_filter(self.data), expected)
 
   amp_list = [1, -15, 45, 0, .81, 17]
   @p(("num_delays", "amp_factor"),
      [(delay, amp) for delay in delays
-                   for amp in it.combinations_with_replacement(amp_list,
-                                                               delay + 1)]
+                   for amp in combinations_with_replacement(amp_list,
+                                                            delay + 1)]
     )
   def test_z_many_fir_sizes_and_amplifications(self, num_delays, amp_factor):
     my_filter = sum(amp_factor[delay] * z ** -delay
@@ -96,8 +98,8 @@ class TestZFilter(object):
 
   def test_z_fir_multiplication(self):
     my_filter = 8 * (2 * z**-3 - 5 * z**-4) * z ** 2 * 7
-    expected = [56*2*a - 56*5*b for a, b in zip([0] + self.data[:-1],
-                                                [0, 0] + self.data[:-2])]
+    expected = [56*2*a - 56*5*b for a, b in xzip([0] + self.data[:-1],
+                                                 [0, 0] + self.data[:-2])]
     assert list(my_filter(self.data)) == expected
   @p("a", alpha)
   def test_z_one_pole(self, a):
@@ -109,10 +111,10 @@ class TestZFilter(object):
 
   @p("a", alpha)
   @p("b", alpha)
-  @p("idx_num1", range(-3,1))
-  @p("idx_den1", range(-1,3,19))
-  @p("idx_num2", range(-2,0,14))
-  @p("idx_den2", range(-18,1))
+  @p("idx_num1", orange(-3,1))
+  @p("idx_den1", orange(-1,3,19))
+  @p("idx_num2", orange(-2,0,14))
+  @p("idx_den2", orange(-18,1))
   def test_z_division(self, a, b, idx_num1, idx_den1, idx_num2, idx_den2):
     fa, fb, fc, fd = (a * z ** idx_num1, 2 + b * z ** idx_den1,
                       3 * z ** idx_num2, 1 + 5 * z ** idx_den2)
@@ -138,8 +140,8 @@ class TestZFilter(object):
   def test_z_div_truediv_unit_delay_divided_by_constant(self, a, div, zero):
     for el in [a, int(10 * a)]:
       div_filter = div(z ** -1, a)
-      div_expected = it.imap(lambda x: operator.truediv(x, a),
-                             [zero] + self.data[:-1])
+      div_expected = xmap(lambda x: operator.truediv(x, a),
+                          [zero] + self.data[:-1])
       assert almost_eq(div_filter(self.data, zero=zero), div_expected)
 
   @p("a", alpha)
@@ -221,7 +223,7 @@ class TestZFilter(object):
       expected[idx] += a * expected[idx-1]
     assert almost_eq(list(my_filter(self.data)), expected)
 
-  @p("delay", range(1, 7))
+  @p("delay", orange(1, 7))
   def test_diff_twice_only_numerator_one_delay(self, delay):
     data = z ** -delay
     ddz = data.diff()
@@ -348,7 +350,7 @@ class TestCascadeAndParallelFilters(object):
 
 class TestCascadeOrParallelFilter(object):
 
-  data_values = [range(3),
+  data_values = [orange(3),
                  Stream([5., 4., 6., 7., 12., -2.]),
                  [.2, .5, .4, .1]
                 ]
@@ -356,7 +358,7 @@ class TestCascadeOrParallelFilter(object):
   @p("data", data_values)
   def test_call_empty_cascade(self, data):
     dtest = data.copy() if isinstance(data, Stream) else data
-    for el, elt in it.izip(CascadeFilter()(data), dtest):
+    for el, elt in xzip(CascadeFilter()(data), dtest):
       assert el == elt
 
   @p("data", data_values)

@@ -30,17 +30,104 @@ import sys
 from math import pi
 from fractions import Fraction
 
-
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
+           "orange", "PYTHON2", "builtins", "xrange", "xzip", "xzip_longest",
+           "xmap", "xfilter", "STR_TYPES", "INT_TYPES", "SOME_GEN_TYPES",
+           "iteritems", "itervalues", "im_func", "meta",
            "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
            "pi_formatter", "auto_formatter", "rst_table", "small_doc", "sHz"]
 
+
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
 DEFAULT_CHUNK_SIZE = 2048 # Samples
 LATEX_PI_SYMBOL = r"$\pi$"
+
+
+# Useful Python 2 and 3 compatibility tools
+def orange(*args, **kwargs):
+  """
+  Old Python 2 range (returns a list), working both in Python 2 and 3.
+  """
+  return list(range(*args, **kwargs))
+
+PYTHON2 = sys.version_info.major == 2
+if PYTHON2:
+  builtins = sys.modules["__builtin__"]
+else:
+  import builtins
+xrange = getattr(builtins, "xrange", range)
+xzip = getattr(it, "izip", zip)
+xzip_longest = getattr(it, "izip_longest", getattr(it, "zip_longest", None))
+xmap = getattr(it, "imap", map)
+xfilter = getattr(it, "ifilter", filter)
+
+STR_TYPES = (getattr(builtins, "basestring", str),)
+INT_TYPES = (int, getattr(builtins, "long", None)) if PYTHON2 else (int,)
+SOME_GEN_TYPES = (types.GeneratorType, xrange(0).__class__, enumerate, xzip,
+                  xzip_longest, xmap, xfilter)
+
+
+def iteritems(dictionary):
+  """
+  Function to use the generator-based items iterator over built-in
+  dictionaries in both Python 2 and 3.
+  """
+  return getattr(dictionary, "iteritems", getattr(dictionary, "items"))()
+
+
+def itervalues(dictionary):
+  """
+  Function to use the generator-based value iterator over built-in
+  dictionaries in both Python 2 and 3.
+  """
+  return getattr(dictionary, "itervalues", getattr(dictionary, "values"))()
+
+
+def im_func(method):
+  """ Gets the function from the method in both Python 2 and 3. """
+  return getattr(method, "im_func", method)
+
+
+def meta(*bases, **kwargs):
+  """
+  Allows unique Python 3 syntax for working with metaclasses in both Python 2
+  and Python 3.
+
+  Examples
+  --------
+  >>> class BadMeta(type): # An usual metaclass definition
+  ...   def __new__(mcls, name, bases, namespace):
+  ...     if "bad" not in namespace: # A bad constraint
+  ...       raise Exception("Oops, not bad enough")
+  ...     value = len(name) # To ensure this metaclass is called again
+  ...     def really_bad(self):
+  ...       return self.bad() * value
+  ...     namespace["really_bad"] = really_bad
+  ...     return super(BadMeta, mcls).__new__(mcls, name, bases, namespace)
+  >>> class Bady(meta(object, metaclass=BadMeta)):
+  ...   def bad(self):
+  ...     return "HUA "
+  >>> class BadGuy(Bady):
+  ...   def bad(self):
+  ...     return "R"
+  >>> Bady().really_bad() # Here value = 4
+  'HUA HUA HUA HUA '
+  >>> BadGuy().really_bad() # Called metaclass ``__new__`` again, so value = 6
+  'RRRRRR'
+
+  """
+  metaclass = kwargs.get("metaclass", type)
+  if not bases:
+    bases = (object,)
+  class NewMeta(type):
+    def __new__(mcls, name, mbases, namespace):
+      if name:
+        return metaclass.__new__(metaclass, name, bases, namespace)
+      return super(NewMeta, mcls).__new__(mcls, "", mbases, {})
+  return NewMeta("", tuple(), {})
 
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
@@ -154,8 +241,7 @@ def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
   The ``dfmt`` symbols for arrays might differ from structs' defaults.
 
   """
-  counter = range(size)
-  chunk = array.array(dfmt, counter)
+  chunk = array.array(dfmt, xrange(size))
   idx = 0
 
   for el in seq:
@@ -166,7 +252,7 @@ def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
       idx = 0
 
   if idx != 0:
-    for idx in range(idx, size):
+    for idx in xrange(idx, size):
       chunk[idx] = padval
     yield chunk.tostring()
 
@@ -230,18 +316,18 @@ def elementwise(name="", pos=None):
       positional = (pos is not None) and (pos < len(args))
       arg = args[pos] if positional else kwargs[name]
 
-      if isinstance(arg, Iterable) and not isinstance(arg, (str, unicode)):
+      if isinstance(arg, Iterable) and not isinstance(arg, STR_TYPES):
         if positional:
           data = (func(*(args[:pos] + (x,) + args[pos+1:]),
                        **kwargs)
                   for x in arg)
         else:
           data = (func(*args,
-                       **dict(kwargs.items() + (name, x)))
+                       **dict(it.chain(iteritems(kwargs), [(name, x)])))
                   for x in arg)
 
         # Generators should still return generators
-        if isinstance(arg, (xrange, types.GeneratorType)):
+        if isinstance(arg, SOME_GEN_TYPES):
           return data
 
         # Cast to numpy array or matrix, if needed, without actually
@@ -295,7 +381,7 @@ def almost_eq_diff(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
     return False
   if is_it_a:
     return all(almost_eq_diff(ai, bi, max_diff, ignore_type)
-               for ai, bi in it.izip_longest(a, b, fillvalue=pad))
+               for ai, bi in xzip_longest(a, b, fillvalue=pad))
   return abs(a - b) <= max_diff
 
 
@@ -327,7 +413,7 @@ def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
     return False
   if is_it_a:
     return all(almost_eq(ai, bi, bits, tol, ignore_type)
-               for ai, bi in it.izip_longest(a, b, fillvalue=pad))
+               for ai, bi in xzip_longest(a, b, fillvalue=pad))
   significand = {32: 23, 64: 52, 80: 63, 128: 112
                 }[bits] # That doesn't include the sign bit
   power = tol - significand - 1
@@ -515,10 +601,10 @@ def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
     "f": elementwise("v", 0)(lambda v: "{0:g}".format(v))(value)
   }
 
-  sizes = {k: len(v) for k, v in str_data.iteritems()}
+  sizes = {k: len(v) for k, v in iteritems(str_data)}
   sizes["p"] = max(1, sizes["p"] - len(LATEX_PI_SYMBOL) + 1)
 
-  for char, max_size in it.izip(order, size):
+  for char, max_size in xzip(order, size):
     if sizes[char] <= max_size:
       return str_data[char]
   return str_data["f"]
@@ -533,12 +619,12 @@ def rst_table(data, schema=None):
   pdata = []
   for row in data:
     prow = [el if isinstance(el, list) else [el] for el in row]
-    pdata.extend(pr for pr in it.izip_longest(*prow, fillvalue=""))
+    pdata.extend(pr for pr in xzip_longest(*prow, fillvalue=""))
 
   # Find the columns sizes
   sizes = [max(len("{0}".format(el)) for el in column)
-           for column in it.izip(*pdata)]
-  sizes = [max(size, len(sch)) for size, sch in it.izip(sizes, schema)]
+           for column in xzip(*pdata)]
+  sizes = [max(size, len(sch)) for size, sch in xzip(sizes, schema)]
 
   # Creates the title and border rows
   if schema is None:
@@ -546,12 +632,12 @@ def rst_table(data, schema=None):
     pdata = pdata[1:]
   border = " ".join("=" * size for size in sizes)
   titles = " ".join("{1:^{0}}".format(*pair)
-                    for pair in it.izip(sizes, schema))
+                    for pair in xzip(sizes, schema))
 
   # Creates the full table and returns
   rows = [border, titles, border]
   rows.extend(" ".join("{1:<{0}}".format(*pair)
-                       for pair in it.izip(sizes, row))
+                       for pair in xzip(sizes, row))
               for row in pdata)
   rows.append(border)
   return rows

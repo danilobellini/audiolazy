@@ -29,8 +29,7 @@ import warnings
 
 # Audiolazy internal imports
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
-from ..lazy_misc import almost_eq
-from ..lazy_itertools import imap, ifilter
+from ..lazy_misc import almost_eq, orange, xrange, xzip, xmap, xfilter
 from ..lazy_math import inf
 
 
@@ -41,7 +40,7 @@ class TestStream(object):
       Stream()
 
   @p("is_iter", [True, False])
-  @p("list_", [range(5), [], [None, Stream, almost_eq, 2.4], [1, "a", 4]])
+  @p("list_", [orange(5), [], [None, Stream, almost_eq, 2.4], [1, "a", 4]])
   def test_from_list(self, list_, is_iter):
     assert list(Stream(iter(list_) if is_iter else list_)) == list_
 
@@ -52,8 +51,8 @@ class TestStream(object):
     assert tuple(Stream(tuple_input)) == tuple_input
 
   @p("value", [0, 1, 17, 200])
-  def test_xrange(self, value):
-    assert list(Stream(xrange(value))) == range(value)
+  def test_lazy_range(self, value):
+    assert list(Stream(xrange(value))) == orange(value)
 
   def test_class_docstring(self):
     x = Stream(it.count())
@@ -80,12 +79,12 @@ class TestStream(object):
 
   def test_non_iterable_input(self):
     data = 25
-    for idx, x in zip(range(15), Stream(data)): # Enumerate wouldn't finish
+    for idx, x in xzip(xrange(15), Stream(data)): # Enumerate wouldn't finish
       assert x == data
 
   def test_multiple_non_iterable_input(self):
     data = [2j+3, 7.5, 75, type(2), Stream]
-    for si, di in it.izip(Stream(*data), data * 4):
+    for si, di in xzip(Stream(*data), data * 4):
       assert si == di
 
   def test_init_docstring_finite(self):
@@ -137,7 +136,7 @@ class TestStream(object):
                            hop=hop) # Shouldn't use "data" anymore
     myblocks_rev = Stream(reversed(list(data_copy))).blocks(size=block_size,
                                                             hop=hop)
-    for idx, (x, y) in enumerate(it.izip(myblocks, myblocks_rev)):
+    for idx, (x, y) in enumerate(xzip(myblocks, myblocks_rev)):
       assert len(x) == block_size
       assert len(y) == block_size
       startx = idx * hop
@@ -187,14 +186,14 @@ class TestStream(object):
 
   def test_no_boolean(self):
     with pytest.raises(TypeError):
-      bool(Stream(range(2)))
+      bool(Stream(xrange(2)))
 
   @p("op", [operator.div, operator.truediv])
   def test_div_truediv(self, op):
     input1 = [1, 5, 7., 3.3]
     input2 = [9.2, 10, 11, 4.9]
     data = op(Stream(input1), Stream(input2))
-    expected = [operator.truediv(x, y) for x, y in zip(input1, input2)]
+    expected = [operator.truediv(x, y) for x, y in xzip(input1, input2)]
     assert isinstance(data, Stream)
     assert list(data) == expected
 
@@ -255,15 +254,15 @@ class TestStream(object):
     assert memory["last"] == 11
 
   def test_limit_from_beginning_from_finite_stream(self):
-    assert Stream(xrange(25)).limit(10).take(inf) == range(10)
-    assert Stream(xrange(25)).limit(40).take(inf) == range(25)
-    assert Stream(xrange(25)).limit(24).take(inf) == range(24)
-    assert Stream(xrange(25)).limit(25).take(inf) == range(25)
-    assert Stream(xrange(25)).limit(26).take(inf) == range(25)
+    assert Stream(xrange(25)).limit(10).take(inf) == orange(10)
+    assert Stream(xrange(25)).limit(40).take(inf) == orange(25)
+    assert Stream(xrange(25)).limit(24).take(inf) == orange(24)
+    assert Stream(xrange(25)).limit(25).take(inf) == orange(25)
+    assert Stream(xrange(25)).limit(26).take(inf) == orange(25)
 
   def test_limit_with_skip_from_finite_stream(self):
-    assert Stream(xrange(45)).skip(2).limit(13).take(inf) == range(2, 15)
-    assert Stream(xrange(45)).limit(13).skip(3).take(inf) == range(3, 13)
+    assert Stream(xrange(45)).skip(2).limit(13).take(inf) == orange(2, 15)
+    assert Stream(xrange(45)).limit(13).skip(3).take(inf) == orange(3, 13)
 
   @p("noise", [-.3, 0, .1])
   def test_limit_from_periodic_stream(self, noise):
@@ -291,18 +290,18 @@ class TestStream(object):
 class TestEveryMapFilter(object):
   """
   Tests Stream.map, Stream.filter, StreamTeeHub.map, StreamTeeHub.filter,
-  lazy_itertools.imap and lazy_itertools.ifilter
+  lazy_itertools.imap and lazy_itertools.ifilter (map and filter in Python 3)
   """
 
-  map_filter_data = [xrange(5), xrange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
-                     range(20,40,3)]
+  map_filter_data = [orange(5), orange(9, 0, -2), [7, 22, -5], [8., 3., 15.],
+                     orange(20,40,3)]
 
   @p("data", map_filter_data)
   @p("func", [lambda x: x ** 2, lambda x: x // 2, lambda x: 18])
   def test_map(self, data, func):
-    expected = map(func, data)
+    expected = [func(x) for x in data]
     assert list(Stream(data).map(func)) == expected
-    assert list(imap(func, data)) == expected
+    assert list(xmap(func, data)) == expected # Tests the test...
     dt = thub(data, 2)
     assert isinstance(dt, StreamTeeHub)
     dt_data = dt.map(func)
@@ -315,9 +314,9 @@ class TestEveryMapFilter(object):
   @p("data", map_filter_data)
   @p("func", [lambda x: x > 0, lambda x: x % 2 == 0, lambda x: False])
   def test_filter(self, data, func):
-    expected = filter(func, data)
+    expected = [x for x in data if func(x)]
     assert list(Stream(data).filter(func)) == expected
-    assert list(ifilter(func, data)) == expected
+    assert list(xfilter(func, data)) == expected # Tests the test...
     dt = thub(data, 2)
     assert isinstance(dt, StreamTeeHub)
     dt_data = dt.filter(func)
@@ -330,8 +329,8 @@ class TestEveryMapFilter(object):
 
 class TestThub(object):
 
-  @p("copies", range(5))
-  @p("used_copies", range(5))
+  @p("copies", orange(5))
+  @p("used_copies", orange(5))
   def test_stream_tee_hub_memory_leak_warning_and_index_error(self, copies,
                                                               used_copies):
     data = Stream(.5, 8, 7 + 2j)

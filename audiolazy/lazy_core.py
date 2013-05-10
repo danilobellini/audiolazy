@@ -27,7 +27,7 @@ from abc import ABCMeta
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_misc import small_doc
+from .lazy_misc import small_doc, STR_TYPES, iteritems, itervalues
 
 __all__ = ["OpMethod", "AbstractOperatorOverloaderMeta", "MultiKeyDict",
            "StrategyDict"]
@@ -123,9 +123,9 @@ class OpMethod(object):
     if key is None:
       return
     ignore = set() if without is None else set(cls.get(without))
-    if isinstance(key, (str, unicode)) or not isinstance(key, Iterable):
+    if isinstance(key, STR_TYPES) or not isinstance(key, Iterable):
       key = [key]
-    key = it.chain(*[el.split() if isinstance(el, (str, unicode)) else [el]
+    key = it.chain(*[el.split() if isinstance(el, STR_TYPES) else [el]
                      for el in key])
     for op_descr in key:
       try:
@@ -335,7 +335,7 @@ class MultiKeyDict(dict):
     self._keys_dict = {}
     self._inv_dict = {}
     super(MultiKeyDict, self).__init__()
-    for key, value in dict(*args, **kwargs).iteritems():
+    for key, value in iteritems(dict(*args, **kwargs)):
       self[key] = value
 
   def __getitem__(self, key):
@@ -455,8 +455,8 @@ class StrategyDict(MultiKeyDict):
                   "``{0}``. Strategies stored: {1}.\n"
         doc = [docbase.format(self.__name__, len(self))]
 
-        pairs = sorted(self.iteritems())
-        if self.default not in self.itervalues():
+        pairs = sorted(iteritems(self))
+        if self.default not in list(self.values()):
           pairs = it.chain(pairs, [(tuple(), self.default)])
 
         for key_tuple, value in pairs:
@@ -499,7 +499,7 @@ class StrategyDict(MultiKeyDict):
 
   def strategy(self, *names):
     def decorator(func):
-      func.__name__ = names[0]
+      func.__name__ = str(names[0])
       self[names] = func
       return self
     return decorator
@@ -515,7 +515,7 @@ class StrategyDict(MultiKeyDict):
   def __getattr__(self, name):
     if name in self._keys_dict:
       return self[name]
-    raise NotImplementedError("Unknown attribute '{0}'".format(name))
+    raise AttributeError("Unknown attribute '{0}'".format(name))
 
   def __iter__(self):
-    return self.itervalues()
+    return itervalues(self)

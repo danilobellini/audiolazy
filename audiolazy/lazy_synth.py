@@ -23,12 +23,12 @@ Simple audio/stream synthesis module
 from math import sin, pi, ceil, isinf
 import collections
 import random
-import itertools as it
 
 # Audiolazy internal imports
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
 from .lazy_filters import comb
+from .lazy_misc import meta, iteritems, xrange, xzip
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
@@ -53,14 +53,14 @@ def modulo_counter(start=0., modulo=256., step=1.):
     c = 0.
     if isinstance(step, collections.Iterable):
       if isinstance(modulo, collections.Iterable):
-        for p, m, s in it.izip(start, modulo, step):
+        for p, m, s in xzip(start, modulo, step):
           c += p - lastp
           c %= m
           yield c
           c += s
           lastp = p
       else:
-        for p, s in it.izip(start, step):
+        for p, s in xzip(start, step):
           c += p - lastp
           c %= modulo
           yield c
@@ -68,7 +68,7 @@ def modulo_counter(start=0., modulo=256., step=1.):
           lastp = p
     else:
       if isinstance(modulo, collections.Iterable):
-        for p, m in it.izip(start, modulo):
+        for p, m in xzip(start, modulo):
           c += p - lastp
           c %= m
           yield c
@@ -101,7 +101,7 @@ def modulo_counter(start=0., modulo=256., step=1.):
     c = start
     if isinstance(step, collections.Iterable):
       if isinstance(modulo, collections.Iterable):
-        for m, s in it.izip(modulo, step):
+        for m, s in xzip(modulo, step):
           c %= m
           yield c
           c += s
@@ -276,7 +276,7 @@ def attack(a, d, s):
   # Configure sustain possibilities
   if isinstance(s, collections.Iterable):
     it_s = iter(s)
-    s = it_s.next()
+    s = next(it_s)
   else:
     it_s = None
 
@@ -428,7 +428,7 @@ class TableLookupMeta(AbstractOperatorOverloaderMeta):
           raise ValueError("Incompatible number of cycles")
         if len(self) != len(other):
           raise ValueError("Incompatible sizes")
-        zip_tables = zip(self.table, other.table)
+        zip_tables = xzip(self.table, other.table)
         new_table = [op_func(data1, data2) for data1, data2 in zip_tables]
         return TableLookup(new_table, self.cycles)
       if isinstance(other, (int, float, complex)):
@@ -454,12 +454,10 @@ class TableLookupMeta(AbstractOperatorOverloaderMeta):
     return dunder
 
 
-class TableLookup(object):
+class TableLookup(meta(metaclass=TableLookupMeta)):
   """
   Table lookup synthesis class, also allowing multi-cycle tables as input.
   """
-  __metaclass__ = TableLookupMeta
-
   def __init__(self, table, cycles=1):
     """
     Inits a table lookup. The given table should be a sequence, like a list.
@@ -525,7 +523,7 @@ class TableLookup(object):
     to be integers.
     """
     data = sum(cycle(self.table[::partial+1]) * amplitude
-               for partial, amplitude in harmonics_dict.iteritems())
+               for partial, amplitude in iteritems(harmonics_dict))
     return TableLookup(data.take(len(self)), cycles=self.cycles)
 
   def normalize(self):

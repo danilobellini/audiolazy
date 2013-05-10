@@ -45,6 +45,16 @@ AudioLazy changes history
 
   - New RecStream class for recording Stream instances with a ``stop`` method
 
++ lazy_itertools:
+
+  - New ``accumulate()`` itertool from Python 3, available also in Python 2
+    yielding a Stream
+
++ lazy_misc:
+
+  - Several Python 2.x and 3.x compatibility resources, like the ``meta``
+    function for creating metaclasses always in a Python 3 look-alike style.
+
 + lazy_stream:
 
   - Stream.take now accepts floats, so with first ``sHz`` output as

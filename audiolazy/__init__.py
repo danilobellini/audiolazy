@@ -81,7 +81,7 @@ _pkg_name = os.path.split(__path__[0])[1]
 __modules_refs__ = []
 __all__ = []
 for _mname in __modules__:
-  exec "from .{0} import *".format(_mname)
+  exec("from .{0} import *".format(_mname))
   _mref = sys.modules[".".join([_pkg_name, _mname])] # The module, actually
   __modules_refs__.append(_mref)
   __all__ += _mref.__all__ # __all__ don't include module names

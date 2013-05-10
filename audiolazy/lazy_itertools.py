@@ -25,14 +25,38 @@ from collections import Iterator
 
 # Audiolazy internal imports
 from .lazy_stream import tostream, Stream
+from .lazy_misc import xrange
 
-# All functions from itertools
+
+# "Decorates" all functions from itertools
 __all__ = ["tee"]
 it_names = set(dir(it)).difference(__all__)
 for func in filter(callable, [getattr(it, name) for name in it_names]):
   name = func.__name__
+  if name in ["filterfalse", "zip_longest"]: # These were renamed in Python 3
+    name = "i" + name # In AudioLazy, keep the Python 2 names
   __all__.append(name)
   locals()[name] = tostream(func)
+
+# Includes the imap and others (they're not from itertools in Python 3)
+for name, func in zip(["imap", "ifilter", "izip"], [map, filter, zip]):
+  if name not in __all__:
+    __all__.append(name)
+    locals()[name] = tostream(func)
+
+
+# Python 3 has an "accumulate" itertool, this makes it available in Python 2
+if "accumulate" not in __all__:
+  __all__.append("accumulate")
+  @tostream
+  def accumulate(iterable):
+    " Return series of accumulated sums. "
+    iterator = iter(iterable)
+    sum_data = next(iterator)
+    yield sum_data
+    for el in iterator:
+      sum_data += el
+      yield sum_data
 
 
 def tee(data, n=2):

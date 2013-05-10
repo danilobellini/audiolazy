@@ -29,7 +29,7 @@ from math import cos, pi, sqrt
 
 # Audiolazy internal imports
 from ..lazy_filters import ZFilter, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_misc import almost_eq, almost_eq_diff, orange, xrange
 from ..lazy_math import dB20
 
 
@@ -37,7 +37,7 @@ class TestZFilterScipy(object):
 
   @p("a", [[1.], [3.], [1., 3.], [15., -17.2], [-18., 9.8, 0., 14.3]])
   @p("b", [[1.], [-1.], [1., 0., -1.], [1., 3.]])
-  @p("data", [range(5), range(5, 0, -1), [7, 22, -5], [8., 3., 15.]])
+  @p("data", [orange(5), orange(5, 0, -1), [7, 22, -5], [8., 3., 15.]])
   def test_lfilter(self, a, b, data):
     filt = ZFilter(b, a)
     expected = lfilter(b, a, data).tolist()

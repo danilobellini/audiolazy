@@ -33,7 +33,7 @@ import struct
 from ..lazy_io import AudioIO
 from ..lazy_synth import white_noise
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, orange
 
 
 class WaitStream(Stream):
@@ -101,7 +101,7 @@ def mock_write_stream(pa_stream, data, chunk_size, should_throw_exception):
   pa_stream._pa.fake_output.value.extend(sdata)
 
 
-@p("data", [range(25), white_noise(100) + 3.])
+@p("data", [orange(25), white_noise(100) + 3.])
 @pytest.mark.timeout(2)
 def test_output_only(monkeypatch, data):
   monkeypatch.setattr(pyaudio, "PyAudio", MockPyAudio)

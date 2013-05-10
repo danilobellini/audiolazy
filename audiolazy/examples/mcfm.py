@@ -80,7 +80,7 @@ class McFMFrame(wx.Frame):
     gc.SetBrush(wx.Brush("yellow"))
     gc.Translate(w * .5, h * .5)
     gc.Scale(w, h)
-    rot = self.rotation_data.next()
+    rot = next(self.rotation_data)
     gc.Rotate(-rot)
     gc.Translate(.5, 0)
     gc.Rotate(rot)

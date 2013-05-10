@@ -28,6 +28,8 @@ from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp, abs as lzabs
 from .lazy_filters import lowpass, z
+from .lazy_misc import xrange
+
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
            "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf"]
@@ -256,7 +258,7 @@ def dft(blk, freqs, normalize=True):
                                          for f in freqs)
   if normalize:
     lblk = len(blk)
-    return map(lambda v: v / lblk, dft_data)
+    return [v / lblk for v in dft_data]
   return list(dft_data)
 
 
@@ -487,7 +489,7 @@ def maverage(size):
     Signal envelope (time domain) strategies.
 
   """
-  return sum((1. / size) * z ** -i for i in range(size))
+  return sum((1. / size) * z ** -i for i in xrange(size))
 
 
 def clip(sig, low=-1., high=1.):
@@ -545,7 +547,7 @@ def unwrap(sig, max_delta=pi, step=2*pi):
 
   """
   idata = iter(sig)
-  d0 = idata.next()
+  d0 = next(idata)
   yield d0
   delta = d0 - d0 # Get the zero (e.g., integer, float) from data
   for d1 in idata:

@@ -24,9 +24,10 @@ import math
 import cmath
 import operator
 import itertools as it
+from functools import reduce
 
 # Audiolazy internal imports
-from .lazy_misc import elementwise
+from .lazy_misc import elementwise, INT_TYPES
 
 __all__ = ["abs", "pi", "e", "cexp", "ln", "log", "log1p", "log10", "log2",
            "factorial", "dB10", "dB20", "inf", "nan", "phase", "sign"]
@@ -100,11 +101,11 @@ def factorial(n):
   if isinstance(n, float):
     if n.is_integer():
       n = int(n)
-  if not isinstance(n, (int, long)):
-    raise TypeError("non-integer input (perhaps you need Euler Gamma "
+  if not isinstance(n, INT_TYPES):
+    raise TypeError("Non-integer input (perhaps you need Euler Gamma "
                     "function or Gauss Pi function)")
   if n < 0:
-    raise ValueError("input shouldn't be negative")
+    raise ValueError("Input shouldn't be negative")
   return reduce(operator.mul,
                 it.takewhile(lambda m: m <= n, it.count(2)),
                 1)

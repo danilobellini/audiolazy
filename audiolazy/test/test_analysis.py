@@ -27,7 +27,7 @@ p = pytest.mark.parametrize
 from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
                              unwrap, amdf)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, xrange, orange
 from ..lazy_synth import line, white_noise
 
 
@@ -52,9 +52,9 @@ class TestZCross(object):
   def test_empty(self):
     assert list(zcross([])) == []
 
-  @p("n", range(1, 5))
+  @p("n", orange(1, 5))
   def test_small_sizes_no_cross(self, n):
-    output = zcross(range(n))
+    output = zcross(xrange(n))
     assert isinstance(output, Stream)
     assert list(output) == [0] * n
 
@@ -115,15 +115,15 @@ class TestClip(object):
 
   @p("low", [None, 0, -3])
   @p("high", [None, 0, 5])
-  def test_with_range(self, low, high):
-    data = range(-10, 10)
+  def test_with_list_based_range(self, low, high):
+    data = orange(-10, 10)
     result = clip(data, low=low, high=high)
     assert isinstance(result, Stream)
     if low is None or low < -10:
       low = -10
     if high is None or high > 10:
       high = 10
-    expected = [low] * (10 + low) + range(low, high) + [high] * (10 - high)
+    expected = [low] * (10 + low) + orange(low, high) + [high] * (10 - high)
     assert expected == list(result)
 
   def test_with_inverted_high_and_low(self):

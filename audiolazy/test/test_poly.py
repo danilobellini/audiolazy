@@ -27,16 +27,15 @@ import operator
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, orange
 
 
 class TestPoly(object):
-  example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], range(-5, 3, -1)]
+  example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(-5, 3, -1)]
 
   @p("data", example_data)
   def test_len_iter_from_list(self, data):
-    data_ok = filter(lambda x: x != 0, data)
-    assert len(Poly(data)) == len(data_ok)
+    assert len(Poly(data)) == len([x for x in data if x != 0])
     assert len(list(Poly(data).values())) == len(data)
     assert list(Poly(data).values()) == data
 

@@ -22,10 +22,13 @@ Polynomial model
 
 import operator
 from collections import Iterable
+from functools import reduce
+import itertools as it
 
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta
-from .lazy_misc import multiplication_formatter, pair_strings_sum_formatter
+from .lazy_misc import (multiplication_formatter, pair_strings_sum_formatter,
+                        meta, iteritems, xrange)
 from .lazy_stream import Stream
 
 __all__ = ["PolyMeta", "Poly"]
@@ -50,11 +53,11 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   def __unary__(cls, op):
     op_func = op.func
     def dunder(self):
-      return cls({k: op_func(v) for k, v in self.data.iteritems()})
+      return cls({k: op_func(v) for k, v in iteritems(self.data)})
     return dunder
 
 
-class Poly(object):
+class Poly(meta(metaclass=PolyMeta)):
   """
   Model for a polynomial.
 
@@ -64,8 +67,6 @@ class Poly(object):
   the terms sorted by their power value.
 
   """
-  __metaclass__ = PolyMeta
-
   def __init__(self, data=None, zero=0):
     """
     Inits a polynomial from given data, which can be a list or a dict.
@@ -101,7 +102,7 @@ class Poly(object):
     self._compact_zeros()
 
   def _compact_zeros(self):
-    for key, value in self.data.items():
+    for key, value in list(iteritems(self.data)):
       if not isinstance(value, Stream):
         if value == 0.:
           del self.data[key]
@@ -115,7 +116,7 @@ class Poly(object):
     """
     max_key = max(key for key in self.data) if self.data else -1
     return (self.data[key] if key in self.data else self.zero
-            for key in range(max_key + 1))
+            for key in xrange(max_key + 1))
 
   def terms(self):
     """
@@ -136,7 +137,7 @@ class Poly(object):
     Differentiate (n-th derivative, where the default n is 1).
     """
     return reduce(lambda dict_, order: # Derivative order can be ignored
-                    {k - 1: k * v for k, v in dict_.iteritems() if k != 0},
+                    {k - 1: k * v for k, v in iteritems(dict_) if k != 0},
                   xrange(n), self.data)
 
   def integrate(self):
@@ -155,13 +156,13 @@ class Poly(object):
     """
     if isinstance(value, Poly):
      return Poly(sum(coeff * value ** power
-                     for power, coeff in self.data.iteritems()))
+                     for power, coeff in iteritems(self.data)))
     if not self.data:
       return 0
 
     last_power = 0
     res = 0
-    for power, coeff in sorted(self.data.items(), reverse=True):
+    for power, coeff in sorted(iteritems(self.data), reverse=True):
       res = coeff + res * value ** (last_power - power)
       last_power = power
     return res * value ** last_power
@@ -180,7 +181,8 @@ class Poly(object):
       other = Poly(other) # The "other" is probably a number
     intersect = [(key, self.data[key] + other.data[key])
                  for key in set(self.data).intersection(other.data)]
-    return Poly(dict(self.data.items() + other.data.items() + intersect))
+    return Poly(dict(it.chain(iteritems(self.data),
+                              iteritems(other.data), intersect)))
 
   def __sub__(self, other):
     return self + (-other)
@@ -192,8 +194,8 @@ class Poly(object):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
     new_data = {}
-    for k1, v1 in self.data.iteritems():
-      for k2, v2 in other.data.iteritems():
+    for k1, v1 in iteritems(self.data):
+      for k2, v2 in iteritems(other.data):
         if k1 + k2 in new_data:
           new_data[k1 + k2] += v1 * v2
         else:
@@ -206,7 +208,7 @@ class Poly(object):
   def __eq__(self, other):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
-    return sorted(self.data.items()) == sorted(other.data.items())
+    return sorted(iteritems(self.data)) == sorted(iteritems(other.data))
 
   def __ne__(self, other):
     return not(self == other)
@@ -224,18 +226,18 @@ class Poly(object):
     if len(self.data) == 0:
       return Poly()
     if len(self.data) == 1:
-      return Poly({k * other: v for k, v in self.data.iteritems()})
+      return Poly({k * other: v for k, v in iteritems(self.data)})
     return reduce(operator.mul, [self] * other)
 
   def __truediv__(self, other):
     if isinstance(other, Poly):
       if len(other) == 1:
-        delta, value = other.data.items()[0]
+        delta, value = next(iteritems(other.data))
         return Poly({(k - delta): operator.truediv(v, other)
-                     for k, v in self.data.iteritems()})
+                     for k, v in iteritems(self.data)})
       raise NotImplementedError("Can't divide general Poly instances")
     return Poly({k: operator.truediv(v, other)
-                 for k, v in self.data.iteritems()})
+                 for k, v in iteritems(self.data)})
 
   __div__ = __truediv__
 

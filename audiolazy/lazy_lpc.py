@@ -21,7 +21,7 @@ Linear Predictive Coding (LPC) module
 """
 
 from __future__ import division
-from itertools import izip
+from functools import reduce
 import operator
 
 # Audiolazy internal imports
@@ -29,7 +29,7 @@ from .lazy_stream import Stream
 from .lazy_filters import ZFilter, z
 from .lazy_math import phase
 from .lazy_core import StrategyDict
-from .lazy_misc import blocks
+from .lazy_misc import blocks, xrange, xzip
 from .lazy_analysis import acorr, lag_matrix
 
 __all__ = ["ParCorError", "toeplitz", "levinson_durbin", "lpc", "parcor",
@@ -128,7 +128,7 @@ def levinson_durbin(acdata, order=None):
 
   try:
     A = ZFilter(1)
-    for m in range(1, order + 1):
+    for m in xrange(1, order + 1):
       B = A(1 / z) * z ** -m
       A -= inner(A, z ** -m) / inner(B, B) * B
   except ZeroDivisionError:
@@ -234,7 +234,7 @@ def lpc(blk, order=None):
   coeffs = pinv(toeplitz(acdata[:-1])) * -matrix(acdata[1:]).T
   coeffs = coeffs.T.tolist()[0]
   filt = 1  + sum(ai * z ** -i for i, ai in enumerate(coeffs, 1))
-  filt.error = acdata[0] + sum(a * c for a, c in izip(acdata[1:], coeffs))
+  filt.error = acdata[0] + sum(a * c for a, c in xzip(acdata[1:], coeffs))
   return filt
 
 
@@ -299,7 +299,7 @@ def lpc(blk, order=None):
   coeffs = pinv(phi[1:, 1:]) * -psi
   coeffs = coeffs.T.tolist()[0]
   filt = 1  + sum(ai * z ** -i for i, ai in enumerate(coeffs, 1))
-  filt.error = phi[0, 0] + sum(a * c for a, c in izip(lagm[0][1:], coeffs))
+  filt.error = phi[0, 0] + sum(a * c for a, c in xzip(lagm[0][1:], coeffs))
   return filt
 
 
@@ -343,8 +343,8 @@ def lpc(blk, order=None):
       A.error = inner(A, A)
       return A
 
-    gamma = [inner(z ** -(m + 1), B[q]) / beta[q] for q in range(m)]
-    B.append(z ** -(m + 1) - sum(gamma[q] * B[q] for q in range(m)))
+    gamma = [inner(z ** -(m + 1), B[q]) / beta[q] for q in xrange(m)]
+    B.append(z ** -(m + 1) - sum(gamma[q] * B[q] for q in xrange(m)))
     beta.append(inner(B[m], B[m]))
     m += 1
 
@@ -463,7 +463,7 @@ def lsf(fir_filt):
   roots_q = roots(Q.numerator[::-1])
   lsf_p = sorted(phase(roots_p))
   lsf_q = sorted(phase(roots_q))
-  return reduce(operator.concat, izip(*sorted([lsf_p, lsf_q])), tuple())
+  return reduce(operator.concat, xzip(*sorted([lsf_p, lsf_q])), tuple())
 
 
 def lsf_stable(filt):

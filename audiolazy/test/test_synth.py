@@ -30,7 +30,7 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, TableLookup, fadein, fadeout,
                           sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff
+from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff, orange, xrange
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
 from ..lazy_math import pi, inf
@@ -100,7 +100,7 @@ class TestModuloCounter(object):
   @p("step", [0, 17, -17])
   def test_streamed_start_ignorable_step(self, step):
     mc = modulo_counter(it.count(), 17, step)
-    assert mc.take(30) == (range(17) * 2)[:30]
+    assert mc.take(30) == (orange(17) * 2)[:30]
 
   def test_streamed_start_and_step(self):
     mc = modulo_counter(Stream(3, 3, 2), 17, it.count())

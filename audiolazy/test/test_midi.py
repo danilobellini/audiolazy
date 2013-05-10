@@ -28,7 +28,7 @@ from random import random
 # Audiolazy internal imports
 from ..lazy_midi import (MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq,
                          str2midi, freq2midi, midi2str)
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, xzip
 from ..lazy_math import inf, nan, isinf, isnan
 
 
@@ -52,7 +52,7 @@ class TestMIDI2Freq(object):
 
   @p("data_type", [tuple, list])
   def test_note_list_tuple(self, data_type):
-    notes, freqs = zip(*self.table)
+    notes, freqs = xzip(*self.table)
     assert almost_eq(midi2freq(data_type(notes)), data_type(freqs))
 
   invalid_table = [
@@ -102,7 +102,7 @@ class TestStr2MIDI(object):
 
   @p("data_type", [tuple, list])
   def test_name_list_tuple(self, data_type):
-    names, notes = zip(*self.table)
+    names, notes = xzip(*self.table)
     assert str2midi(data_type(names)) == data_type(notes)
 
   def test_interrogation_input(self):

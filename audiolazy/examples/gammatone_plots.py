@@ -43,7 +43,7 @@ fig1 = plt.figure("Frequency response", figsize=(16, 9), dpi=60)
 fig2 = plt.figure("Impulse response", figsize=(16, 9), dpi=60)
 
 # Plotting loop
-for idx, (fc, endtime) in enumerate(sorted(plot_freq_time.iteritems()), 1):
+for idx, (fc, endtime) in enumerate(sorted(plot_freq_time.items()), 1):
   # Configuration for the given frequency
   num_samples = int(round(endtime))
   time_scale = linspace(0, num_samples / ms, num_samples)
