@@ -327,7 +327,7 @@ class MultiKeyDict(dict):
   >>> del mkd[2]
   >>> len(mkd)
   1
-  >>> sorted(mkd.keys()[0]) # Sorts the only key tuple
+  >>> sorted(list(mkd.keys())[0]) # Sorts the only key tuple
   [-7, 1]
 
   """

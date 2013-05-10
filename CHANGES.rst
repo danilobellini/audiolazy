@@ -33,7 +33,8 @@ AudioLazy changes history
   - Extended domain for some functions by using ``inf`` and ``nan``
   - Now with 5600+ tests and 80% code coverage
   - Removed deprecated ``Stream.tee()`` method
-  - No more distinction between ``__div__`` and ``__truediv__``
+  - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
+  - Now AudioLazy works with Python 3.3!
 
 + lazy_core:
 

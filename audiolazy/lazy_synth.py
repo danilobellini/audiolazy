@@ -183,7 +183,7 @@ def line(dur, begin=0., end=1., finish=False):
   >>> a = np.mat([[1, 2], [3, 4]])
   >>> b = np.mat([[3, 2], [2, 1]])
   >>> for el in line(4, a, b):
-  ...   print el
+  ...   print(el)
   [[ 1.  2.]
    [ 3.  4.]]
   [[ 1.5   2.  ]
@@ -197,7 +197,7 @@ def line(dur, begin=0., end=1., finish=False):
 
   >>> from audiolazy import z
   >>> for el in line(4, z ** 2 - 5, z + 2):
-  ...   print el
+  ...   print(el)
   z^2 - 5
   0.75 * z^2 + 0.25 * z - 3.25
   0.5 * z^2 + 0.5 * z - 1.5

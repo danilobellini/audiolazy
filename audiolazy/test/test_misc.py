@@ -70,7 +70,7 @@ class TestChunks(object):
   def test_chunks(self, given_data, size, func):
     dfmt="f"
     padval=0.
-    data = "".join(func(given_data, size=size, dfmt=dfmt, padval=padval))
+    data = b"".join(func(given_data, size=size, dfmt=dfmt, padval=padval))
     samples_in = len(given_data)
     samples_out = samples_in
     if samples_in % size != 0:

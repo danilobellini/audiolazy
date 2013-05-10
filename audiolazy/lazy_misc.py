@@ -468,7 +468,9 @@ def multiplication_formatter(power, value, symbol):
   """
   if isinstance(value, float):
     if value.is_integer():
-      value = int(value) # Hides ".0" when possible
+      value = rint(value) # Hides ".0" when possible
+    else:
+      value = "{:g}".format(value)
   if power != 0:
     suffix = "" if power == 1 else "^{p}".format(p=power)
     if value == 1:

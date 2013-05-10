@@ -104,7 +104,7 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
   >>> x = itertools.count()
   >>> y = itertools.repeat(3)
   >>> z = 2*x + y
-  >>> w = itertools.takewhile(lambda (idx, el): idx < 10, enumerate(z))
+  >>> w = itertools.takewhile(lambda pair: pair[0] < 10, enumerate(z))
   >>> list(el for idx, el in w)
   [3, 5, 7, 9, 11, 13, 15, 17, 19, 21]
 
@@ -581,8 +581,8 @@ def thub(data, n):
 
   With numbers:
 
-  >>> sub_sum(1, 1)
-  0
+  >>> sub_sum(1, 1.)
+  0.0
 
   Combining number with iterable:
 
