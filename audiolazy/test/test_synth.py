@@ -30,7 +30,8 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, TableLookup, fadein, fadeout,
                           sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff, orange, xrange
+from ..lazy_misc import (almost_eq, sHz, blocks, almost_eq_diff, orange,
+                         xrange, rint)
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
 from ..lazy_math import pi, inf
@@ -149,7 +150,7 @@ class TestOnesZerosZeroes(object):
   def test_finite_duration(self, func, data, dur):
     my_stream = func(dur)
     assert isinstance(my_stream, Stream)
-    dur_int = max(int(round(dur)), 0)
+    dur_int = max(rint(dur), 0)
     assert list(my_stream) == [data] * dur_int
 
 
@@ -171,7 +172,7 @@ class TestWhiteNoise(object):
   def test_finite_duration(self, dur):
     my_stream = white_noise(dur)
     assert isinstance(my_stream, Stream)
-    dur_int = max(int(round(dur)), 0)
+    dur_int = max(rint(dur), 0)
     my_list = list(my_stream)
     assert len(my_list) == dur_int
     for el in my_list:
@@ -232,7 +233,7 @@ class TestImpulse(object):
   def test_finite_duration(self, dur):
     delta = impulse(dur)
     assert isinstance(delta, Stream)
-    dur_int = max(int(round(dur)), 0)
+    dur_int = max(rint(dur), 0)
     if dur_int == 0:
       assert list(delta) == []
     else:

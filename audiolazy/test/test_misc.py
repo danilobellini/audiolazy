@@ -27,8 +27,34 @@ import struct
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import (chunks, array_chunks, elementwise, almost_eq,
-                         rst_table, orange, xrange)
+from ..lazy_misc import (INT_TYPES, rint, chunks, array_chunks, elementwise,
+                         almost_eq, rst_table, orange, xrange)
+
+
+class TestRInt(object):
+  table = [
+    (.499, 0),
+    (-.499, 0),
+    (.5, 1),
+    (-.5, -1),
+    (1.00001e3, 1000),
+    (-227.0090239, -227),
+    (-12.95, -13),
+  ]
+
+  @p(("data", "expected"), table)
+  def tests_from_table_default_step(self, data, expected):
+    result = rint(data)
+    assert isinstance(result, INT_TYPES)
+    assert result == expected
+
+  @p(("data", "expected"), table)
+  @p("n", [2, 3, 10])
+  def tests_from_step_n(self, data, expected, n):
+    data_n, expected_n = n * data, n * expected # Inputs aren't in step n
+    result = rint(data_n, step=n)
+    assert isinstance(result, INT_TYPES)
+    assert result == expected_n
 
 
 class TestChunks(object):

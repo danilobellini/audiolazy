@@ -31,7 +31,7 @@ AudioLazy changes history
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5500+ tests and 80% code coverage
+  - Now with 5600+ tests and 80% code coverage
   - Removed deprecated ``Stream.tee()`` method
   - No more distinction between ``__div__`` and ``__truediv__``
 
@@ -54,6 +54,8 @@ AudioLazy changes history
 
   - Several Python 2.x and 3.x compatibility resources, like the ``meta``
     function for creating metaclasses always in a Python 3 look-alike style.
+  - New ``rint`` for "round integer" operations as well as other higher step
+    integer quantization
 
 + lazy_stream:
 

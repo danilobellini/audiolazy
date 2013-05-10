@@ -29,11 +29,12 @@ import itertools as it
 import sys
 from math import pi
 from fractions import Fraction
+import operator
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
            "orange", "PYTHON2", "builtins", "xrange", "xzip", "xzip_longest",
            "xmap", "xfilter", "STR_TYPES", "INT_TYPES", "SOME_GEN_TYPES",
-           "iteritems", "itervalues", "im_func", "meta",
+           "iteritems", "itervalues", "im_func", "meta", "rint",
            "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
@@ -128,6 +129,36 @@ def meta(*bases, **kwargs):
         return metaclass.__new__(metaclass, name, bases, namespace)
       return super(NewMeta, mcls).__new__(mcls, "", mbases, {})
   return NewMeta("", tuple(), {})
+
+
+def rint(x, step=1):
+  """
+  Round to integer.
+
+  Parameters
+  ----------
+  x :
+    Input number (integer or float) to be rounded.
+  step :
+    Quantization level (defaults to 1). If set to 2, the output will be the
+    "best" even number.
+
+  Result
+  ------
+  The step multiple nearest to x. When x is exactly halfway between two
+  possible outputs, it'll result the one farthest to zero.
+
+  """
+  div, mod = divmod(x, step)
+  err = min(step / 10., .1)
+  result = div * step
+  if x > 0:
+    result += err
+  elif x < 0:
+    result -= err
+  if (operator.ge if x >= 0 else operator.gt)(2 * mod, step):
+    result += step
+  return int(result)
 
 
 def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
