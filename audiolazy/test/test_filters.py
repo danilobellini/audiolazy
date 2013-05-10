@@ -24,7 +24,7 @@ import pytest
 p = pytest.mark.parametrize
 
 import operator
-from itertools import combinations_with_replacement
+import itertools as it
 from math import pi
 from functools import reduce
 
@@ -33,9 +33,12 @@ from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
                             resonator, lowpass, highpass)
 from ..lazy_misc import (almost_eq, almost_eq_diff, zero_pad, orange, xrange,
                          xzip, xmap)
-from ..lazy_itertools import cycle
+from ..lazy_itertools import cycle, chain
 from ..lazy_stream import Stream
-from ..lazy_math import dB10, dB20
+from ..lazy_math import dB10, dB20, inf
+
+from . import skipper
+operator.div = getattr(operator, "div", skipper("There's no operator.div"))
 
 
 class TestZFilter(object):
@@ -84,11 +87,14 @@ class TestZFilter(object):
     assert almost_eq(my_filter(self.data), expected)
 
   amp_list = [1, -15, 45, 0, .81, 17]
-  @p(("num_delays", "amp_factor"),
-     [(delay, amp) for delay in delays
-                   for amp in combinations_with_replacement(amp_list,
-                                                            delay + 1)]
-    )
+  @p( ("num_delays", "amp_factor"),
+      chain.from_iterable(
+        (lambda amps, dls: [
+          [(d, a) for a in it.combinations_with_replacement(amps, d + 1)]
+          for d in dls
+        ])(amp_list, delays)
+      ).take(inf)
+  )
   def test_z_many_fir_sizes_and_amplifications(self, num_delays, amp_factor):
     my_filter = sum(amp_factor[delay] * z ** -delay
                     for delay in xrange(num_delays + 1))

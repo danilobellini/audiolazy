@@ -63,7 +63,10 @@ class TestChunks(object):
   _ld = len(_data)
   @p("func", [chunks, array_chunks])
   @p("size", [1, 2, 3, 4, _ld - 1, _ld, _ld + 1, 2 * _ld, 2 * _ld + 1])
-  @p("given_data", [_data[:idx] for idx, unused in enumerate(_data)])
+  @p("given_data", (lambda d:
+                      [d[:idx] for idx, unused in enumerate(d)]
+                   )(d=_data)
+  )
   def test_chunks(self, given_data, size, func):
     dfmt="f"
     padval=0.

@@ -29,6 +29,9 @@ import operator
 from ..lazy_poly import Poly
 from ..lazy_misc import almost_eq, orange
 
+from . import skipper
+operator.div = getattr(operator, "div", skipper("There's no operator.div"))
+
 
 class TestPoly(object):
   example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(-5, 3, -1)]

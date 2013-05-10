@@ -118,10 +118,10 @@ class TestMIDI2Str(object):
   def test_name_with_errors(self, name, note):
     error = round(random() / 3 + .1, 3) # Minimum is greater than tolerance
 
-    full_name = name + "+{}%".format(error * 100)
+    full_name = name + "+{}%".format("%.1f" % (error * 100))
     assert midi2str(note + error, sharp="#" in name) == full_name
 
-    full_name = name + "-{}%".format(error * 100)
+    full_name = name + "-{}%".format("%.1f" % (error * 100))
     assert midi2str(note - error, sharp="#" in name) == full_name
 
   @p("note", [inf, -inf, nan])

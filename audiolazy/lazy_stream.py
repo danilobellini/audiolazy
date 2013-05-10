@@ -26,7 +26,7 @@ from functools import wraps
 from warnings import warn
 
 # Audiolazy internal imports
-from .lazy_misc import blocks, meta, xrange, xmap, xfilter
+from .lazy_misc import blocks, meta, xrange, xmap, xfilter, NEXT_NAME, rint
 from .lazy_core import AbstractOperatorOverloaderMeta
 from .lazy_math import inf
 
@@ -237,7 +237,7 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
     constructor unless ``n == None``, which means returns the next element
     from the sequence outside any container.
     If ``n`` is None, this can raise StopIteration due to lack of data in
-    the Stream. When ``n`` is an integer, there's no such exception.
+    the Stream. When ``n`` is a number, there's no such exception.
 
     Examples
     --------
@@ -285,7 +285,7 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
     if n is inf:
       return constructor(self._data)
     if isinstance(n, float):
-      n = int(round(n))
+      n = rint(n)
     return constructor(next(self._data) for _ in xrange(n))
 
   def copy(self):
@@ -349,8 +349,8 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
     """
     Returns a Stream of attributes or methods, got in an elementwise fashion.
     """
-    if name == "next":
-      raise NotImplementedError("Streams are iterable, not iterators")
+    if name == NEXT_NAME:
+      raise AttributeError("Streams are iterable, not iterators")
     return Stream(getattr(a, name) for a in self._data)
 
   def __call__(self, *args, **kwargs):

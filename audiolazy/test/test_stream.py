@@ -29,8 +29,12 @@ import warnings
 
 # Audiolazy internal imports
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
-from ..lazy_misc import almost_eq, orange, xrange, xzip, xmap, xfilter
+from ..lazy_misc import (almost_eq, orange, xrange, xzip, xmap, xfilter,
+                         NEXT_NAME)
 from ..lazy_math import inf
+
+from . import skipper
+operator.div = getattr(operator, "div", skipper("There's no operator.div"))
 
 
 class TestStream(object):
@@ -199,7 +203,7 @@ class TestStream(object):
 
   def test_next(self):
     """ Streams should have no "next" method! """
-    assert not hasattr(Stream(2), "next")
+    assert not hasattr(Stream(2), NEXT_NAME)
 
   def test_peek_take(self):
     data = Stream([1, 4, 3, 2])

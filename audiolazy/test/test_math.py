@@ -46,12 +46,10 @@ class TestLog(object):
 
   @p(("func", "base"), list(funcs.items()))
   def test_minus_one(self, func, base):
-    radius = func(e)
-    tp = 2 * pi * radius
-    for pair in it.combinations([func(-1) % tp,
-                                 func(-1.) % tp,
-                                 func(-1. + 0j) % tp,
-                                 -tp / 2j,
+    for pair in it.combinations([func(-1),
+                                 func(-1.),
+                                 func(-1. + 0j),
+                                 1j * pi * func(e),
                                 ], 2):
       assert almost_eq(*pair)
 

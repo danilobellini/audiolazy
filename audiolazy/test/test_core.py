@@ -37,7 +37,7 @@ class TestAbstractOperatorOverloaderMeta(object):
           pass
       except TypeError as excep:
         msg = "Class 'unnamed' has no builder/template for operator method '"
-        assert excep.message.startswith(msg)
+        assert str(excep).startswith(msg)
         raise
 
   def test_empty_invalid_subclass(self):
@@ -49,7 +49,7 @@ class TestAbstractOperatorOverloaderMeta(object):
           pass
       except TypeError as excep:
         msg = "Class 'DummyClass' has no builder/template for operator method"
-        assert excep.message.startswith(msg)
+        assert str(excep).startswith(msg)
         raise
 
 

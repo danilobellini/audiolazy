@@ -87,9 +87,9 @@ class OpMethod(object):
     <generator object get at 0x...>
     >>> len(list(_)) # Found __rshift__ and __rrshift__, as a generator
     2
-    >>> OpMethod.get("__add__").next().func(2, 3) # By name, finds 2 + 3
+    >>> next(OpMethod.get("__add__")).func(2, 3) # By name, finds 2 + 3
     5
-    >>> OpMethod.get("rsub").next().symbol # Name is without underscores
+    >>> next(OpMethod.get("rsub")).symbol # Name is without underscores
     '-'
     >>> mod = list(OpMethod.get("%"))
     >>> mod[0].rev # Is it reversed? The __mod__ isn't.
@@ -101,10 +101,10 @@ class OpMethod(object):
     >>> add = list(OpMethod.get("+"))
     >>> add[2].arity # Unary "+"
     1
-    >>> add[2] is OpMethod.get("pos").next()
+    >>> add[2] is next(OpMethod.get("pos"))
     True
     >>> import operator
-    >>> OpMethod.get(operator.add).next().symbol # Using the operator function
+    >>> next(OpMethod.get(operator.add)).symbol # Using the operator function
     '+'
     >>> len(list(OpMethod.get(operator.add))) # __add__ and __radd__
     2
@@ -314,7 +314,7 @@ class MultiKeyDict(dict):
   2
   >>> sorted(mk)
   [2, 3]
-  >>> sorted(mk.iterkeys())
+  >>> sorted(mk.keys())
   [(2,), (4, 1)]
 
   Casting from another dict:

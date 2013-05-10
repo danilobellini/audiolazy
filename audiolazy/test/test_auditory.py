@@ -23,6 +23,8 @@ Testing module for the lazy_auditory module
 import pytest
 p = pytest.mark.parametrize
 
+import itertools as it
+
 # Audiolazy internal imports
 from ..lazy_auditory import erb, gammatone_erb_constants, gammatone
 from ..lazy_misc import almost_eq, almost_eq_diff, sHz
@@ -78,7 +80,8 @@ class TestGammatone(object):
 
   @p(("filt_func", "freq", "bw"),
      [(gf, pi / 5, pi / 19) for gf in gammatone] +
-     [(gammatone.klapuri, freq, bw) for freq in some_data for bw in some_data]
+     [(gammatone.klapuri, freq, bw) for freq, bw
+                                    in it.product(some_data,some_data)]
     )
   def test_number_of_poles_order(self, filt_func, freq, bw):
     cfilt = filt_func(freq=freq, bandwidth=bw)

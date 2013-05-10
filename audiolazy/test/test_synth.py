@@ -31,7 +31,7 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           sin_table, saw_table)
 from ..lazy_stream import Stream
 from ..lazy_misc import (almost_eq, sHz, blocks, almost_eq_diff, orange,
-                         xrange, rint)
+                         xrange, rint, xzip)
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
 from ..lazy_math import pi, inf
@@ -108,7 +108,7 @@ class TestModuloCounter(object):
     should_step =  [0, 0, 1, 3, 6, 10, 15-17, 21-17, 28-17, 36-34, 45-34,
                     55-51, 66-68]
     should_start = [3, 3, 2, 3, 3, 2, 3, 3, 2, 3, 3, 2, 3, 3, 2, 3]
-    should_mc = [a+b for a,b in it.izip(should_start, should_step)]
+    should_mc = [a+b for a,b in xzip(should_start, should_step)]
     assert mc.take(len(should_mc)) == should_mc
 
   def test_streamed_modulo(self):

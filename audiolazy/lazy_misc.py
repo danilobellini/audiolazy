@@ -34,7 +34,7 @@ import operator
 __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
            "orange", "PYTHON2", "builtins", "xrange", "xzip", "xzip_longest",
            "xmap", "xfilter", "STR_TYPES", "INT_TYPES", "SOME_GEN_TYPES",
-           "iteritems", "itervalues", "im_func", "meta", "rint",
+           "NEXT_NAME", "iteritems", "itervalues", "im_func", "meta", "rint",
            "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
@@ -69,6 +69,7 @@ STR_TYPES = (getattr(builtins, "basestring", str),)
 INT_TYPES = (int, getattr(builtins, "long", None)) if PYTHON2 else (int,)
 SOME_GEN_TYPES = (types.GeneratorType, xrange(0).__class__, enumerate, xzip,
                   xzip_longest, xmap, xfilter)
+NEXT_NAME = "next" if PYTHON2 else "__next__"
 
 
 def iteritems(dictionary):
@@ -76,7 +77,10 @@ def iteritems(dictionary):
   Function to use the generator-based items iterator over built-in
   dictionaries in both Python 2 and 3.
   """
-  return getattr(dictionary, "iteritems", getattr(dictionary, "items"))()
+  try:
+    return getattr(dictionary, "iteritems")()
+  except AttributeError:
+    return iter(getattr(dictionary, "items")())
 
 
 def itervalues(dictionary):
@@ -84,7 +88,10 @@ def itervalues(dictionary):
   Function to use the generator-based value iterator over built-in
   dictionaries in both Python 2 and 3.
   """
-  return getattr(dictionary, "itervalues", getattr(dictionary, "values"))()
+  try:
+    return getattr(dictionary, "itervalues")()
+  except AttributeError:
+    return iter(getattr(dictionary, "values")())
 
 
 def im_func(method):
@@ -94,8 +101,8 @@ def im_func(method):
 
 def meta(*bases, **kwargs):
   """
-  Allows unique Python 3 syntax for working with metaclasses in both Python 2
-  and Python 3.
+  Allows unique syntax similar to Python 3 for working with metaclasses in
+  both Python 2 and Python 3.
 
   Examples
   --------
@@ -114,6 +121,8 @@ def meta(*bases, **kwargs):
   >>> class BadGuy(Bady):
   ...   def bad(self):
   ...     return "R"
+  >>> issubclass(BadGuy, Bady)
+  True
   >>> Bady().really_bad() # Here value = 4
   'HUA HUA HUA HUA '
   >>> BadGuy().really_bad() # Called metaclass ``__new__`` again, so value = 6

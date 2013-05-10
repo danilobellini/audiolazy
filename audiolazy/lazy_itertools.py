@@ -38,6 +38,8 @@ for func in filter(callable, [getattr(it, name) for name in it_names]):
   __all__.append(name)
   locals()[name] = tostream(func)
 
+chain.from_iterable = tostream(it.chain.from_iterable)
+
 # Includes the imap and others (they're not from itertools in Python 3)
 for name, func in zip(["imap", "ifilter", "izip"], [map, filter, zip]):
   if name not in __all__:

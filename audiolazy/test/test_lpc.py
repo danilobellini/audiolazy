@@ -154,15 +154,15 @@ class TestLPC(object):
   blk_order_pairs = list(it.product(block_list, order_list))
   covars_value_error_cases = [(blk, order) for blk, order in blk_order_pairs
                                            if len(blk) <= order]
-  kcovar_value_error_cases = ( # Due to zero "k" coefficient
-    [(big_block, order) for order in order_list if order <= 18] +
-    [(small_block, order) for order in order_list if order <= 7]
-  )
-  kcovar_valid_cases = [pair for pair in blk_order_pairs
-                             if pair not in kcovar_zdiv_error_cases
-                             and pair not in covars_value_error_cases
-                             and pair not in kcovar_value_error_cases]
-
+  kcovar_value_error_cases = (lambda bb, sb, ol: ( # Due to zero "k" coeffs
+    [(bb, order) for order in ol if order <= 18] +
+    [(sb, order) for order in ol if order <= 7]
+  ))(bb=big_block, sb=small_block, ol=order_list)
+  kcovar_valid_cases = (lambda ok_pairs, not_ok_pairs:
+    [pair for pair in ok_pairs if pair not in not_ok_pairs]
+  )(ok_pairs = blk_order_pairs,
+    not_ok_pairs = kcovar_zdiv_error_cases + covars_value_error_cases +
+                   kcovar_value_error_cases)
   @p(("blk", "order"), blk_order_pairs)
   def test_equalness_all_autocorrelation_strategies(self, blk, order):
     # Common case, tests whether all solutions are the same

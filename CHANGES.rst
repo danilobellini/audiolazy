@@ -49,6 +49,7 @@ AudioLazy changes history
 
   - New ``accumulate()`` itertool from Python 3, available also in Python 2
     yielding a Stream
+  - The ``chain.from_iterable()`` is now available in a Stream version too
 
 + lazy_misc:
 

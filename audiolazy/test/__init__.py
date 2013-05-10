@@ -20,4 +20,14 @@
 AudioLazy testing sub-package
 """
 
-# This file is needed since the tests uses relative imports.
+import pytest
+
+def skipper(msg="There's something not supported in this environment"):
+  """
+  Internal function to work as the last argument in a ``getattr`` call to
+  help skip environment-specific tests when needed.
+
+  """
+  def skip(*args, **kwargs):
+    pytest.skip(msg.format(*args, **kwargs))
+  return skip

@@ -28,7 +28,7 @@ from numpy.fft import fft as np_fft
 # Audiolazy internal imports
 from ..lazy_analysis import dft
 from ..lazy_math import pi
-from ..lazy_misc import almost_eq_diff
+from ..lazy_misc import almost_eq_diff, rint
 from ..lazy_synth import line
 
 
@@ -45,7 +45,7 @@ class TestDFT(object):
   @p("size_multiplier", [.5, 1, 2, 3, 1.5, 1.2])
   def test_empty(self, blk, size_multiplier):
     full_size = len(blk)
-    size = int(round(full_size * size_multiplier))
+    size = rint(full_size * size_multiplier)
     np_data = np_fft(blk, size).tolist()
     lz_data = dft(blk[:size],
                   line(size, 0, 2 * pi, finish=False),

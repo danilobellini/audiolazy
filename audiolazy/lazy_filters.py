@@ -187,7 +187,7 @@ class LinearFilter(LinearFilterProperties):
     for delay, coeff in iteritems(self.numdict):
       if isinstance(coeff, Iterable):
         num_iterables.append(delay)
-        data_sum.append("d{idx} * b{idx}.next()".format(idx=delay))
+        data_sum.append("d{idx} * next(b{idx})".format(idx=delay))
       elif coeff == 1:
         data_sum.append("d{idx}".format(idx=delay))
       elif coeff == -1:
@@ -199,7 +199,7 @@ class LinearFilter(LinearFilterProperties):
     for delay, coeff in iteritems(self.dendict):
       if isinstance(coeff, Iterable):
         den_iterables.append(delay)
-        data_sum.append("-m{idx} * a{idx}.next()".format(idx=delay))
+        data_sum.append("-m{idx} * next(a{idx})".format(idx=delay))
       elif delay == 0:
         gain = coeff
       elif coeff == -1:
