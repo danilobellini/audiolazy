@@ -160,7 +160,8 @@ version 0.04 (requires ``git`` for cloning)::
   pip install -U git+git://github.com/danilobellini/audiolazy.git@v0.04
 
 The package doesn't have any strong dependency for its core besides the Python
-itself and its standard library, but you might need:
+itself (versions 2.7, 3.2 or newer) as well as its standard library, but you
+might need:
 
 - PyAudio: needed for playing and recording audio (``AudioIO`` class);
 - NumPy: needed for doing some maths, such as finding the LSFs from a filter

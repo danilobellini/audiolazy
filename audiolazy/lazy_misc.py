@@ -231,9 +231,9 @@ def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
 def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
            padval=0.):
   """
-  Chunk generator, or a blockenizer for homogeneous data, to help writing an
-  iterable into a file. This implementation is based on the struct module.
+  Chunk generator based on the struct module (Python standard library).
 
+  Blockenizer for homogeneous data, to help writing an iterable into a file.
   The dfmt should be one char, chosen from the ones in link:
 
     `<http://docs.python.org/library/struct.html#format-characters>`_
@@ -462,8 +462,11 @@ def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
 
 def multiplication_formatter(power, value, symbol):
   """
-  Formats a number ``value * symbol ** power`` as a string, where symbol is
-  already a string and both other inputs are numbers.
+  Formats a ``value * symbol ** power`` as a string.
+
+  Usually ``symbol`` is already a string and both other inputs are numbers,
+  however this isn't strictly needed. If ``symbol`` is a number, the
+  multiplication won't be done, keeping its default string formatting as is.
 
   """
   if isinstance(value, float):
@@ -484,8 +487,11 @@ def multiplication_formatter(power, value, symbol):
 
 def pair_strings_sum_formatter(a, b):
   """
-  Formats the sum of a and b, where both are numbers already converted
-  to strings.
+  Formats the sum of a and b.
+
+  Note
+  ----
+  Both inputs are numbers already converted to strings.
 
   """
   if b[:1] == "-":
@@ -497,6 +503,8 @@ def pair_strings_sum_formatter(a, b):
 def rational_formatter(value, symbol_str="", symbol_value=1, after=False,
                        max_denominator=1000000):
   """
+  Pretty rational string from float numbers.
+
   Converts a given numeric value to a string based on rational fractions of
   the given symbol, useful for labels in plots.
 
@@ -593,11 +601,13 @@ def pi_formatter(value, after=False, max_denominator=1000000):
 def auto_formatter(value, order="pprpr", size=[4, 5, 3, 6, 4],
                    after=False, max_denominator=1000000):
   """
-  Automatic string formatter for integer fractions, fractions of :math:`\pi`
-  and float numbers with small number of digits.
+  Pretty string from int/float.
 
-  Chooses between pi_formatter, rational_formatter without a symbol and
-  a float representation by counting each digit, the "pi" symbol and the
+  "Almost" automatic string formatter for integer fractions, fractions of
+  :math:`\pi` and float numbers with small number of digits.
+
+  Chooses between ``pi_formatter``, ``rational_formatter`` without a symbol
+  and the float representation by counting each digit, the "pi" symbol and the
   slash as one char each, trying in the given ``order`` until one gets at
   most the given ``size`` limit parameter as its length.
 

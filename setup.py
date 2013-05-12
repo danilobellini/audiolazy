@@ -19,7 +19,6 @@
 # danilo [dot] bellini [at] gmail [dot] com
 """
 AudioLazy package setup file
-
 """
 
 from setuptools import setup
@@ -65,7 +64,7 @@ metadata["long_description"] = "\n".join(["", ldescr, "", changes_data])
 # Classifiers and license
 metadata["license"] = "GPLv3"
 metadata["classifiers"] = [
-  "Development Status :: 2 - Pre-Alpha",
+  "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
@@ -76,9 +75,15 @@ metadata["classifiers"] = [
   "Operating System :: POSIX :: Linux",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
+  "Programming Language :: Python :: 2",
+  "Programming Language :: Python :: 2.7",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.2",
+  "Programming Language :: Python :: 3.3",
   "Topic :: Artistic Software",
   "Topic :: Multimedia :: Sound/Audio",
   "Topic :: Multimedia :: Sound/Audio :: Analysis",
+  "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
   "Topic :: Multimedia :: Sound/Audio :: Players",
   "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
   "Topic :: Scientific/Engineering",

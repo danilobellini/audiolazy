@@ -151,7 +151,7 @@ def pre_processor(app, what, name, obj, options, lines,
       del lines[idxs.pop():] # Remove the last summary
     if len(idxs) >= 1:
       lines.insert(idxs[-1] + 1, "")
-      if obj == audiolazy.lazy_math:
+      if obj in [audiolazy.lazy_math, audiolazy.lazy_misc]:
         lines.insert(idxs[-1] + 1, ".. tabularcolumns:: cl")
       else:
         lines.insert(idxs[-1] + 1, ".. tabularcolumns:: CJ")
@@ -182,7 +182,7 @@ def pre_processor(app, what, name, obj, options, lines,
     elif nlower == "returns":
       result.append(":returns: " + " ".join(blk))
 
-    elif nlower in ("note", "warning"):
+    elif nlower in ("note", "warning", "hint"):
       result.append(".. {0}::".format(nlower))
       result.extend("  " + el for el in blk)
 
@@ -218,7 +218,6 @@ def should_skip(app, what, name, obj, skip, options):
 
   """
   if name in ["__doc__", "__module__", "__dict__", "__weakref__",
-               "_not_implemented", "__operator_inputs__",
                "__abstractmethods__"
               ] or name.startswith("_abc_"):
     return True
@@ -251,9 +250,9 @@ def file_name_generator_recursive(path):
       yield full_name
 
 
-def older_file(file_iterable):
+def newest_file(file_iterable):
   """
-  Returns the name of the older file given an iterable of file names.
+  Returns the name of the newest file given an iterable of file names.
 
   """
   return max(file_iterable, key=lambda fname: os.path.getmtime(fname))
@@ -314,8 +313,8 @@ else:
 # Get "today" using the last file modification date
 # WARNING: Be careful with git clone, clonning date will be "today"
 install_path = audiolazy.__path__[0]
-installed_older_file = older_file(file_name_generator_recursive(install_path))
-installed_time = os.path.getmtime(installed_older_file)
+installed_nfile = newest_file(file_name_generator_recursive(install_path))
+installed_time = os.path.getmtime(installed_nfile)
 today = time.strftime("%Y-%m-%d", time.gmtime(installed_time)) # In UTF time
 
 exclude_patterns = []
@@ -335,6 +334,7 @@ latex_elements = {
   "papersize": "a4paper",
   "pointsize": "10pt", # Font size
   "preamble": r"  \setlength{\tymax}{330pt}",
+  "fontpkg": "\\usepackage{cmbright}",
 }
 
 latex_documents = [(
@@ -346,7 +346,7 @@ latex_documents = [(
 )]
 
 latex_show_pagerefs = True
-latex_show_urls = True
+latex_show_urls = "footnote"
 latex_domain_indices = False
 
 
