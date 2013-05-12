@@ -25,11 +25,12 @@ from collections import Iterator
 
 # Audiolazy internal imports
 from .lazy_stream import tostream, Stream
-from .lazy_misc import xrange
+from .lazy_misc import xrange, xzip
+from .lazy_core import StrategyDict
 
 
 # "Decorates" all functions from itertools
-__all__ = ["tee"]
+__all__ = ["tee", "chain", "izip"]
 it_names = set(dir(it)).difference(__all__)
 for func in filter(callable, [getattr(it, name) for name in it_names]):
   name = func.__name__
@@ -38,10 +39,21 @@ for func in filter(callable, [getattr(it, name) for name in it_names]):
   __all__.append(name)
   locals()[name] = tostream(func)
 
-chain.from_iterable = tostream(it.chain.from_iterable)
 
-# Includes the imap and others (they're not from itertools in Python 3)
-for name, func in zip(["imap", "ifilter", "izip"], [map, filter, zip]):
+# StrategyDict chain, following "from_iterable" from original itertool
+chain = StrategyDict("chain")
+chain.strategy("chain")(tostream(it.chain))
+chain.strategy("star", "from_iterable")(tostream(it.chain.from_iterable))
+
+
+# StrategyDict izip, allowing izip.longest instead of izip_longest
+izip = StrategyDict("izip")
+izip.strategy("izip", "smallest")(tostream(xzip))
+izip["longest"] = izip_longest
+
+
+# Includes the imap and ifilter (they're not from itertools in Python 3)
+for name, func in zip(["imap", "ifilter"], [map, filter]):
   if name not in __all__:
     __all__.append(name)
     locals()[name] = tostream(func)

@@ -52,7 +52,10 @@ AudioLazy changes history
 
   - New ``accumulate()`` itertool from Python 3, available also in Python 2
     yielding a Stream
-  - The ``chain.from_iterable()`` is now available in a Stream version too
+  - Strategy ``chain.from_iterable`` is now available (Stream version
+    itertool), and ``chain`` is now a StrategyDict
+  - Now ``izip`` is a StrategyDict, with ``izip.smallest`` (default) and
+    ``izip.longest`` strategies
 
 + lazy_misc:
 
