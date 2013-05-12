@@ -38,13 +38,102 @@ except:
 
 import threading
 import struct
+import array
 
 # Audiolazy internal imports
 from .lazy_stream import Stream
-from .lazy_misc import chunks, DEFAULT_CHUNK_SIZE, DEFAULT_SAMPLE_RATE
+from .lazy_misc import DEFAULT_SAMPLE_RATE, blocks, xrange
 from .lazy_math import inf
+from .lazy_core import StrategyDict
 
-__all__ = ["RecStream", "AudioIO", "AudioThread"]
+__all__ = ["chunks", "RecStream", "AudioIO", "AudioThread"]
+
+
+chunks = StrategyDict("chunks")
+chunks.__class__.size = 2048 # Samples
+
+
+@chunks.strategy("struct")
+def chunks(seq, size=None, dfmt="f", byte_order=None, padval=0.):
+  """
+  Chunk generator based on the struct module (Python standard library).
+
+  Low-level data blockenizer for homogeneous data as a generator, to help
+  writing an iterable into a file.
+  The dfmt should be one char, chosen from the ones in link:
+
+    `<http://docs.python.org/library/struct.html#format-characters>`_
+
+  Useful examples (integer are signed, use upper case for unsigned ones):
+
+  - "b" for 8 bits (1 byte) integer
+  - "h" for 16 bits (2 bytes) integer
+  - "i" for 32 bits (4 bytes) integer
+  - "f" for 32 bits (4 bytes) float (default)
+  - "d" for 64 bits (8 bytes) float (double)
+
+  Byte order follows native system defaults. Other options are in the site:
+
+    `<http://docs.python.org/library/struct.html#struct-alignment>`_
+
+  They are:
+
+  - "<" means little-endian
+  - ">" means big-endian
+
+  Note
+  ----
+  Default chunk size can be accessed (and changed) via chunks.size.
+
+  """
+  if size is None:
+    size = chunks.size
+  dfmt = str(size) + dfmt
+  if byte_order is None:
+    struct_string = dfmt
+  else:
+    struct_string = byte_order + dfmt
+  s = struct.Struct(struct_string)
+  for block in blocks(seq, size, padval=padval):
+    yield s.pack(*block)
+
+
+@chunks.strategy("array")
+def chunks(seq, size=None, dfmt="f", byte_order=None, padval=0.):
+  """
+  Chunk generator based on the array module (Python standard library).
+
+  See chunk.struct for more help. This strategy uses array.array (random access
+  by indexing management) instead of struct.Struct and blocks/deque (circular
+  queue appending) from the chunks.struct strategy.
+
+  Hint
+  ----
+  Try each one to find the faster one for your machine, and chooses
+  the default one by assigning ``chunks.default = chunks.strategy_name``.
+  It'll be the one used by the AudioIO/AudioThread playing mechanism.
+
+  Note
+  ----
+  The ``dfmt`` symbols for arrays might differ from structs' defaults.
+
+  """
+  if size is None:
+    size = chunks.size
+  chunk = array.array(dfmt, xrange(size))
+  idx = 0
+
+  for el in seq:
+    chunk[idx] = el
+    idx += 1
+    if idx == size:
+      yield chunk.tostring()
+      idx = 0
+
+  if idx != 0:
+    for idx in xrange(idx, size):
+      chunk[idx] = padval
+    yield chunk.tostring()
 
 
 class RecStream(Stream):
@@ -55,6 +144,8 @@ class RecStream(Stream):
   and a ``recording`` read-only property for status.
   """
   def __init__(self, device_manager, file_obj, chunk_size, dfmt):
+    if chunk_size is None:
+      chunk_size = chunks.size
     s = struct.Struct("{0}{1}".format(chunk_size, dfmt))
 
     def rec():
@@ -193,7 +284,7 @@ class AudioIO(object):
     """
     self._recordings.remove(recst)
 
-  def record(self, chunk_size = DEFAULT_CHUNK_SIZE,
+  def record(self, chunk_size = None,
                    dfmt = "f",
                    nchannels = 1,
                    rate = DEFAULT_SAMPLE_RATE
@@ -240,7 +331,7 @@ class AudioThread(threading.Thread):
 
   """
   def __init__(self, device_manager, audio,
-                     chunk_size = DEFAULT_CHUNK_SIZE,
+                     chunk_size = None,
                      dfmt = "f",
                      nchannels = 1,
                      rate = DEFAULT_SAMPLE_RATE,
@@ -272,7 +363,7 @@ class AudioThread(threading.Thread):
     self.device_manager = device_manager
     self.dfmt = dfmt
     self.nchannels = nchannels
-    self.chunk_size = chunk_size
+    self.chunk_size = chunks.size if chunk_size is None else chunk_size
 
     # Lockers
     self.lock = threading.Lock() # Avoid control methods simultaneous call

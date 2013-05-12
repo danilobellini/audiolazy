@@ -32,7 +32,7 @@ AudioLazy changes history
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
   - Now with 5600+ tests and 80% code coverage
-  - Removed deprecated ``Stream.tee()`` method
+  - Removed deprecated ``Stream.tee()`` method and DEFAULT_CHUNK_SIZE constant
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
   - Now AudioLazy works with Python 3.3!
 
@@ -45,6 +45,8 @@ AudioLazy changes history
 + lazy_io:
 
   - New RecStream class for recording Stream instances with a ``stop`` method
+  - Now chunks is a StrategyDict here, instead of two lazy_misc functions
+  - Now the default chunk size is stored in chunks.size, and can be changed
 
 + lazy_itertools:
 

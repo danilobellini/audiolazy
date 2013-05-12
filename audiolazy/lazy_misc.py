@@ -20,8 +20,6 @@
 Common miscellanous tools and constants for general use
 """
 
-import struct
-import array
 from collections import deque, Iterable
 from functools import wraps
 import types
@@ -31,11 +29,11 @@ from math import pi
 from fractions import Fraction
 import operator
 
-__all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
+__all__ = ["DEFAULT_SAMPLE_RATE", "LATEX_PI_SYMBOL",
            "orange", "PYTHON2", "builtins", "xrange", "xzip", "xzip_longest",
            "xmap", "xfilter", "STR_TYPES", "INT_TYPES", "SOME_GEN_TYPES",
            "NEXT_NAME", "iteritems", "itervalues", "im_func", "meta", "rint",
-           "blocks", "chunks", "array_chunks", "zero_pad", "elementwise",
+           "blocks", "zero_pad", "elementwise",
            "almost_eq_diff", "almost_eq", "multiplication_formatter",
            "pair_strings_sum_formatter", "rational_formatter",
            "pi_formatter", "auto_formatter", "rst_table", "small_doc", "sHz"]
@@ -43,7 +41,6 @@ __all__ = ["DEFAULT_SAMPLE_RATE", "DEFAULT_CHUNK_SIZE", "LATEX_PI_SYMBOL",
 
 # Useful constants
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
-DEFAULT_CHUNK_SIZE = 2048 # Samples
 LATEX_PI_SYMBOL = r"$\pi$"
 
 
@@ -170,7 +167,7 @@ def rint(x, step=1):
   return int(result)
 
 
-def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
+def blocks(seq, size=None, hop=None, padval=0.):
   """
   General iterable blockenizer.
 
@@ -226,75 +223,6 @@ def blocks(seq, size=DEFAULT_CHUNK_SIZE, hop=None, padval=0.):
     for _ in xrange(idx,size):
       res.append(padval)
     yield res
-
-
-def chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
-           padval=0.):
-  """
-  Chunk generator based on the struct module (Python standard library).
-
-  Blockenizer for homogeneous data, to help writing an iterable into a file.
-  The dfmt should be one char, chosen from the ones in link:
-
-    `<http://docs.python.org/library/struct.html#format-characters>`_
-
-  Useful examples (integer are signed, use upper case for unsigned ones):
-
-  - "b" for 8 bits (1 byte) integer
-  - "h" for 16 bits (2 bytes) integer
-  - "i" for 32 bits (4 bytes) integer
-  - "f" for 32 bits (4 bytes) float (default)
-  - "d" for 64 bits (8 bytes) float (double)
-
-  Byte order follows native system defaults. Other options are in the site:
-
-    `<http://docs.python.org/library/struct.html#struct-alignment>`_
-
-  They are:
-
-  - "<" means little-endian
-  - ">" means big-endian
-
-  """
-  dfmt = str(size) + dfmt
-  if byte_order is None:
-    struct_string = dfmt
-  else:
-    struct_string = byte_order + dfmt
-  s = struct.Struct(struct_string)
-  for block in blocks(seq, size, padval=padval):
-    yield s.pack(*block)
-
-
-def array_chunks(seq, size=DEFAULT_CHUNK_SIZE, dfmt="f", byte_order=None,
-                 padval=0.):
-  """
-  Chunk generator based on the array module (Python standard library).
-
-  Generator: Another Repetitive Replacement Again Yielding chunks, this is
-  an audiolazy.chunks(...) clone using array.array (random access by
-  indexing management) instead of struct.Struct and blocks/deque (circular
-  queue appending). Try before to find the faster one for your machine.
-
-  Note
-  ----
-  The ``dfmt`` symbols for arrays might differ from structs' defaults.
-
-  """
-  chunk = array.array(dfmt, xrange(size))
-  idx = 0
-
-  for el in seq:
-    chunk[idx] = el
-    idx += 1
-    if idx == size:
-      yield chunk.tostring()
-      idx = 0
-
-  if idx != 0:
-    for idx in xrange(idx, size):
-      chunk[idx] = padval
-    yield chunk.tostring()
 
 
 def zero_pad(seq, left=0, right=0, zero=0.):

@@ -30,7 +30,7 @@ from time import sleep
 import struct
 
 # Audiolazy internal imports
-from ..lazy_io import AudioIO
+from ..lazy_io import AudioIO, chunks
 from ..lazy_synth import white_noise
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, orange
@@ -122,3 +122,41 @@ def test_output_only(monkeypatch, data):
     assert almost_eq(played_data, data) # Data loss (64-32bits conversion)
 
   assert player._pa.terminated # Test whether "terminate" was called
+
+
+@p("func", chunks)
+class TestChunks(object):
+
+  data = [17., -3.42, 5.4, 8.9, 27., 45.2, 1e-5, -3.7e-4, 7.2, .8272, -4.]
+  ld = len(data)
+  sizes = [1, 2, 3, 4, ld - 1, ld, ld + 1, 2 * ld, 2 * ld + 1]
+  data_segments = (lambda d: [d[:idx] for idx, unused in enumerate(d)])(data)
+
+  @p("size", sizes)
+  @p("given_data", data_segments)
+  def test_chunks(self, func, given_data, size):
+    dfmt="f"
+    padval=0.
+    data = b"".join(func(given_data, size=size, dfmt=dfmt, padval=padval))
+    samples_in = len(given_data)
+    samples_out = samples_in
+    if samples_in % size != 0:
+      samples_out -= samples_in % -size
+      assert samples_out > samples_in # Testing the tester...
+    restored_data = struct.Struct(dfmt * samples_out).unpack(data)
+    assert almost_eq(given_data,
+                     restored_data[:samples_in],
+                     ignore_type=True)
+    assert almost_eq([padval]*(samples_out - samples_in),
+                     restored_data[samples_in:],
+                     ignore_type=True)
+
+  @p("size", sizes)
+  def test_default_size(self, func, size):
+    dsize = chunks.size
+    assert list(func(self.data)) == list(func(self.data, size=dsize))
+    try:
+      chunks.size = size
+      assert list(func(self.data)) == list(func(self.data, size=size))
+    finally:
+      chunks.size = dsize

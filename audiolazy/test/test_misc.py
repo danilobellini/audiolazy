@@ -23,12 +23,10 @@ Testing module for the lazy_misc module
 import pytest
 p = pytest.mark.parametrize
 
-import struct
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import (INT_TYPES, rint, chunks, array_chunks, elementwise,
-                         almost_eq, rst_table, orange, xrange)
+from ..lazy_misc import INT_TYPES, rint, elementwise, rst_table, orange, xrange
 
 
 class TestRInt(object):
@@ -57,36 +55,8 @@ class TestRInt(object):
     assert result == expected_n
 
 
-class TestChunks(object):
-
-  _data = [17., -3.42, 5.4, 8.9, 27., 45.2, 1e-5, -3.7e-4, 7.2, .8272, -4.]
-  _ld = len(_data)
-  @p("func", [chunks, array_chunks])
-  @p("size", [1, 2, 3, 4, _ld - 1, _ld, _ld + 1, 2 * _ld, 2 * _ld + 1])
-  @p("given_data", (lambda d:
-                      [d[:idx] for idx, unused in enumerate(d)]
-                   )(d=_data)
-  )
-  def test_chunks(self, given_data, size, func):
-    dfmt="f"
-    padval=0.
-    data = b"".join(func(given_data, size=size, dfmt=dfmt, padval=padval))
-    samples_in = len(given_data)
-    samples_out = samples_in
-    if samples_in % size != 0:
-      samples_out -= samples_in % -size
-      assert samples_out > samples_in # Testing the tester...
-    restored_data = struct.Struct(dfmt * samples_out).unpack(data)
-    assert almost_eq(given_data,
-                     restored_data[:samples_in],
-                     ignore_type=True)
-    assert almost_eq([padval]*(samples_out - samples_in),
-                     restored_data[samples_in:],
-                     ignore_type=True)
-
-
 class TestElementwise(object):
-  _data = [1, 7, 9, -11, 0, .3, "ab", True, None, chunks]
+  _data = [1, 7, 9, -11, 0, .3, "ab", True, None, rst_table]
   @p("data", it.chain(_data, [_data], tuple(_data),
                       it.combinations_with_replacement(_data, 2))
     )
