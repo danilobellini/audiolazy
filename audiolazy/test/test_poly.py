@@ -27,6 +27,8 @@ p = pytest.mark.parametrize
 
 import operator
 import types
+from itertools import combinations_with_replacement, combinations
+
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
@@ -34,6 +36,7 @@ from ..lazy_misc import almost_eq, orange, xrange, almost_eq_diff, blocks
 from ..lazy_math import inf
 from ..lazy_filters import z
 from ..lazy_itertools import count
+from ..lazy_core import OpMethod
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -41,6 +44,30 @@ operator.div = getattr(operator, "div", skipper("There's no operator.div"))
 
 class TestPoly(object):
   example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(-5, 3, -1)]
+
+  instances = [
+    Poly([1.7, 2, 3.3]),
+    Poly({-2: 1, -1: 5.1, 3: 2}),
+    Poly({-1.1: 1, 1.1: .5}),
+  ]
+
+  polynomials = [
+    12 * x ** 2 + .5 * x + 18,
+    .45 * x ** 17 + 2 * x ** 5 - x + 8,
+    8 * x ** 5 + .2 * x ** 3 + .1 * x ** 2,
+    42.7 * x ** 4,
+    8 * x ** 3 + 3 * x ** 2 + 22.2 * x + .17,
+  ]
+
+  diff_table = [ # Pairs (polynomial, its derivative)
+    (x + 2, 1),
+    (Poly({0: 22}), 0),
+    (Poly({}), 0),
+    (x ** 2 + 2 * x + x ** -7 + x ** -.2 - 4,
+     2 * x + 2 - 7 * x ** -8 - .2 * x ** -1.2),
+  ]
+
+  to_zero_inputs = [0, 0.0, False, {}, []]
 
   @p("data", example_data)
   def test_len_iter_from_list(self, data):
@@ -63,8 +90,8 @@ class TestPoly(object):
     data = {8: 5, 7: -1, 6: 80, 9: 0}
     polynomial = Poly(dict(data))
     assert len(polynomial) == 3
-    assert list(polynomial.values()) == [0] * 6 + [80, -1, 5]
 
+    assert list(polynomial.values()) == [0] * 6 + [80, -1, 5]
   @p("data", example_data)
   def test_output_dict(self, data):
     assert dict(Poly(data).terms()) == {k: v for k, v in enumerate(data)
@@ -77,12 +104,6 @@ class TestPoly(object):
     poly_obj = Poly([.3, 4]) - Poly() - Poly([0, 4, -4]) + Poly([.7, 0, -4])
     assert len(poly_obj) == 1
     assert almost_eq(poly_obj[0], 1)
-
-  instances = [
-    Poly([1.7, 2, 3.3]),
-    Poly({-2: 1, -1: 5.1, 3: 2}),
-    Poly({-1.1: 1, 1.1: .5}),
-  ]
 
   @p("val", instances)
   @p("div", [operator.div, operator.truediv])
@@ -97,14 +118,6 @@ class TestPoly(object):
     assert almost_eq(div(val, -den).terms(), (-expected).terms())
     assert almost_eq(div(-val, den).terms(), (-expected).terms())
     assert almost_eq(div(-val, -den).terms(), expected.terms())
-
-  polynomials = [
-    12 * x ** 2 + .5 * x + 18,
-    .45 * x ** 17 + 2 * x ** 5 - x + 8,
-    8 * x ** 5 + .2 * x ** 3 + .1 * x ** 2,
-    42.7 * x ** 4,
-    8 * x ** 3 + 3 * x ** 2 + 22.2 * x + .17,
-  ]
 
   @p("poly", instances + polynomials)
   def test_value_zero(self, poly):
@@ -175,7 +188,7 @@ class TestPoly(object):
     assert values == [0] * (order + 1)
 
   @p("poly", polynomials)
-  @p("zero", [0, 0.0, None])
+  @p("zero", to_zero_inputs)
   def test_values_order_valid_with_zero(self, poly, zero):
     new_poly = Poly(list(poly.values()), zero=zero)
     order = max(new_poly.terms())[0]
@@ -185,6 +198,125 @@ class TestPoly(object):
       assert values[key] == value
       values[key] = zero
     assert values == [zero] * (order + 1)
+
+  @p(("poly", "diff_poly"), diff_table)
+  def test_diff(self, poly, diff_poly):
+    assert poly.diff() == diff_poly
+
+  @p(("poly", "diff_poly"), diff_table)
+  def test_integrate(self, poly, diff_poly):
+    if not isinstance(diff_poly, Poly):
+      diff_poly = Poly(diff_poly)
+    integ = diff_poly.integrate()
+    poly = poly - poly[0] # Removes the constant
+    assert almost_eq(integ.terms(), poly.terms())
+
+  @p("poly", polynomials + [0])
+  def test_integrate_error(self, poly):
+    if not isinstance(poly, Poly):
+      poly = Poly(poly)
+    if poly[-1] == 0: # Ensure polynomial has the problematic term
+      poly = poly + x ** -1
+    with pytest.raises(ValueError):
+      print(poly)
+      poly.integrate()
+      print(poly.integrate())
+
+  def test_empty_comparison_to_zero(self):
+    inputs = [[], {}, [0, 0], [0], {25: 0}, {0: 0}, {-.2: 0}]
+    values = [0, 0.] + [Poly(k) for k in inputs]
+    for a, b in combinations_with_replacement(values, 2):
+      assert a == b
+
+  @p("input_data", [[], {}, [0, 0], [0], {25: 0}, {0: 0}, {-.2: 0}])
+  def test_empty_polynomial_evaluation(self, input_data):
+    poly = Poly(input_data)
+    assert poly(5) == poly(0) == poly(-3) == poly(.2) == poly(None) == 0
+    for zero in self.to_zero_inputs:
+      poly = Poly(input_data, zero=zero)
+      assert poly(5) is zero
+      assert poly(0) is zero
+      assert poly(-3) is zero
+      assert poly(.2) is zero
+      assert poly(None) is zero
+
+  def test_not_equal(self):
+    for a, b in combinations(self.polynomials, 2):
+      assert a != b
+
+  @p("op", OpMethod.get("+ - *"))
+  @p("zero", to_zero_inputs)
+  def test_operators_with_poly_input_keeping_zero(self, op, zero):
+    if op.rev: # Testing binary reversed
+      for p0, p1 in combinations_with_replacement(self.polynomials, 2):
+        p0 = Poly(p0)
+        p1 = Poly(p1, zero)
+        result = getattr(p0, op.dname)(p1)
+        assert isinstance(result, Poly)
+        assert result.zero == 0
+        result = getattr(p1, op.dname)(p0)
+        assert isinstance(result, Poly)
+        assert result.zero is zero
+    elif op.arity == 2: # Testing binary
+      for p0, p1 in combinations_with_replacement(self.polynomials, 2):
+        p0 = Poly(p0)
+        p1 = Poly(p1, zero)
+        result = op.func(p0, p1)
+        assert isinstance(result, Poly)
+        assert result.zero == 0
+        result = op.func(Poly(p1), p0) # Should keep
+        assert isinstance(result, Poly)
+        assert result.zero is zero
+    else: # Testing unary
+      for poly in self.polynomials:
+        poly = Poly(poly, zero)
+        result = op.func(poly)
+        assert isinstance(result, Poly)
+        assert result.zero is zero
+
+  @p("op", OpMethod.get("pow truediv"))
+  @p("zero", to_zero_inputs)
+  def test_pow_truediv_keeping_zero(self, op, zero):
+    values = [Poly(2), Poly(1, zero=[]), 3]
+    values += [0, Poly()] if op.name == "pow" else [.3, -1.4]
+    for value in values:
+      for poly in self.polynomials:
+        poly = Poly(poly, zero)
+        result = op.func(poly, value)
+        assert isinstance(result, Poly)
+        assert result.zero is zero
+
+  def test_pow_raise(self):
+    with pytest.raises(NotImplementedError):
+      (x + 2) ** (.5 + x ** -1)
+    with pytest.raises(NotImplementedError):
+      (x ** -1 + 2) ** (2 * x)
+    with pytest.raises(TypeError):
+      2 ** (2 * x)
+
+  def test_truediv_raise(self): # In Python 2 div == truediv due to OpMethod
+    with pytest.raises(NotImplementedError):
+      (x + 2) / (.5 + x ** -1)
+    with pytest.raises(NotImplementedError):
+      (x ** -1 + 2) / (7 + 2 * x)
+    with pytest.raises(TypeError):
+      2 / (2 * x) # Would be "__rdiv__" in Python 2, anyway it should raise
+
+  @p("zero", to_zero_inputs)
+  @p("method", ["diff", "integrate"])
+  def test_eq_ne_diff_integrate_keep_zero(self, zero, method):
+    if method == "diff":
+      expected = Poly([3, 4])
+    else:
+      expected = Poly([0., 4, 1.5, 2./3])
+    result = getattr(Poly([4, 3, 2], zero=zero), method)()
+    if zero == 0:
+      assert result == expected
+    else:
+      assert result != expected
+    assert almost_eq(result.terms(), expected.terms())
+    assert result == Poly(expected, zero=zero)
+    assert result.zero is zero
 
 
 class TestLagrange(object):

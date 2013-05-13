@@ -48,14 +48,15 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
 
   def __rbinary__(cls, op):
     op_func = op.func
-    def dunder(self, other):
-      return op_func(cls(other), self) # The "other" is probably a number
+    def dunder(self, other): # The "other" is probably a number
+      return op_func(cls(other, zero=self.zero), self)
     return dunder
 
   def __unary__(cls, op):
     op_func = op.func
     def dunder(self):
-      return cls({k: op_func(v) for k, v in iteritems(self.data)})
+      return cls({k: op_func(v) for k, v in iteritems(self.data)},
+                 zero=self.zero)
     return dunder
 
 
@@ -66,7 +67,7 @@ class Poly(meta(metaclass=PolyMeta)):
   That's not a dict and not a list but behaves like something in between.
   The "values" method allows casting to list with list(Poly.values())
   The "terms" method allows casting to dict with dict(Poly.terms()), and give
-  the terms sorted by their power value.
+  the terms sorted by their power value if used in a loop instead of casting.
 
   The instances of this class should be seen as immutable, although there's
   no enforcement for that.
@@ -92,7 +93,7 @@ class Poly(meta(metaclass=PolyMeta)):
   '0.854710'
 
   """
-  def __init__(self, data=None, zero=0):
+  def __init__(self, data=None, zero=None):
     """
     Inits a polynomial from given data, which can be a list or a dict.
 
@@ -108,18 +109,14 @@ class Poly(meta(metaclass=PolyMeta)):
     be used.
 
     """
-    self.zero = zero
+    self.zero = 0. if zero is None else zero
     if isinstance(data, list):
-      if len(data) == 0:
-        self.data = {}
-      elif isinstance(data[0], list): # Pairs, behaviour like dict constructor
-        self.data = dict(data)
-      else: # Behaviour like list constructor
-        self.data = {power: value for power, value in enumerate(data)}
+      self.data = {power: value for power, value in enumerate(data)}
     elif isinstance(data, dict):
       self.data = dict(data)
     elif isinstance(data, Poly):
       self.data = data.data.copy()
+      self.zero = data.zero if zero is None else zero
     elif data is None:
       self.data = {}
     else:
@@ -214,9 +211,10 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     Differentiate (n-th derivative, where the default n is 1).
     """
-    return reduce(lambda dict_, order: # Derivative order can be ignored
-                    {k - 1: k * v for k, v in iteritems(dict_) if k != 0},
-                  xrange(n), self.data)
+    return Poly(reduce(lambda d, order: # Derivative order can be ignored
+                         {k - 1: k * v for k, v in iteritems(d) if k != 0},
+                       xrange(n), self.data),
+                zero=self.zero)
 
   def integrate(self):
     """
@@ -224,7 +222,8 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     if -1 in self.data:
       raise ValueError("Unable to integrate term that powers to -1")
-    return {k + 1: v / (k + 1) for k, v in self.terms()}
+    return Poly({k + 1: v / (k + 1) for k, v in self.terms()},
+                zero=self.zero)
 
   def __call__(self, value):
     """
@@ -233,9 +232,10 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     if isinstance(value, Poly):
       return Poly(sum(coeff * value ** power
-                      for power, coeff in iteritems(self.data)))
+                      for power, coeff in iteritems(self.data)),
+                  self.zero)
     if not self.data:
-      return 0
+      return self.zero
     if value == 0:
       return self[0]
 
@@ -259,7 +259,8 @@ class Poly(meta(metaclass=PolyMeta)):
     intersect = [(key, self.data[key] + other.data[key])
                  for key in set(self.data).intersection(other.data)]
     return Poly(dict(it.chain(iteritems(self.data),
-                              iteritems(other.data), intersect)))
+                              iteritems(other.data), intersect)),
+                zero=self.zero)
 
   def __sub__(self, other):
     return self + (-other)
@@ -277,15 +278,16 @@ class Poly(meta(metaclass=PolyMeta)):
           new_data[k1 + k2] += v1 * v2
         else:
           new_data[k1 + k2] = v1 * v2
-    return Poly(new_data)
+    return Poly(new_data, zero=self.zero)
 
   # ----------
   # Comparison
   # ----------
   def __eq__(self, other):
     if not isinstance(other, Poly):
-      other = Poly(other) # The "other" is probably a number
-    return sorted(iteritems(self.data)) == sorted(iteritems(other.data))
+      other = Poly(other, zero=self.zero) # The "other" is probably a number
+    return sorted(iteritems(self.data)) == sorted(iteritems(other.data)) \
+       and self.zero == other.zero
 
   def __ne__(self, other):
     return not(self == other)
@@ -298,23 +300,32 @@ class Poly(meta(metaclass=PolyMeta)):
     Power operator. The "other" parameter should be an int (or anything like),
     but it works with float when the Poly has only one term.
     """
+    if isinstance(other, Poly):
+      if any(k != 0 for k, v in other.terms()):
+        raise NotImplementedError("Can't power general Poly instances")
+      other = other[0]
     if other == 0:
-      return Poly(1)
+      return Poly(1, zero=self.zero)
     if len(self.data) == 0:
-      return Poly()
+      return Poly(zero=self.zero)
     if len(self.data) == 1:
-      return Poly({k * other: v for k, v in iteritems(self.data)})
+      return Poly({k * other: v for k, v in iteritems(self.data)},
+                  zero=self.zero)
     return reduce(operator.mul, [self] * other)
 
   def __truediv__(self, other):
     if isinstance(other, Poly):
       if len(other) == 1:
         delta, value = next(iteritems(other.data))
-        return Poly({(k - delta): operator.truediv(v, other)
-                     for k, v in iteritems(self.data)})
+        return Poly({(k - delta): operator.truediv(v, value)
+                     for k, v in iteritems(self.data)},
+                    zero=self.zero)
+      elif len(other) == 0:
+        raise ZeroDivisionError("Dividing Poly instance by zero")
       raise NotImplementedError("Can't divide general Poly instances")
     return Poly({k: operator.truediv(v, other)
-                 for k, v in iteritems(self.data)})
+                 for k, v in iteritems(self.data)},
+                zero=self.zero)
 
   __div__ = __truediv__
 
