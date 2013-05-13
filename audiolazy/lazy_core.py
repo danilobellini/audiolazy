@@ -264,10 +264,13 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
         # Inserts the dunder into the class
         dunder.__name__ = op.dname
         setattr(cls, dunder.__name__, dunder)
-        if sys.version_info.major == 2 and op.name in ["truediv", "rtruediv"]:
-          new_name = op.dname.replace("true", "")
-          if new_name not in namespace: # If wasn't insert manually
-            setattr(cls, new_name, dunder)
+      else:
+        dunder = namespace[op.dname]
+
+      if sys.version_info.major == 2 and op.name in ["truediv", "rtruediv"]:
+        new_name = op.dname.replace("true", "")
+        if new_name not in namespace: # If wasn't insert manually
+          setattr(cls, new_name, dunder)
 
     return cls
 

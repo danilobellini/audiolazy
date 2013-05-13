@@ -30,8 +30,9 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_misc import (multiplication_formatter, pair_strings_sum_formatter,
-                        meta, iteritems, xrange, xzip, rint, INT_TYPES)
-from .lazy_stream import Stream, tostream
+                        meta, iteritems, xrange, xzip, rint, INT_TYPES,
+                        xzip_longest)
+from .lazy_stream import Stream, tostream, thub
 
 __all__ = ["PolyMeta", "Poly", "x", "lagrange", "resample"]
 
@@ -207,6 +208,16 @@ class Poly(meta(metaclass=PolyMeta)):
       raise AttributeError("Power needs to be positive integers")
     return max(key for key in self.data) if self.data else 0
 
+  def copy(self, zero=None):
+    """
+    Returns a Poly instance with the same terms, but as a "T" (tee) copy
+    when they're Stream instances, allowing maths using a polynomial more
+    than once.
+    """
+    return Poly({k: v.copy() if isinstance(v, Stream) else v
+                 for k, v in self.terms()},
+                zero=self.zero if zero is None else zero)
+
   def diff(self, n=1):
     """
     Differentiate (n-th derivative, where the default n is 1).
@@ -236,9 +247,11 @@ class Poly(meta(metaclass=PolyMeta)):
                   self.zero)
     if not self.data:
       return self.zero
-    if value == 0:
-      return self[0]
+    if not isinstance(value, Stream):
+      if value == 0:
+        return self[0]
 
+    value = thub(value, len(self))
     return reduce(
       lambda old, new: (new[0], new[1] + old[1] * value ** (old[0] - new[0])),
       sorted(iteritems(self.data), reverse=True) + [(0, 0)]
@@ -272,8 +285,12 @@ class Poly(meta(metaclass=PolyMeta)):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
     new_data = {}
-    for k1, v1 in iteritems(self.data):
-      for k2, v2 in iteritems(other.data):
+    thubbed_self = [(k, thub(v, len(other.data)))
+                    for k, v in iteritems(self.data)]
+    thubbed_other = [(k, thub(v, len(self.data)))
+                     for k, v in iteritems(other.data)]
+    for k1, v1 in thubbed_self:
+      for k2, v2 in thubbed_other:
         if k1 + k2 in new_data:
           new_data[k1 + k2] += v1 * v2
         else:
@@ -286,8 +303,22 @@ class Poly(meta(metaclass=PolyMeta)):
   def __eq__(self, other):
     if not isinstance(other, Poly):
       other = Poly(other, zero=self.zero) # The "other" is probably a number
-    return sorted(iteritems(self.data)) == sorted(iteritems(other.data)) \
-       and self.zero == other.zero
+
+    def sorted_flattenizer(dictionary):
+      return reduce( operator.concat,
+                     sorted(iteritems(dictionary.data)),
+                     tuple() )
+
+    def is_pair_equal(a, b):
+      if isinstance(a, Stream) or isinstance(b, Stream):
+        return a is b
+      return a == b
+
+    for pair in xzip_longest(sorted_flattenizer(self),
+                             sorted_flattenizer(other)):
+      if not is_pair_equal(*pair):
+        return False
+    return is_pair_equal(self.zero, other.zero)
 
   def __ne__(self, other):
     return not(self == other)
@@ -309,9 +340,10 @@ class Poly(meta(metaclass=PolyMeta)):
     if len(self.data) == 0:
       return Poly(zero=self.zero)
     if len(self.data) == 1:
-      return Poly({k * other: v for k, v in iteritems(self.data)},
+      return Poly({k * other: 1 if v == 1 else v ** other # To avoid casting
+                   for k, v in iteritems(self.data)},
                   zero=self.zero)
-    return reduce(operator.mul, [self] * other)
+    return reduce(operator.mul, [self.copy()] * (other - 1) + [self])
 
   def __truediv__(self, other):
     if isinstance(other, Poly):
@@ -323,11 +355,10 @@ class Poly(meta(metaclass=PolyMeta)):
       elif len(other) == 0:
         raise ZeroDivisionError("Dividing Poly instance by zero")
       raise NotImplementedError("Can't divide general Poly instances")
+    other = thub(other, len(self))
     return Poly({k: operator.truediv(v, other)
                  for k, v in iteritems(self.data)},
                 zero=self.zero)
-
-  __div__ = __truediv__
 
   # ---------------------
   # String representation
@@ -336,7 +367,7 @@ class Poly(meta(metaclass=PolyMeta)):
     term_strings = []
     for power, value in self.terms():
       if isinstance(value, Iterable):
-        value = "a{0}".format(power)
+        value = "a{}".format(power).replace(".", "_").replace("-", "m")
       if value != 0.:
         term_strings.append(multiplication_formatter(power, value, "x"))
     return "0" if len(term_strings) == 0 else \

@@ -31,7 +31,7 @@ AudioLazy changes history
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5700+ tests and 81% code coverage
+  - Now with 5900+ tests and 82% code coverage
   - Removed deprecated ``Stream.tee()`` method and DEFAULT_CHUNK_SIZE constant
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
   - Now AudioLazy works with Python 3.3!
@@ -72,6 +72,11 @@ AudioLazy changes history
     time-varying sample rate
   - New methods ``Poly.is_polynomial()`` and ``Poly.is_laurent()``
   - New property ``Poly.order`` for common polynomials
+  - Now ``Poly.integrate()`` and ``Poly.diff()`` methods returns Poly
+    instances, and the ``zero`` from the caller Poly is always kept in
+    result (this includes many bugfixes)
+  - Poly instances are now better prepared for Stream coeffs and evaluation,
+    including a helper ``Poly.copy()`` method
 
 + lazy_stream:
 

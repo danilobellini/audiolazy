@@ -29,7 +29,6 @@ import operator
 import types
 from itertools import combinations_with_replacement, combinations
 
-
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
 from ..lazy_misc import almost_eq, orange, xrange, almost_eq_diff, blocks
@@ -37,6 +36,7 @@ from ..lazy_math import inf
 from ..lazy_filters import z
 from ..lazy_itertools import count
 from ..lazy_core import OpMethod
+from ..lazy_stream import Stream
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -302,6 +302,14 @@ class TestPoly(object):
     with pytest.raises(TypeError):
       2 / (2 * x) # Would be "__rdiv__" in Python 2, anyway it should raise
 
+  def test_truediv_zero_division_error(self):
+    with pytest.raises(ZeroDivisionError):
+      x ** 5 / (0 * x)
+    with pytest.raises(ZeroDivisionError):
+      (2 + x ** 1.1) / (0 * x)
+    with pytest.raises(ZeroDivisionError):
+      (x ** -31 + 7) / 0.
+
   @p("zero", to_zero_inputs)
   @p("method", ["diff", "integrate"])
   def test_eq_ne_diff_integrate_keep_zero(self, zero, method):
@@ -317,6 +325,135 @@ class TestPoly(object):
     assert almost_eq(result.terms(), expected.terms())
     assert result == Poly(expected, zero=zero)
     assert result.zero is zero
+
+  @p("op", OpMethod.get("pow truediv"))
+  @p("zero", to_zero_inputs)
+  def test_pow_truediv_from_empty_poly_instance(self, op, zero):
+    empty = Poly(zero=zero)
+    result = op.func(empty, 2)
+    assert result == empty
+    assert result != Poly(zero=op)
+    assert len(result) == 0
+    assert result.zero is zero
+
+  @p("data", example_data)
+  @p("poly", polynomials + [x + 5 * x ** 2 + 2])
+  def test_stream_evaluation(self, data, poly):
+    result = poly(Stream(data))
+    assert isinstance(result, Stream)
+    result = list(result)
+    assert len(result) == len(data)
+    assert result == [poly(k) for k in data]
+
+  def test_stream_coeffs_with_integer(self): # Poly before to avoid casting
+    poly = x * Stream(0, 2, 3) + x ** 2 * Stream(4, 1) + 8 # Order matters!
+    assert str(poly) == "8 + a1 * x + a2 * x^2"
+    result = poly(5)
+    assert isinstance(result, Stream)
+    expected = 5 * Stream(0, 2, 3) + 25 * Stream(4, 1) + 8
+    assert all(expected.limit(50) == result.limit(50))
+
+  def test_stream_coeffs_purely_stream(self): # Poly before to avoid casting
+    poly = x * Stream(0, 2, 3) + x ** 2 * Stream(4, 1) + Stream(2, 2, 2, 2, 5)
+    assert str(poly) == "a0 + a1 * x + a2 * x^2"
+    result = poly(count())
+    assert isinstance(result, Stream)
+    expected = (count() * Stream(0, 2, 3) + count() ** 2 * Stream(4, 1) +
+                Stream(2, 2, 2, 2, 5))
+    assert all(expected.limit(50) == result.limit(50))
+
+  def test_stream_coeffs_mul(self):
+    poly1 = x * Stream(0, 1, 2) + 5 # Order matters
+    poly2 = x ** 2 * count() - 2
+    poly = poly1 * poly2
+    result = poly(Stream(4, 3, 7, 5, 8))
+    assert isinstance(result, Stream)
+    expected = (Stream(4, 3, 7, 5, 8) ** 3 * Stream(0, 1, 2) * count()
+                + Stream(4, 3, 7, 5, 8) ** 2 * 5 * count()
+                - Stream(4, 3, 7, 5, 8) * Stream(0, 1, 2) * 2
+                - 10
+               )
+    assert all(expected.limit(50) == result.limit(50))
+
+  @p("zero", to_zero_inputs)
+  def test_stream_coeffs_add_copy_with_zero(self, zero):
+    poly = x * Stream(0, 4, 2, 3, 1)
+    new_poly = 3 * poly.copy(zero=zero)
+    new_poly += poly
+    assert isinstance(new_poly, Poly)
+    assert new_poly.zero is zero
+    result = new_poly(Stream(1, 2, 3, 0, 4, 7, -2))
+    assert isinstance(result, Stream)
+    expected = 4 * Stream(1, 2, 3, 0, 4, 7, -2) * Stream(0, 4, 2, 3, 1)
+    assert all(expected.limit(50) == result.limit(50))
+
+  @p("zero", to_zero_inputs)
+  def test_stream_coeffs_mul_copy_with_zero(self, zero):
+    poly = x ** 2 * Stream(3, 2, 1) + 2 * count() + x ** -3
+    new_poly = poly.copy(zero=zero)
+    new_poly *= poly + 1
+    assert isinstance(new_poly, Poly)
+    assert new_poly.zero is zero
+    result = new_poly(count(18) ** .5)
+    assert isinstance(result, Stream)
+    expected = (count(18) * Stream(3, 2, 1)
+                + 2 * count() + count(18) ** -1.5
+               ) * (count(18) * Stream(3, 2, 1)
+                + 2 * count() + count(18) ** -1.5 + 1
+               )
+    assert almost_eq(expected.limit(50), result.limit(50))
+
+  def test_eq_ne_of_a_stream_copy(self):
+    poly = x * Stream(0, 1)
+    new_poly = poly.copy()
+    assert poly == poly
+    assert poly != new_poly
+    assert new_poly == new_poly
+    other_poly = poly.copy(zero=[])
+    assert new_poly != other_poly
+    assert new_poly.zero != other_poly.zero
+
+  @p("poly", polynomials)
+  def test_pow_basics(self, poly):
+    assert poly ** 0 == 1
+    assert poly ** Poly() == 1
+    assert poly ** 1 == poly
+    assert poly ** 2 == poly * poly
+    assert poly ** Poly(2) == poly * poly
+    assert almost_eq((poly ** 3).terms(), (poly * poly * poly).terms())
+
+  def test_power_one_keep_integer(self):
+    for value in [0, -1, .5, 18]:
+      poly = Poly(1) ** value
+      assert poly.order == 0
+      assert poly[0] == 1
+      assert isinstance(poly[0], int)
+
+  @p("zero", to_zero_inputs)
+  def test_pow_with_stream_coeff(self, zero):
+    poly = Poly(x ** -2 * Stream(1, 0) + 2, zero=zero)
+    new_poly = poly ** 2
+    assert isinstance(new_poly, Poly)
+    assert new_poly.zero is zero
+    result = new_poly(count(1))
+    assert isinstance(result, Stream)
+    expected = (count(1) ** -4 * Stream(1, 0)
+                + 4 * count(1) ** -2 * Stream(1, 0)
+                + 4
+               )
+    assert almost_eq(expected.limit(50), result.limit(50))
+
+  @p("zero", to_zero_inputs)
+  def test_truediv_by_stream(self, zero):
+    poly = Poly(x ** .5 * Stream(.2, .4) + 7, zero=zero)
+    new_poly = poly / count(2, 4)
+    assert isinstance(new_poly, Poly)
+    assert new_poly.zero is zero
+    result = new_poly(Stream(17, .2, .1, 0, .2, .5, 99))
+    assert isinstance(result, Stream)
+    expected = (Stream(17, .2, .1, 0, .2, .5, 99) ** .5 * Stream(.2, .4) + 7
+               ) / count(2, 4)
+    assert almost_eq(expected.limit(50), result.limit(50))
 
 
 class TestLagrange(object):

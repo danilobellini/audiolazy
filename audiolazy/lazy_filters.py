@@ -721,14 +721,6 @@ class ZFilter(meta(LinearFilter, metaclass=ZFilterMeta)):
       raise ValueError("Filter equations have different domains")
     return ZFilter(self.numpoly * other, self.denpoly)
 
-  def __div__(self, other):
-    if isinstance(other, ZFilter):
-      return ZFilter(self.numpoly * other.denpoly,
-                     self.denpoly * other.numpoly)
-    if isinstance(other, LinearFilter):
-      raise ValueError("Filter equations have different domains")
-    return self * operator.div(1, other)
-
   def __truediv__(self, other):
     if isinstance(other, ZFilter):
       return ZFilter(self.numpoly * other.denpoly,
@@ -748,7 +740,7 @@ class ZFilter(meta(LinearFilter, metaclass=ZFilterMeta)):
     num_term_strings = []
     for power, value in self.numpoly.terms():
       if isinstance(value, Iterable):
-        value = "b{0}".format(power)
+        value = "b{}".format(power).replace(".", "_").replace("-", "m")
       if value != 0.:
         num_term_strings.append(multiplication_formatter(-power, value, "z"))
     num = "0" if len(num_term_strings) == 0 else \
@@ -757,7 +749,7 @@ class ZFilter(meta(LinearFilter, metaclass=ZFilterMeta)):
     den_term_strings = []
     for power, value in self.denpoly.terms():
       if isinstance(value, Iterable):
-        value = "a{0}".format(power)
+        value = "a{}".format(power).replace(".", "_").replace("-", "m")
       if value != 0.:
         den_term_strings.append(multiplication_formatter(-power, value, "z"))
     den = reduce(pair_strings_sum_formatter, den_term_strings)
