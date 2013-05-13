@@ -30,7 +30,7 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_misc import (multiplication_formatter, pair_strings_sum_formatter,
-                        meta, iteritems, xrange, xzip, rint)
+                        meta, iteritems, xrange, xzip, rint, INT_TYPES)
 from .lazy_stream import Stream, tostream
 
 __all__ = ["PolyMeta", "Poly", "x", "lagrange", "resample"]
@@ -41,10 +41,10 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   Poly metaclass. This class overloads few operators to the Poly class.
   All binary dunders (non reverse) should be implemented on the Poly class
   """
-  __operators__ = ["+ -", # elementwise
-                   "*", # cross
-                   "pow truediv ", # when other is not Poly (no reverse)
-                   "eq ne "] # comparison of Poly terms
+  __operators__ = ("+ - " # elementwise
+                   "* " # cross
+                   "pow truediv " # when other is not Poly (no reverse)
+                   "eq ne ") # comparison of Poly terms
 
   def __rbinary__(cls, op):
     op_func = op.func
@@ -68,7 +68,9 @@ class Poly(meta(metaclass=PolyMeta)):
   The "terms" method allows casting to dict with dict(Poly.terms()), and give
   the terms sorted by their power value.
 
-  You can use the ``x`` object to create your own instances.
+  The instances of this class should be seen as immutable, although there's
+  no enforcement for that.
+  You can use the ``x`` object and operators to create your own instances.
 
   Examples
   --------
@@ -122,12 +124,16 @@ class Poly(meta(metaclass=PolyMeta)):
       self.data = {}
     else:
       self.data = {0: data}
-    self._compact_zeros()
 
-  def _compact_zeros(self):
+    # Compact zeros
     for key, value in list(iteritems(self.data)):
+      if isinstance(key, float):
+        if key.is_integer():
+          del self.data[key]
+          key = rint(key)
+          self.data[key] = value
       if not isinstance(value, Stream):
-        if value == 0.:
+        if value == 0:
           del self.data[key]
 
   def values(self):
@@ -137,9 +143,9 @@ class Poly(meta(metaclass=PolyMeta)):
     reversed from the output of this function used as input to a list or a
     tuple constructor).
     """
-    max_key = max(key for key in self.data) if self.data else -1
-    return (self.data[key] if key in self.data else self.zero
-            for key in xrange(max_key + 1))
+    if self.data:
+      for key in xrange(self.order + 1):
+        yield self[key]
 
   def terms(self):
     """
@@ -155,6 +161,55 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     return len(self.data)
 
+  def is_polynomial(self):
+    """
+    Tells whether it is a linear combination of natural powers of ``x``.
+    """
+    return all(isinstance(k, INT_TYPES) and k >= 0 for k in self.data)
+
+  def is_laurent(self):
+    """
+    Boolean that indicates whether is a Laurent polynomial or not.
+
+    A Laurent polynomial is any sum of integer powers of ``x``.
+
+    Examples
+    --------
+    >>> (x + 4).is_laurent()
+    True
+    >>> (x ** -3 + 4).is_laurent()
+    True
+    >>> (x ** -3 + 4).is_polynomial()
+    False
+    >>> (x ** 1.1 + 4).is_laurent()
+    False
+
+    """
+    return all(isinstance(k, INT_TYPES) for k in self.data)
+
+  @property
+  def order(self):
+    """
+    Finds the polynomial order.
+
+    Examples
+    --------
+    >>> (x + 4).order
+    1
+    >>> (x + 4 - x ** 18).order
+    18
+    >>> (x - x).order
+    0
+    >>> (x ** -3 + 4).order
+    Traceback (most recent call last):
+      ...
+    AttributeError: Power needs to be positive integers
+
+    """
+    if not self.is_polynomial():
+      raise AttributeError("Power needs to be positive integers")
+    return max(key for key in self.data) if self.data else 0
+
   def diff(self, n=1):
     """
     Differentiate (n-th derivative, where the default n is 1).
@@ -168,8 +223,7 @@ class Poly(meta(metaclass=PolyMeta)):
     Integrate without adding an integration constant.
     """
     if -1 in self.data:
-      raise ValueError("Unable to integrate the polynomial term that powers "
-                       "to -1, since the logarithm is not a polynomial")
+      raise ValueError("Unable to integrate term that powers to -1")
     return {k + 1: v / (k + 1) for k, v in self.terms()}
 
   def __call__(self, value):
@@ -194,7 +248,7 @@ class Poly(meta(metaclass=PolyMeta)):
     if item in self.data:
       return self.data[item]
     else:
-      return 0
+      return self.zero
 
   # ---------------------
   # Elementwise operators

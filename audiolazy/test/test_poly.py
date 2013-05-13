@@ -114,6 +114,78 @@ class TestPoly(object):
     assert expected == poly[0]
     assert expected == poly[0.0]
 
+  @p("poly", [Poly(v) for v in [{}, {0: 1}, {0: 0}, {0: -12.3}]])
+  def test_constant_and_empty_polynomial_and_laurent(self, poly):
+    assert poly.is_polynomial()
+    assert poly.is_laurent()
+
+  @p("poly", polynomials)
+  def test_is_polynomial(self, poly):
+    assert poly.is_polynomial()
+    assert (poly + x ** 22.).is_polynomial()
+    assert (poly + 8).is_polynomial()
+    assert (poly * x).is_polynomial()
+    assert (poly(-x) * .5).is_polynomial()
+    assert (poly * .5 * x ** 2).is_polynomial()
+    assert not (poly * .5 * x ** .2).is_polynomial()
+    assert not (poly * x ** .5).is_polynomial()
+    assert not (poly * x ** -(max(poly.terms())[0] + 1)).is_polynomial()
+
+  @p("poly", polynomials)
+  def test_is_laurent(self, poly):
+    plaur = poly(x ** -1)
+    assert poly.is_laurent()
+    assert plaur.is_laurent()
+    assert (plaur + x ** 2.).is_laurent()
+    assert (plaur + 22).is_laurent()
+    assert (plaur * x ** 2).is_laurent()
+    assert (poly * x ** -(max(poly.terms())[0] + 1)).is_laurent()
+    assert (plaur * x ** -(max(poly.terms())[0] + 1)).is_laurent()
+    assert (plaur * x ** -(max(poly.terms())[0] // 2 + 1)).is_laurent()
+    assert not (poly * x ** .5).is_laurent()
+    assert not (poly + x ** -.2).is_laurent()
+
+  def test_values_order_empty(self):
+    poly = Poly({})
+    val = poly.values()
+    assert isinstance(val, types.GeneratorType)
+    assert list(val) == []
+    assert poly.order == 0
+    assert poly.is_polynomial()
+    assert poly.is_laurent()
+
+  def test_values_order_invalid(self):
+    poly = Poly({-1: 3, 1: 2})
+    val = poly.values()
+    with pytest.raises(AttributeError):
+      next(val)
+    with pytest.raises(AttributeError):
+      poly.order
+    assert not poly.is_polynomial()
+    assert poly.is_laurent()
+
+  @p("poly", polynomials)
+  def test_values_order_valid(self, poly):
+    order = max(poly.terms())[0]
+    assert poly.order == order
+    values = list(poly.values())
+    for key, value in poly.terms():
+      assert values[key] == value
+      values[key] = 0
+    assert values == [0] * (order + 1)
+
+  @p("poly", polynomials)
+  @p("zero", [0, 0.0, None])
+  def test_values_order_valid_with_zero(self, poly, zero):
+    new_poly = Poly(list(poly.values()), zero=zero)
+    order = max(new_poly.terms())[0]
+    assert new_poly.order == order == poly.order
+    values = list(new_poly.values())
+    for key, value in poly.terms():
+      assert values[key] == value
+      values[key] = zero
+    assert values == [zero] * (order + 1)
+
 
 class TestLagrange(object):
 
