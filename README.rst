@@ -256,7 +256,7 @@ LTI Filter frequency response plot (needs MatPlotLib):
 
 .. image:: images/filt_plot.png
 
-But the ``matplotlib.figure.Figure.show`` method won't work unless you're
+The ``matplotlib.figure.Figure.show`` method won't work unless you're
 using a newer version of MatPlotLib (works on MatPlotLib 1.2.0), but you still
 can save the above plot directly to a PDF, PNG, etc. with older versions
 (e.g. MatPlotLib 1.0.1):

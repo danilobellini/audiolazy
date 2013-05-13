@@ -20,14 +20,20 @@
 Testing module for the lazy_poly module
 """
 
+from __future__ import division
+
 import pytest
 p = pytest.mark.parametrize
 
 import operator
+import types
 
 # Audiolazy internal imports
-from ..lazy_poly import Poly
-from ..lazy_misc import almost_eq, orange
+from ..lazy_poly import Poly, lagrange, resample, x
+from ..lazy_misc import almost_eq, orange, xrange, almost_eq_diff, blocks
+from ..lazy_math import inf
+from ..lazy_filters import z
+from ..lazy_itertools import count
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -38,7 +44,7 @@ class TestPoly(object):
 
   @p("data", example_data)
   def test_len_iter_from_list(self, data):
-    assert len(Poly(data)) == len([x for x in data if x != 0])
+    assert len(Poly(data)) == len([k for k in data if k != 0])
     assert len(list(Poly(data).values())) == len(data)
     assert list(Poly(data).values()) == data
 
@@ -91,3 +97,94 @@ class TestPoly(object):
     assert almost_eq(div(val, -den).terms(), (-expected).terms())
     assert almost_eq(div(-val, den).terms(), (-expected).terms())
     assert almost_eq(div(-val, -den).terms(), expected.terms())
+
+  polynomials = [
+    12 * x ** 2 + .5 * x + 18,
+    .45 * x ** 17 + 2 * x ** 5 - x + 8,
+    8 * x ** 5 + .2 * x ** 3 + .1 * x ** 2,
+    42.7 * x ** 4,
+    8 * x ** 3 + 3 * x ** 2 + 22.2 * x + .17,
+  ]
+
+  @p("poly", instances + polynomials)
+  def test_value_zero(self, poly):
+    expected = ([v for k, v in poly.terms() if k == 0] + [0])[0]
+    assert expected == poly(0)
+    assert expected == poly(0.0)
+    assert expected == poly[0]
+    assert expected == poly[0.0]
+
+
+class TestLagrange(object):
+
+  values = [-5, 0, 14, .17]
+
+  @p("v0", values)
+  @p("v1", values)
+  def test_linear_func(self, v0, v1):
+    for k in [0, v0, v1]:
+      pairs = [(1 + k, v0), (-1 + k, v1)]
+      for interpolator in [lagrange(pairs), lagrange(reversed(pairs))]:
+        assert isinstance(interpolator, types.LambdaType)
+        assert almost_eq(interpolator(k), v0 * .5 + v1 * .5)
+        assert almost_eq(interpolator(3 + k), v0 * 2 - v1)
+        assert almost_eq(interpolator(.5 + k), v0 * .75 + v1 * .25)
+        assert almost_eq(interpolator(k - .5), v0 * .25 + v1 * .75)
+
+  @p("v0", values)
+  @p("v1", values)
+  def test_linear_poly(self, v0, v1):
+    for k in [0, v0, v1]:
+      pairs = [(1 + k, v0), (-1 + k, v1)]
+      for interpolator in [lagrange.poly(pairs),
+                           lagrange.poly(reversed(pairs))]:
+        expected = Poly([v0 - (1 + k) * (v0 - v1) * .5, (v0 - v1) * .5])
+        assert almost_eq(interpolator.values(), expected.values())
+
+  @p("v0", values)
+  @p("v1", values)
+  def test_parabola_poly(self, v0, v1):
+    pairs = [(0, v0), (1, v1), (v1 + .2, 0)]
+    r = v1 + .2
+    a = (v0 + r *(v1 - v0)) / (r * (1 - r))
+    b = v1 - v0 - a
+    c = v0
+    expected = a * x ** 2 + b * x + c
+    for interpolator in [lagrange.poly(pairs),
+                         lagrange.poly(pairs[1:] + pairs[:1]),
+                         lagrange.poly(reversed(pairs))]:
+      assert almost_eq(interpolator.values(), expected.values())
+
+  data = [.12, .22, -15, .7, 18, 227, .1, 4, 0, -9e3, 1, 18, 1e-4,
+          44, 3, 8.00000004, 27]
+
+  @p("poly", TestPoly.polynomials)
+  def test_recover_poly_from_samples(self, poly):
+    expected = list(poly.values())
+    size = len(expected)
+    for seq in blocks(self.data, size=size, hop=1):
+      pairs = [(k, poly(k)) for k in seq]
+      interpolator = lagrange.poly(pairs)
+      assert almost_eq_diff(expected, interpolator.values())
+
+
+class TestResample(object):
+
+  def test_simple_downsample(self):
+    data = [1, 2, 3, 4, 5]
+    resampled = resample(data, old=1, new=.5, order=1)
+    assert resampled.take(20) == [1, 3, 5]
+
+  def test_simple_upsample_linear(self):
+    data = [1, 2, 3, 4, 5]
+    resampled = resample(data, old=1, new=2, order=1)
+    expected = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5]
+    assert almost_eq(resampled.take(20), expected)
+
+  def test_simple_upsample_linear_time_varying(self):
+    acc = 1 / (1 - z ** -1)
+    data = resample(xrange(50), old=1, new=1 + count() / 10, order=1)
+    assert data.take() == 0.
+    result = data.take(inf)
+    expected = acc(1 / (1 + count() / 10))
+    assert almost_eq(result, expected.limit(len(result)))

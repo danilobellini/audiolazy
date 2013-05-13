@@ -31,7 +31,7 @@ AudioLazy changes history
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5600+ tests and 80% code coverage
+  - Now with 5700+ tests and 80% code coverage
   - Removed deprecated ``Stream.tee()`` method and DEFAULT_CHUNK_SIZE constant
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
   - Now AudioLazy works with Python 3.3!
@@ -63,6 +63,13 @@ AudioLazy changes history
     function for creating metaclasses always in a Python 3 look-alike style.
   - New ``rint`` for "round integer" operations as well as other higher step
     integer quantization
+
++ lazy_poly:
+
+  - New ``x`` Poly object (to be used like the ``z`` ZFilter instance)
+  - Waring-Lagrange polynomial interpolator StrategyDict
+  - General resample based on Waring-Lagrange interpolators, working with
+    time-varying sample rate
 
 + lazy_stream:
 
