@@ -27,7 +27,7 @@ import numpy as np
 from math import pi
 
 # Audiolazy internal imports
-from ..lazy_misc import almost_eq, sHz, almost_eq_diff
+from ..lazy_misc import almost_eq, sHz
 from ..lazy_synth import adsr, sinusoid
 
 
@@ -60,7 +60,7 @@ def test_sinusoid():
   sin_data = np.sin(phase440 + np.sin(phase220) * np.pi)
 
   s, Hz = sHz(rate)
-  assert almost_eq_diff(sin_data,
+  assert almost_eq.diff(sin_data,
                         sinusoid(freq=440*Hz,
                                  phase=sinusoid(220*Hz) * pi
                                 ).take(int(3 * s)),

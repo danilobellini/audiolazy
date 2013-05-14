@@ -80,6 +80,9 @@ AudioLazy changes history
 
   - New ``rint`` for "round integer" operations as well as other higher step
     integer quantization
+  - Now ``almost_eq`` is a single StrategyDict with both ``bits`` (default,
+    comparison by significand/mantissa bits) and ``diff`` (absolute value
+    difference) strategies
 
 + lazy_poly:
 

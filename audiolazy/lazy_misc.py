@@ -30,9 +30,10 @@ import operator
 # Audiolazy internal imports
 from .lazy_compat import (xrange, xzip_longest, STR_TYPES, SOME_GEN_TYPES,
                           iteritems)
+from .lazy_core import StrategyDict
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "rint", "blocks", "zero_pad", "elementwise",
-           "almost_eq_diff", "almost_eq", "sHz"]
+           "almost_eq", "sHz"]
 
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
 
@@ -224,35 +225,10 @@ def elementwise(name="", pos=None):
   return elementwise_decorator
 
 
-def almost_eq_diff(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
-  """
-  Almost equal, based on the :math:`|a - b|` value.
-
-  Alternative to "a == b" for float numbers and iterables with float numbers.
-  See almost_eq for more information.
-
-  This version based on the non-normalized absolute diff, similar to what
-  unittest does with its assertAlmostEquals. If a and b sizes differ, at least
-  one will be padded with the pad input value to keep going with the
-  comparison.
-
-  Note
-  ----
-  Be careful with endless generators!
-
-  """
-  if not (ignore_type or type(a) == type(b)):
-    return False
-  is_it_a = isinstance(a, Iterable)
-  is_it_b = isinstance(b, Iterable)
-  if is_it_a != is_it_b:
-    return False
-  if is_it_a:
-    return all(almost_eq_diff(ai, bi, max_diff, ignore_type)
-               for ai, bi in xzip_longest(a, b, fillvalue=pad))
-  return abs(a - b) <= max_diff
+almost_eq = StrategyDict("almost_eq")
 
 
+@almost_eq.strategy("bits")
 def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
   """
   Almost equal, based on the amount of floating point significand bits.
@@ -280,12 +256,42 @@ def almost_eq(a, b, bits=32, tol=1, ignore_type=True, pad=0.):
   if is_it_a != is_it_b:
     return False
   if is_it_a:
-    return all(almost_eq(ai, bi, bits, tol, ignore_type)
+    return all(almost_eq.bits(ai, bi, bits, tol, ignore_type)
                for ai, bi in xzip_longest(a, b, fillvalue=pad))
   significand = {32: 23, 64: 52, 80: 63, 128: 112
                 }[bits] # That doesn't include the sign bit
   power = tol - significand - 1
   return abs(a - b) <= 2 ** power * abs(a + b)
+
+
+@almost_eq.strategy("diff")
+def almost_eq(a, b, max_diff=1e-7, ignore_type=True, pad=0.):
+  """
+  Almost equal, based on the :math:`|a - b|` value.
+
+  Alternative to "a == b" for float numbers and iterables with float numbers.
+  See almost_eq for more information.
+
+  This version based on the non-normalized absolute diff, similar to what
+  unittest does with its assertAlmostEquals. If a and b sizes differ, at least
+  one will be padded with the pad input value to keep going with the
+  comparison.
+
+  Note
+  ----
+  Be careful with endless generators!
+
+  """
+  if not (ignore_type or type(a) == type(b)):
+    return False
+  is_it_a = isinstance(a, Iterable)
+  is_it_b = isinstance(b, Iterable)
+  if is_it_a != is_it_b:
+    return False
+  if is_it_a:
+    return all(almost_eq.diff(ai, bi, max_diff, ignore_type)
+               for ai, bi in xzip_longest(a, b, fillvalue=pad))
+  return abs(a - b) <= max_diff
 
 
 def sHz(rate):

@@ -28,7 +28,7 @@ from numpy.fft import fft as np_fft
 # Audiolazy internal imports
 from ..lazy_analysis import dft
 from ..lazy_math import pi
-from ..lazy_misc import almost_eq_diff, rint
+from ..lazy_misc import almost_eq, rint
 from ..lazy_synth import line
 
 
@@ -51,4 +51,4 @@ class TestDFT(object):
                   line(size, 0, 2 * pi, finish=False),
                   normalize=False
                  )
-    assert almost_eq_diff(np_data, lz_data, max_diff=1e-12)
+    assert almost_eq.diff(np_data, lz_data, max_diff=1e-12)

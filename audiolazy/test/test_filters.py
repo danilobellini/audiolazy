@@ -31,7 +31,7 @@ from functools import reduce
 # Audiolazy internal imports
 from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
                             resonator, lowpass, highpass)
-from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
+from ..lazy_misc import almost_eq, zero_pad
 from ..lazy_compat import orange, xrange, xzip, xmap
 from ..lazy_itertools import cycle, chain
 from ..lazy_stream import Stream
@@ -280,9 +280,9 @@ class TestZFilter(object):
     filtd2 = ((numd2 * den - num * dend2) * den - 2 * filtd_num * dend
              ) / den ** 3
     filt_to_test = filt.diff(n=2)
-    assert almost_eq_diff(filt_to_test.numerator, filtd2.numerator,
+    assert almost_eq.diff(filt_to_test.numerator, filtd2.numerator,
                           max_diff=1e-10)
-    assert almost_eq_diff(filt_to_test.denominator, filtd2.denominator,
+    assert almost_eq.diff(filt_to_test.denominator, filtd2.denominator,
                           max_diff=1e-10)
 
     if 1/(1 + z**-2) != mul: # Too difficult to group together with others
@@ -290,9 +290,9 @@ class TestZFilter(object):
                   filtd_num * (muld * den - 2 * mul * dend)
                  ) * mul / den ** 3
       filt_to_testma = filt.diff(n=2, mul_after=mul)
-      assert almost_eq_diff(filt_to_testma.numerator, filtd2ma.numerator,
+      assert almost_eq.diff(filt_to_testma.numerator, filtd2ma.numerator,
                             max_diff=1e-10)
-      assert almost_eq_diff(filt_to_testma.denominator, filtd2ma.denominator,
+      assert almost_eq.diff(filt_to_testma.denominator, filtd2ma.denominator,
                             max_diff=1e-10)
 
   @p("delay", delays)
@@ -403,7 +403,7 @@ class TestResonator(object):
   def test_gain_0dB_at_given_freq(self, func, freq, bw):
     filt = func(freq, bw)
     gain = dB20(filt.freq_response(freq))
-    assert almost_eq_diff(gain, 0., max_diff=5e-14)
+    assert almost_eq.diff(gain, 0., max_diff=5e-14)
 
 
 class TestLowpassHighpass(object):
@@ -413,4 +413,4 @@ class TestLowpassHighpass(object):
   def test_3dB_gain(self, filt_func, freq):
     filt = filt_func(freq)
     ref_gain = dB10(.5) # -3.0103 dB
-    assert almost_eq_diff(dB20(filt.freq_response(freq)), ref_gain)
+    assert almost_eq.diff(dB20(filt.freq_response(freq)), ref_gain)

@@ -27,7 +27,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_auditory import erb, gammatone_erb_constants, gammatone
-from ..lazy_misc import almost_eq, almost_eq_diff, sHz
+from ..lazy_misc import almost_eq, sHz
 from ..lazy_math import pi
 from ..lazy_filters import CascadeFilter
 from ..lazy_stream import Stream
@@ -40,7 +40,7 @@ class TestERB(object):
       (3000, 348.517),
      ])
   def test_glasberg_moore_slaney_example(self, freq, bandwidth):
-    assert almost_eq_diff(erb["gm90"](freq), bandwidth, max_diff=5e-4)
+    assert almost_eq.diff(erb["gm90"](freq), bandwidth, max_diff=5e-4)
 
   @p("erb_func", erb)
   @p("rate", [8000, 22050, 44100])
@@ -68,10 +68,10 @@ class TestGammatoneERBConstants(object):
      ])
   def test_annex_c_table_1(self, n, an, aninv, cn, cninv):
     x, y = gammatone_erb_constants(n)
-    assert almost_eq_diff(x, aninv, max_diff=5e-4)
-    assert almost_eq_diff(y, cn, max_diff=5e-4)
-    assert almost_eq_diff(1./x, an, max_diff=5e-4)
-    assert almost_eq_diff(1./y, cninv, max_diff=5e-4)
+    assert almost_eq.diff(x, aninv, max_diff=5e-4)
+    assert almost_eq.diff(y, cn, max_diff=5e-4)
+    assert almost_eq.diff(1./x, an, max_diff=5e-4)
+    assert almost_eq.diff(1./y, cninv, max_diff=5e-4)
 
 
 class TestGammatone(object):

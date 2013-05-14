@@ -29,7 +29,7 @@ from math import cos, pi, sqrt
 
 # Audiolazy internal imports
 from ..lazy_filters import ZFilter, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_misc import almost_eq
 from ..lazy_compat import orange, xrange
 from ..lazy_math import dB20
 
@@ -56,7 +56,7 @@ class TestResonatorScipy(object):
     resonance_freq = fminbound(lambda x: -dB20(filt.freq_response(x)),
                                0, pi, xtol=1e-10)
     resonance_gain = dB20(filt.freq_response(resonance_freq))
-    assert almost_eq_diff(resonance_gain, 0., max_diff=1e-12)
+    assert almost_eq.diff(resonance_gain, 0., max_diff=1e-12)
 
     if "freq" in names: # Given frequency is at the denominator
       R = sqrt(filt.denominator[2])

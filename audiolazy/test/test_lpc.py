@@ -30,7 +30,7 @@ from functools import reduce
 # Audiolazy internal imports
 from ..lazy_lpc import (toeplitz, levinson_durbin, lpc, parcor,
                         parcor_stable, lsf, lsf_stable)
-from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_misc import almost_eq
 from ..lazy_compat import xrange
 from ..lazy_filters import z, ZFilter
 from ..lazy_math import abs as lzabs
@@ -212,9 +212,9 @@ class TestLPC(object):
     except AssertionError: # Near zero? Try again with absolute value
       max_diff = 1e-10 * min(abs(x) for x in f1.numerator + f2.numerator
                                     if x != 0)
-      assert almost_eq_diff(f1.error, f2.error, max_diff=max_diff)
-      assert almost_eq_diff(f1.error, 0, max_diff=max_diff)
-      assert almost_eq_diff(0, f2.error, max_diff=max_diff)
+      assert almost_eq.diff(f1.error, f2.error, max_diff=max_diff)
+      assert almost_eq.diff(f1.error, 0, max_diff=max_diff)
+      assert almost_eq.diff(0, f2.error, max_diff=max_diff)
     assert f1.error >= 0.
     assert f2.error >= 0.
 

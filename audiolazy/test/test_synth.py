@@ -30,7 +30,7 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, TableLookup, fadein, fadeout,
                           sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff, rint
+from ..lazy_misc import almost_eq, sHz, blocks, rint
 from ..lazy_compat import orange, xrange, xzip
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
@@ -198,7 +198,7 @@ class TestTableLookup(object):
                      [s30, s30, -s30, -s30] * 3)
     expected_pi_over_2 = [0., s30, 1., s30, 0., -s30, -1., -s30]
     # Assert with "diff" since it has zeros
-    assert almost_eq_diff(sin_table(pi/4).take(32), expected_pi_over_2 * 4)
+    assert almost_eq.diff(sin_table(pi/4).take(32), expected_pi_over_2 * 4)
 
   def test_saw_basics(self):
     assert saw_table[0] == -1

@@ -31,7 +31,7 @@ from itertools import combinations_with_replacement, combinations
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
-from ..lazy_misc import almost_eq, almost_eq_diff, blocks
+from ..lazy_misc import almost_eq, blocks
 from ..lazy_compat import orange, xrange
 from ..lazy_math import inf
 from ..lazy_filters import z
@@ -507,7 +507,7 @@ class TestLagrange(object):
     for seq in blocks(self.data, size=size, hop=1):
       pairs = [(k, poly(k)) for k in seq]
       interpolator = lagrange.poly(pairs)
-      assert almost_eq_diff(expected, interpolator.values())
+      assert almost_eq.diff(expected, interpolator.values())
 
 
 class TestResample(object):
