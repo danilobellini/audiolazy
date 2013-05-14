@@ -28,6 +28,7 @@ from subprocess import Popen, PIPE
 import time
 from collections import OrderedDict
 import types
+from audiolazy import iteritems
 
 
 def splitter(lines, sep="-=", keep_idx=False):
@@ -67,7 +68,7 @@ def splitter(lines, sep="-=", keep_idx=False):
   blk_data = OrderedDict()
 
   empty_count = iter(audiolazy.count(1))
-  next_empty = lambda: "--Empty--{0}--".format(empty_count.next())
+  next_empty = lambda: "--Empty--{0}--".format(next(empty_count))
 
   if first_idx != 0:
     blk_data[next_empty()] = lines[:first_idx]
@@ -124,7 +125,7 @@ def audiolazy_namer(name):
       (property, "attr"),
       (type, "class"),
     ])
-    role = [v for k, v in type_dict.iteritems() if isinstance(data, k)][0]
+    role = [v for k, v in iteritems(type_dict) if isinstance(data, k)][0]
 
   # Not found
   except AttributeError:
@@ -159,7 +160,7 @@ def pre_processor(app, what, name, obj, options, lines,
 
   # Real docstring format pre-processing
   result = []
-  for name, blk in splitter(lines).iteritems():
+  for name, blk in iteritems(splitter(lines)):
     nlower =  name.lower()
 
     if nlower == "parameters":
@@ -264,7 +265,8 @@ def newest_file(file_iterable):
 
 # Gets README.rst file location from git (it's on the repository root)
 git_command_location = shlex.split("git rev-parse --show-cdup")
-file_location = Popen(git_command_location, stdout=PIPE).stdout.read().strip()
+git_output = Popen(git_command_location, stdout=PIPE).stdout.read()
+file_location = git_output.decode("utf-8").strip()
 readme_file_name = os.path.join(file_location, "README.rst")
 
 # Opens the file (this should be importable!)
@@ -382,7 +384,7 @@ epub_copyright = copyright
 #
 # Item in sys.modules for StrategyDict instances (needed for automodule)
 #
-for name, sdict in audiolazy.__dict__.iteritems():
+for name, sdict in iteritems(audiolazy.__dict__):
   if isinstance(sdict, audiolazy.StrategyDict):
     fname = ".".join([sdict.default.__module__, name])
     sdict.__all__ = tuple(x[0] for x in sdict.keys())

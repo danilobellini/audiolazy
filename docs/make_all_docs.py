@@ -28,6 +28,7 @@ You should call rst_creator first!
 
 import shlex
 from subprocess import call
+import sphinx
 
 # Call string templates
 sphinx_template = "sphinx-build -b {out_type} -d {build_dir}/doctrees "\
@@ -54,7 +55,7 @@ def call_sphinx(out_type, build_dir = "build"):
   """
   sphinx_string = sphinx_template.format(build_dir=build_dir,
                                          out_type=out_type)
-  if call(shlex.split(sphinx_string)) != 0:
+  if sphinx.main(shlex.split(sphinx_string)) != 0:
     raise RuntimeError("Something went wrong while building '{0}'"
                        .format(out_type))
   if out_type in make_target:
