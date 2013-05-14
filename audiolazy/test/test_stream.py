@@ -29,8 +29,8 @@ import warnings
 
 # Audiolazy internal imports
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
-from ..lazy_misc import (almost_eq, orange, xrange, xzip, xmap, xfilter,
-                         NEXT_NAME)
+from ..lazy_misc import almost_eq
+from ..lazy_compat import orange, xrange, xzip, xmap, xfilter, NEXT_NAME
 from ..lazy_math import inf
 
 from . import skipper

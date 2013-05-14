@@ -28,7 +28,8 @@ from random import random
 # Audiolazy internal imports
 from ..lazy_midi import (MIDI_A4, FREQ_A4, SEMITONE_RATIO, midi2freq,
                          str2midi, freq2midi, midi2str)
-from ..lazy_misc import almost_eq, xzip
+from ..lazy_misc import almost_eq
+from ..lazy_compat import xzip
 from ..lazy_math import inf, nan, isinf, isnan
 
 

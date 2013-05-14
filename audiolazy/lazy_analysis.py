@@ -28,8 +28,7 @@ from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp, abs as lzabs
 from .lazy_filters import lowpass, z
-from .lazy_misc import xrange
-
+from .lazy_compat import xrange
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
            "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf"]

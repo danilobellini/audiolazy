@@ -31,8 +31,8 @@ from functools import reduce
 # Audiolazy internal imports
 from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
                             resonator, lowpass, highpass)
-from ..lazy_misc import (almost_eq, almost_eq_diff, zero_pad, orange, xrange,
-                         xzip, xmap)
+from ..lazy_misc import almost_eq, almost_eq_diff, zero_pad
+from ..lazy_compat import orange, xrange, xzip, xmap
 from ..lazy_itertools import cycle, chain
 from ..lazy_stream import Stream
 from ..lazy_math import dB10, dB20, inf

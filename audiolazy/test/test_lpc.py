@@ -30,7 +30,8 @@ from functools import reduce
 # Audiolazy internal imports
 from ..lazy_lpc import (toeplitz, levinson_durbin, lpc, parcor,
                         parcor_stable, lsf, lsf_stable)
-from ..lazy_misc import almost_eq, almost_eq_diff, xrange
+from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_compat import xrange
 from ..lazy_filters import z, ZFilter
 from ..lazy_math import abs as lzabs
 

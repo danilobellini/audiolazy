@@ -42,7 +42,8 @@ import array
 
 # Audiolazy internal imports
 from .lazy_stream import Stream
-from .lazy_misc import DEFAULT_SAMPLE_RATE, blocks, xrange
+from .lazy_misc import DEFAULT_SAMPLE_RATE, blocks
+from .lazy_compat import xrange
 from .lazy_math import inf
 from .lazy_core import StrategyDict
 

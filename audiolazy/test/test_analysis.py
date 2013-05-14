@@ -27,7 +27,8 @@ p = pytest.mark.parametrize
 from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
                              unwrap, amdf)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, xrange, orange
+from ..lazy_misc import almost_eq
+from ..lazy_compat import xrange, orange
 from ..lazy_synth import line, white_noise
 
 

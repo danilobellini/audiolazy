@@ -29,7 +29,8 @@ from .lazy_stream import Stream
 from .lazy_filters import ZFilter, z
 from .lazy_math import phase
 from .lazy_core import StrategyDict
-from .lazy_misc import blocks, xrange, xzip
+from .lazy_misc import blocks
+from .lazy_compat import xrange, xzip
 from .lazy_analysis import acorr, lag_matrix
 
 __all__ = ["ParCorError", "toeplitz", "levinson_durbin", "lpc", "parcor",

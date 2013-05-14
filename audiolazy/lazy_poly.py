@@ -30,8 +30,9 @@ import itertools as it
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_misc import (multiplication_formatter, pair_strings_sum_formatter,
-                        meta, iteritems, xrange, xzip, rint, INT_TYPES,
-                        xzip_longest)
+                        rint)
+from .lazy_compat import (meta, iteritems, xrange, xzip, INT_TYPES,
+                          xzip_longest)
 from .lazy_stream import Stream, tostream, thub
 
 __all__ = ["PolyMeta", "Poly", "x", "lagrange", "resample"]

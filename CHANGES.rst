@@ -34,7 +34,21 @@ AudioLazy changes history
   - Now with 5900+ tests and 82% code coverage
   - Removed deprecated ``Stream.tee()`` method and DEFAULT_CHUNK_SIZE constant
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
-  - Now AudioLazy works with Python 3.3!
+  - Now AudioLazy works with Python 3.2 and 3.3!
+
++ lazy_compat (*new!*):
+
+  - Module for Python 2.x and 3.x compatibility resources (constants
+    and functions) without AudioLazy dependencies (i.e., no Stream here)
+  - Common place for iterable-based version of itertools/built-ins in both
+    Python 2 and 3 starting with "x": ``xmap``, ``xfilter``, ``xzip``,
+    ``xrange``, ``xzip_longest``. Versions with "i" are kept in lazy_itertools
+    module to return Stream instances (``imap``, ``izip``, ``izip.longest``,
+    etc.), and Python 2 list-based behaviour of ``range`` is kept as
+    ``orange`` (a fruitful name)
+  - New ``meta`` function for creating metaclasses always in a "Python 3
+    look-alike" style, keeping the semantics (including the inheritance
+    hierarchy, which won't have any extra "dummy" class)
 
 + lazy_core:
 
@@ -59,8 +73,6 @@ AudioLazy changes history
 
 + lazy_misc:
 
-  - Several Python 2.x and 3.x compatibility resources, like the ``meta``
-    function for creating metaclasses always in a Python 3 look-alike style.
   - New ``rint`` for "round integer" operations as well as other higher step
     integer quantization
 

@@ -27,7 +27,8 @@ from abc import ABCMeta
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_misc import small_doc, STR_TYPES, iteritems, itervalues
+from .lazy_misc import small_doc
+from .lazy_compat import STR_TYPES, iteritems, itervalues
 
 __all__ = ["OpMethod", "AbstractOperatorOverloaderMeta", "MultiKeyDict",
            "StrategyDict"]

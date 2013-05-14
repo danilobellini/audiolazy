@@ -26,7 +26,8 @@ p = pytest.mark.parametrize
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import INT_TYPES, rint, elementwise, rst_table, orange, xrange
+from ..lazy_misc import rint, elementwise, rst_table
+from ..lazy_compat import INT_TYPES, orange, xrange
 
 
 class TestRInt(object):

@@ -25,7 +25,7 @@ p = pytest.mark.parametrize
 
 # Audiolazy internal imports
 from ..lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from ..lazy_misc import meta
+from ..lazy_compat import meta
 
 
 class TestAbstractOperatorOverloaderMeta(object):

@@ -33,7 +33,8 @@ import struct
 from ..lazy_io import AudioIO, chunks
 from ..lazy_synth import white_noise
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, orange
+from ..lazy_misc import almost_eq
+from ..lazy_compat import orange
 
 
 class WaitStream(Stream):

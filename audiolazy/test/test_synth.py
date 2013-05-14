@@ -30,8 +30,8 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, TableLookup, fadein, fadeout,
                           sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import (almost_eq, sHz, blocks, almost_eq_diff, orange,
-                         xrange, rint, xzip)
+from ..lazy_misc import almost_eq, sHz, blocks, almost_eq_diff, rint
+from ..lazy_compat import orange, xrange, xzip
 from ..lazy_itertools import count
 from ..lazy_analysis import lag_to_freq
 from ..lazy_math import pi, inf

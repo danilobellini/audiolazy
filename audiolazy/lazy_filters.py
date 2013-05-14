@@ -30,7 +30,8 @@ from functools import reduce
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
                         pair_strings_sum_formatter, sHz, auto_formatter,
-                        almost_eq, meta, iteritems, xrange, im_func)
+                        almost_eq)
+from .lazy_compat import meta, iteritems, xrange, im_func
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_math import (exp, sin, cos, sqrt, pi, nan, dB20, phase,

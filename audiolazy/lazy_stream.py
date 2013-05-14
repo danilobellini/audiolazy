@@ -26,7 +26,8 @@ from functools import wraps
 from warnings import warn
 
 # Audiolazy internal imports
-from .lazy_misc import blocks, meta, xrange, xmap, xfilter, NEXT_NAME, rint
+from .lazy_misc import blocks, rint
+from .lazy_compat import meta, xrange, xmap, xfilter, NEXT_NAME
 from .lazy_core import AbstractOperatorOverloaderMeta
 from .lazy_math import inf
 

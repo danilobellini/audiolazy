@@ -29,7 +29,8 @@ from math import cos, pi, sqrt
 
 # Audiolazy internal imports
 from ..lazy_filters import ZFilter, resonator
-from ..lazy_misc import almost_eq, almost_eq_diff, orange, xrange
+from ..lazy_misc import almost_eq, almost_eq_diff
+from ..lazy_compat import orange, xrange
 from ..lazy_math import dB20
 
 

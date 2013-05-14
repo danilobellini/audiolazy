@@ -28,7 +28,7 @@ import random
 from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
 from .lazy_filters import comb
-from .lazy_misc import meta, iteritems, xrange, xzip
+from .lazy_compat import meta, iteritems, xrange, xzip
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
            "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",

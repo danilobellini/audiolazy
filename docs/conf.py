@@ -151,7 +151,7 @@ def pre_processor(app, what, name, obj, options, lines,
       del lines[idxs.pop():] # Remove the last summary
     if len(idxs) >= 1:
       lines.insert(idxs[-1] + 1, "")
-      if obj in [audiolazy.lazy_math, audiolazy.lazy_misc]:
+      if obj is audiolazy.lazy_math:
         lines.insert(idxs[-1] + 1, ".. tabularcolumns:: cl")
       else:
         lines.insert(idxs[-1] + 1, ".. tabularcolumns:: CJ")
@@ -333,7 +333,7 @@ htmlhelp_basename = project + "doc"
 latex_elements = {
   "papersize": "a4paper",
   "pointsize": "10pt", # Font size
-  "preamble": r"  \setlength{\tymax}{330pt}",
+  "preamble": r"  \setlength{\tymax}{360pt}",
   "fontpkg": "\\usepackage{cmbright}",
 }
 

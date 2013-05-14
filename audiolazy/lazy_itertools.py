@@ -25,7 +25,7 @@ from collections import Iterator
 
 # Audiolazy internal imports
 from .lazy_stream import tostream, Stream
-from .lazy_misc import xrange, xzip
+from .lazy_compat import xrange, xzip
 from .lazy_core import StrategyDict
 
 

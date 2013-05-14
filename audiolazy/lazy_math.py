@@ -27,7 +27,8 @@ import itertools as it
 from functools import reduce
 
 # Audiolazy internal imports
-from .lazy_misc import elementwise, INT_TYPES
+from .lazy_misc import elementwise
+from .lazy_compat import INT_TYPES
 
 __all__ = ["abs", "pi", "e", "cexp", "ln", "log", "log1p", "log10", "log2",
            "factorial", "dB10", "dB20", "inf", "nan", "phase", "sign"]
