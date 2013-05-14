@@ -29,8 +29,8 @@ import itertools as it
 
 # Audiolazy internal imports
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_misc import (multiplication_formatter, pair_strings_sum_formatter,
-                        rint)
+from .lazy_text import multiplication_formatter, pair_strings_sum_formatter
+from .lazy_misc import rint
 from .lazy_compat import (meta, iteritems, xrange, xzip, INT_TYPES,
                           xzip_longest)
 from .lazy_stream import Stream, tostream, thub

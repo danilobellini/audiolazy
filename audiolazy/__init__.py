@@ -98,10 +98,10 @@ for _mname, _mref in zip(__modules__, __modules_refs__):
   _mref.__doc__ += "\n".join(rst_table(_table, ("Name", "Description")))
   _mref.__doc__ += "\n"
 
-  # Creates table w/ docstring data from each module (w/ lazy_misc.small_doc)
+  # Creates table w/ docstring data from each module
   _mdocs_pairs.append((_mname, small_doc(_mref, max_width=_maxmlen)))
 
-# Edits the package docstring (with audiolazy.lazy_misc.rst_table)
+# Edits the package docstring
 __doc__ += "\nSummary of package modules: \n\n"
 __doc__ += "\n".join(rst_table(_mdocs_pairs, ("Module", "Description")))
 __doc__ += "\n"

@@ -32,7 +32,10 @@ AudioLazy changes history
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
   - Now with 5900+ tests and 82% code coverage
-  - Removed deprecated ``Stream.tee()`` method and DEFAULT_CHUNK_SIZE constant
+  - Removed deprecated ``Stream.tee()`` method
+  - Constants ``DEFAULT_CHUNK_SIZE`` and ``LATEX_PI_SYMBOL`` were removed:
+    the default values are now changeable and inside ``chunks`` and
+    ``float_str``, respectively (see docstrings for more details)
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
   - Now AudioLazy works with Python 3.2 and 3.3!
 
@@ -55,6 +58,8 @@ AudioLazy changes history
   - New ``OpMethod`` class with 33 operator method instances and querying
   - Changed ``AbstractOperatorOverloaderMeta`` to the new OpMethod-based
     interface
+  - Now StrategyDict changes the module ``__test__`` so that doctests from
+    strategies are found by the doctest finder.
 
 + lazy_io:
 
@@ -103,6 +108,7 @@ AudioLazy changes history
   - StreamTeeHub methods ``skip()``, ``limit()``, ``append()``, ``map()`` and
     ``filter()`` returns the modified copy as a Stream instance (i.e., works
     like ``Stream(my_stream_tee_hub).method_name()``)
+  - Control over the module name in ``tostream`` (needed for lazy_itertools)
 
 + lazy_synth:
 
@@ -110,6 +116,11 @@ AudioLazy changes history
     ``impulse()`` now can be inf (besides None)
   - Impulse now have ``one=1.`` and ``zero=0.`` arguments
 
++ lazy_text (*new!*):
+
+ - Got all text/string formatting functions from lazy_misc.
+ - Namespace clean-up: new StrategyDict ``float_str`` embraces older
+   rational/pi/auto formatters in one instance
 
 *** Version 0.04 (Documentation, LPC, Plots!) ***
 

@@ -170,11 +170,11 @@ def lpc(blk, order=None):
   16
   >>> filt = lpc.autocor(data, 2)
   >>> filt # The analysis filter
-  1 + 0.875 * z^-1
+  1 + 0.875 * z^-2
   >>> filt.numerator # List of coefficients
-  [1, 0.875]
+  [1, 0.0, 0.875]
   >>> filt.error # Prediction error (squared!)
-  14.125
+  1.875
 
   See Also
   --------
@@ -222,11 +222,11 @@ def lpc(blk, order=None):
   16
   >>> filt = lpc["nautocor"](data, 2)
   >>> filt # The analysis filter
-  1 + 0.875 * z^-1
-  >>> filt.numerator # List of coefficients3
-  [1, 0.875]
+  1 + 0.875 * z^-2
+  >>> filt.numerator # List of coefficients
+  [1, 0.0, 0.875]
   >>> filt.error # Prediction error (squared!)
-  14.125
+  1.875
 
   """
   from numpy import matrix
@@ -266,11 +266,11 @@ def lpc(blk, order=None):
   16
   >>> filt = lpc.kautocor(data, 2)
   >>> filt # The analysis filter
-  1 + 0.875 * z^-1
+  1 + 0.875 * z^-2
   >>> filt.numerator # List of coefficients
-  [1, 0.875]
+  [1, 0.0, 0.875]
   >>> filt.error # Prediction error (squared!)
-  14.125
+  1.875
 
   See Also
   --------

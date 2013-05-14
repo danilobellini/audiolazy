@@ -26,7 +26,7 @@ p = pytest.mark.parametrize
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import rint, elementwise, rst_table
+from ..lazy_misc import rint, elementwise
 from ..lazy_compat import INT_TYPES, orange, xrange
 
 
@@ -57,7 +57,7 @@ class TestRInt(object):
 
 
 class TestElementwise(object):
-  _data = [1, 7, 9, -11, 0, .3, "ab", True, None, rst_table]
+  _data = [1, 7, 9, -11, 0, .3, "ab", True, None, rint]
   @p("data", it.chain(_data, [_data], tuple(_data),
                       it.combinations_with_replacement(_data, 2))
     )
@@ -74,24 +74,3 @@ class TestElementwise(object):
     assert type(fg) == type(gen)
     assert list(fx) == orange(0,42*2,2)
     assert list(fg) == list(gen)
-
-
-class TestRSTTable(object):
-
-  simple_input = [
-    [1, 2, 3, "hybrid"],
-    [3, "mixed", .5, 123123]
-  ]
-
-  def test_simple_input_table(self):
-    assert rst_table(
-             self.simple_input,
-             "this is_ a test".split()
-           ) == [
-             "==== ===== === ======",
-             "this  is_   a   test ",
-             "==== ===== === ======",
-             "1    2     3   hybrid",
-             "3    mixed 0.5 123123",
-             "==== ===== === ======",
-           ]

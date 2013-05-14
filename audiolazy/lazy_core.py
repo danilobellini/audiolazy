@@ -27,7 +27,6 @@ from abc import ABCMeta
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_misc import small_doc
 from .lazy_compat import STR_TYPES, iteritems, itervalues
 
 __all__ = ["OpMethod", "AbstractOperatorOverloaderMeta", "MultiKeyDict",
@@ -407,11 +406,10 @@ class StrategyDict(MultiKeyDict):
   anything outside the dictionary (i.e., it won't be changed if you remove
   the strategy).
 
-  It iterates through the values (i.e., for each strategy, not its name)
+  It iterates through the values (i.e., for each strategy, not its name).
 
   Examples
   --------
-
   >>> sd = StrategyDict()
   >>> @sd.strategy("sum") # First strategy is default
   ... def sd(a, b, c):
@@ -436,6 +434,14 @@ class StrategyDict(MultiKeyDict):
   instance. This singleton subclassing is needed for docstring
   personalization.
 
+  Warning
+  -------
+  Every strategy you insert have as a side-effect a change into its module
+  ``__test__`` dictionary, to allow the doctests finder locate your
+  strategies. Make sure your strategy ``__module__`` attribute is always
+  right. Set it to ``None`` (or anything that evaluates to ``False``) if
+  you don't want this behaviour.
+
   """
   def __new__(self, name="strategy_dict_unnamed_instance"):
     """
@@ -455,6 +461,7 @@ class StrategyDict(MultiKeyDict):
 
       @property
       def __doc__(self):
+        from .lazy_text import small_doc
         docbase = "This is a StrategyDict instance object called\n" \
                   "``{0}``. Strategies stored: {1}.\n"
         doc = [docbase.format(self.__name__, len(self))]
@@ -512,6 +519,15 @@ class StrategyDict(MultiKeyDict):
     if "default" not in self.__dict__: # Avoiding hasattr due to __getattr__
       self.default = value
     super(StrategyDict, self).__setitem__(key, value)
+
+    # Also register strategy into module __test__ (allow doctests)
+    module_name = getattr(value, "__module__", False)
+    if module_name:
+      module = sys.modules[module_name]
+      if not hasattr(module, "__test__"):
+        setattr(module, "__test__", {})
+      strategy_name = ".".join([self.__name__, value.__name__])
+      module.__test__[strategy_name] = value
 
   def __call__(self, *args, **kwargs):
     return self.default(*args, **kwargs)

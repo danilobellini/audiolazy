@@ -28,9 +28,9 @@ from functools import reduce
 
 # Audiolazy internal imports
 from .lazy_stream import Stream, avoid_stream, thub
-from .lazy_misc import (elementwise, zero_pad, multiplication_formatter,
-                        pair_strings_sum_formatter, sHz, auto_formatter,
-                        almost_eq)
+from .lazy_misc import elementwise, zero_pad, sHz, almost_eq
+from .lazy_text import (float_str, multiplication_formatter,
+                        pair_strings_sum_formatter)
 from .lazy_compat import meta, iteritems, xrange, im_func
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
@@ -443,7 +443,7 @@ class LinearFilter(LinearFilterProperties):
     ph_plot.grid(True)
 
     # X Ticks (gets strange unit "7.5 * degrees / sample" back ) ...
-    fmt_func = lambda value, pos: auto_formatter(value * pi / 12., "p", [8])
+    fmt_func = lambda value, pos: float_str(value * pi / 12., "p", [8])
     if rate is None:
       if fscale == "linear":
         loc = plt.MaxNLocator(steps=[1, 2, 3, 4, 6, 8, 10])

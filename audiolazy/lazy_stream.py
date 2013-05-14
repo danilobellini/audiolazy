@@ -409,14 +409,22 @@ def avoid_stream(cls):
   return cls
 
 
-def tostream(func):
+def tostream(func, module_name=None):
   """
   Decorator to convert the function output into a Stream. Useful for
   generator functions.
+
+  Note
+  ----
+  Always use the ``module_name`` input when "decorating" a function that was
+  defined in other module.
+
   """
   @wraps(func)
   def new_func(*args, **kwargs):
     return Stream(func(*args, **kwargs))
+  if module_name is not None:
+    new_func.__module__ = module_name
   return new_func
 
 

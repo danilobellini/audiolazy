@@ -37,18 +37,19 @@ for func in filter(callable, [getattr(it, name) for name in it_names]):
   if name in ["filterfalse", "zip_longest"]: # These were renamed in Python 3
     name = "i" + name # In AudioLazy, keep the Python 2 names
   __all__.append(name)
-  locals()[name] = tostream(func)
+  locals()[name] = tostream(func, module_name=__name__)
 
 
 # StrategyDict chain, following "from_iterable" from original itertool
 chain = StrategyDict("chain")
-chain.strategy("chain")(tostream(it.chain))
-chain.strategy("star", "from_iterable")(tostream(it.chain.from_iterable))
+chain.strategy("chain")(tostream(it.chain, module_name=__name__))
+chain.strategy("star", "from_iterable")(tostream(it.chain.from_iterable,
+                                                 module_name=__name__))
 
 
 # StrategyDict izip, allowing izip.longest instead of izip_longest
 izip = StrategyDict("izip")
-izip.strategy("izip", "smallest")(tostream(xzip))
+izip.strategy("izip", "smallest")(tostream(xzip, module_name=__name__))
 izip["longest"] = izip_longest
 
 
@@ -56,7 +57,7 @@ izip["longest"] = izip_longest
 for name, func in zip(["imap", "ifilter"], [map, filter]):
   if name not in __all__:
     __all__.append(name)
-    locals()[name] = tostream(func)
+    locals()[name] = tostream(func, module_name=__name__)
 
 
 # Python 3 has an "accumulate" itertool, this makes it available in Python 2
