@@ -309,6 +309,8 @@ class AudioIO(object):
     Endless Stream instance that gather data from the audio input device.
 
     """
+    if chunk_size is None:
+      chunk_size = chunks.size
     input_stream = RecStream(self,
                              self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
                                            channels=nchannels,
@@ -376,7 +378,7 @@ class AudioThread(threading.Thread):
     self.stream = device_manager._pa.open(format=_STRUCT2PYAUDIO[dfmt],
                                           channels=nchannels,
                                           rate=rate,
-                                          frames_per_buffer=chunk_size,
+                                          frames_per_buffer=self.chunk_size,
                                           output=True)
 
   def run(self):

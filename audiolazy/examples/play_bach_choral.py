@@ -63,7 +63,7 @@ for freq, start, dur, has_fermata in score:
   delta = start - last_start
   if has_fermata:
     delta *= 2
-  song.add(delta, lz.karplus_strong(freq, memory=ks_mem(freq)) * lz.ones(dur))
+  song.add(delta, lz.karplus_strong(freq, memory=ks_mem(freq)).limit(dur))
   last_start = start
 
 # Play the song!
