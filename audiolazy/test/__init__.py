@@ -21,13 +21,68 @@ AudioLazy testing sub-package
 """
 
 import pytest
+import types
+
+# Audiolazy internal imports
+from ..lazy_compat import meta
+from ..lazy_core import AbstractOperatorOverloaderMeta
+
 
 def skipper(msg="There's something not supported in this environment"):
   """
   Internal function to work as the last argument in a ``getattr`` call to
   help skip environment-specific tests when needed.
-
   """
   def skip(*args, **kwargs):
     pytest.skip(msg.format(*args, **kwargs))
   return skip
+
+
+class XFailerMeta(AbstractOperatorOverloaderMeta):
+  """
+  Metaclass for XFailer, ensuring every operator use is a pytest.xfail call.
+  """
+  def __binary__(self, op):
+    return lambda *a, **kw: pytest.xfail()
+  __unary__ = __rbinary__ = __binary__
+
+
+class XFailer(meta(metaclass=XFailerMeta)):
+  """
+  Class that responds to mostly uses as a pytest.xfail call.
+  """
+  def __call__(self, *a, **kw):
+    pytest.xfail()
+
+  def __getattr__(self, name):
+    return lambda *a, **kw: pytest.xfail()
+
+
+class XFailerModule(types.ModuleType):
+  """
+  Internal fake module creator to ensure xfail in all functions, if module
+  doesn't exist.
+  """
+  def __init__(self, name):
+    try:
+      exec("import {}".format(name))
+    except ImportError:
+      import sys
+      sys.modules[name] = self
+      self.__name__ = name
+
+  __file__ = __path__ = __loader__ = ""
+
+  def __getattr__(self, name):
+    return XFailer()
+
+
+# Creates an XFailer for each module that isn't available
+XFailerModule("numpy")
+XFailerModule("numpy.fft")
+XFailerModule("numpy.linalg")
+XFailerModule("pyaudio")
+XFailerModule("_portaudio")
+XFailerModule("scipy")
+XFailerModule("scipy.optimize")
+XFailerModule("scipy.signal")

@@ -39,6 +39,10 @@ AudioLazy changes history
     ``float_str``, respectively (see docstrings for more details)
   - No more distinction between ``__div__`` and ``__truediv__`` (Python 2.7)
   - Now AudioLazy works with Python 3.2 and 3.3!
+  - Test skipping for tests that depends upon something that is Python
+    version-specific
+  - Test "xfail" using XFailer classes when depending package (e.g. pyaudio)
+    is unavailable in the testing environment
 
 + lazy_compat (*new!*):
 

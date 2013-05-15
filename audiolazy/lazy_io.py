@@ -20,22 +20,6 @@
 Audio recording input and playing output module
 """
 
-# PyAudio PortAudio bindings
-try:
-  import pyaudio
-  import _portaudio # Just to be slightly faster (per chunk!)
-
-  # Conversion dict from structs.Struct() format symbols to PyAudio constants
-  _STRUCT2PYAUDIO = {"f": pyaudio.paFloat32,
-                     "i": pyaudio.paInt32,
-                     "h": pyaudio.paInt16,
-                     "b": pyaudio.paInt8,
-                     "B": pyaudio.paUInt8,
-                    }
-except:
-  print("Info: PyAudio not found. Module imported, but can't use audio I/O")
-  pass
-
 import threading
 import struct
 import array
@@ -48,6 +32,15 @@ from .lazy_math import inf
 from .lazy_core import StrategyDict
 
 __all__ = ["chunks", "RecStream", "AudioIO", "AudioThread"]
+
+
+# Conversion dict from structs.Struct() format symbols to PyAudio constants
+_STRUCT2PYAUDIO = {"f": 1, #pyaudio.paFloat32
+                   "i": 2, #pyaudio.paInt32
+                   "h": 8, #pyaudio.paInt16
+                   "b": 16, #pyaudio.paInt8
+                   "B": 32, #pyaudio.paUInt8
+                  }
 
 
 chunks = StrategyDict("chunks")
@@ -186,6 +179,7 @@ class AudioIO(object):
     Defaults to False. Only works if the close method is explicitly
     called.
     """
+    import pyaudio
     self._pa = pyaudio.PyAudio()
     self._threads = []
     self.wait = wait # Wait threads to finish at end (constructor parameter)
@@ -374,6 +368,10 @@ class AudioThread(threading.Thread):
     self.go.set()
     self.halting = False # The stop message
 
+    # Get the streaming function
+    import _portaudio # Just to be slightly faster (per chunk!)
+    self.write_stream = _portaudio.write_stream
+
     # Open a new audio output stream
     self.stream = device_manager._pa.open(format=_STRUCT2PYAUDIO[dfmt],
                                           channels=nchannels,
@@ -393,7 +391,7 @@ class AudioThread(threading.Thread):
                         dfmt=self.dfmt):
       #Below is a faster way to call:
       #  self.stream.write(chunk, self.chunk_size)
-      _portaudio.write_stream(st, chunk, self.chunk_size, False)
+      self.write_stream(st, chunk, self.chunk_size, False)
       if not self.go.is_set():
         self.stream.stop_stream()
         if self.halting:
