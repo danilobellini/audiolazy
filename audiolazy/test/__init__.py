@@ -22,6 +22,7 @@ AudioLazy testing sub-package
 
 import pytest
 import types
+import sys
 
 # Audiolazy internal imports
 from ..lazy_compat import meta
@@ -42,8 +43,8 @@ class XFailerMeta(AbstractOperatorOverloaderMeta):
   """
   Metaclass for XFailer, ensuring every operator use is a pytest.xfail call.
   """
-  def __binary__(self, op):
-    return lambda *a, **kw: pytest.xfail()
+  def __binary__(cls, op):
+    return lambda self, other: self()
   __unary__ = __rbinary__ = __binary__
 
 
@@ -51,11 +52,14 @@ class XFailer(meta(metaclass=XFailerMeta)):
   """
   Class that responds to mostly uses as a pytest.xfail call.
   """
-  def __call__(self, *a, **kw):
-    pytest.xfail()
+  def __init__(self, module):
+    self.module = module
+
+  def __call__(self, *args, **kwargs):
+    pytest.xfail(reason="Module {} not found".format(self.module))
 
   def __getattr__(self, name):
-    return lambda *a, **kw: pytest.xfail()
+    return self.__call__
 
 
 class XFailerModule(types.ModuleType):
@@ -67,14 +71,13 @@ class XFailerModule(types.ModuleType):
     try:
       exec("import {}".format(name))
     except ImportError:
-      import sys
       sys.modules[name] = self
       self.__name__ = name
 
   __file__ = __path__ = __loader__ = ""
 
   def __getattr__(self, name):
-    return XFailer()
+    return XFailer(self.__name__)
 
 
 # Creates an XFailer for each module that isn't available

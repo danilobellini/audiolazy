@@ -163,18 +163,9 @@ def lpc(blk, order=None):
   A FIR filter, as a ZFilter object. The mean squared error over the given
   block is in its "error" attribute.
 
-  Examples
-  --------
-  >>> data = [-1, 0, 1, 0] * 4
-  >>> len(data) # Small data
-  16
-  >>> filt = lpc.autocor(data, 2)
-  >>> filt # The analysis filter
-  1 + 0.875 * z^-2
-  >>> filt.numerator # List of coefficients
-  [1, 0.0, 0.875]
-  >>> filt.error # Prediction error (squared!)
-  1.875
+  Hint
+  ----
+  See ``lpc.kautocor`` example, which should apply equally for this strategy.
 
   See Also
   --------
@@ -215,18 +206,16 @@ def lpc(blk, order=None):
   A FIR filter, as a ZFilter object. The mean squared error over the given
   block is in its "error" attribute.
 
-  Examples
+  Hint
+  ----
+  See ``lpc.kautocor`` example, which should apply equally for this strategy.
+
+  See Also
   --------
-  >>> data = [-1, 0, 1, 0] * 4
-  >>> len(data) # Small data
-  16
-  >>> filt = lpc["nautocor"](data, 2)
-  >>> filt # The analysis filter
-  1 + 0.875 * z^-2
-  >>> filt.numerator # List of coefficients
-  [1, 0.0, 0.875]
-  >>> filt.error # Prediction error (squared!)
-  1.875
+  lpc.autocor:
+    LPC coefficients by using one of the autocorrelation method strategies.
+  lpc.kautocor:
+    LPC coefficients obtained with Levinson-Durbin algorithm.
 
   """
   from numpy import matrix
@@ -277,6 +266,10 @@ def lpc(blk, order=None):
   levinson_durbin :
     Levinson-Durbin algorithm for solving Yule-Walker equations (Toeplitz
     matrix linear system).
+  lpc.autocor:
+    LPC coefficients by using one of the autocorrelation method strategies.
+  lpc.nautocor:
+    LPC coefficients from linear system solved with Numpy pseudo-inverse.
 
   """
   return levinson_durbin(acorr(blk, order), order)

@@ -164,6 +164,7 @@ class TestLPC(object):
   )(ok_pairs = blk_order_pairs,
     not_ok_pairs = kcovar_zdiv_error_cases + covars_value_error_cases +
                    kcovar_value_error_cases)
+
   @p(("blk", "order"), blk_order_pairs)
   def test_equalness_all_autocorrelation_strategies(self, blk, order):
     # Common case, tests whether all solutions are the same
@@ -217,6 +218,14 @@ class TestLPC(object):
       assert almost_eq.diff(0, f2.error, max_diff=max_diff)
     assert f1.error >= 0.
     assert f2.error >= 0.
+
+  @p("strategy", [lpc.autocor, lpc.kautocor, lpc.nautocor])
+  def test_docstring_in_all_autocor_strategies(self, strategy):
+    data = [-1, 0, 1, 0] * 4
+    filt = strategy(data, 2)
+    assert almost_eq(filt, 1 + 0.875 * z ** -2)
+    assert almost_eq.diff(filt.numerator, [1, 0., .875])
+    assert almost_eq(filt.error, 1.875)
 
 
 class TestParcorStableLSFStable(object):
