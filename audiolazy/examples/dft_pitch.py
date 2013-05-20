@@ -15,28 +15,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-# Created on Tue Mar 05 2013
+# Created on Wed May 01 2013
 # danilo [dot] bellini [at] gmail [dot] com
 """
-Pitch follower via zero-crossing rate with Tkinter GUI
+Pitch follower via DFT peak with Tkinter GUI
 """
 
 # ------------------------
 # AudioLazy pitch follower
 # ------------------------
-from audiolazy import (tostream, zcross, lag_to_freq, AudioIO, freq2str, sHz,
-                       lowpass, envelope, pi, maverage, Stream, thub)
+from audiolazy import (tostream, AudioIO, freq2str, sHz,
+                       lowpass, envelope, pi, thub, Stream, maverage)
+from numpy.fft import rfft
 
 def limiter(sig, threshold=.1, size=256, env=envelope.rms, cutoff=pi/2048):
   sig = thub(sig, 2)
   return sig * Stream( 1. if el <= threshold else threshold / el
                        for el in maverage(size)(env(sig, cutoff=cutoff)) )
 
+
 @tostream
-def zcross_pitch(sig, size=2048, hop=None):
-  for blk in zcross(sig, hysteresis=.01).blocks(size=size, hop=hop):
-    crossings = sum(blk)
-    yield 0. if crossings == 0 else lag_to_freq(2. * size / crossings)
+def dft_pitch(sig, size=2048, hop=None):
+  for blk in Stream(sig).blocks(size=size, hop=hop):
+    dft_data = rfft(blk)
+    idx, vmax = max(enumerate(dft_data),
+                    key=lambda el: abs(el[1]) / (2 * el[0] / size + 1)
+                   )
+    yield 2 * pi * idx / size
 
 
 def pitch_from_mic(upd_time_in_ms):
@@ -47,7 +52,7 @@ def pitch_from_mic(upd_time_in_ms):
     snd = recorder.record(rate=rate)
     sndlow = lowpass(400 * Hz)(limiter(snd, cutoff=20 * Hz))
     hop = int(upd_time_in_ms * 1e-3 * s)
-    for pitch in freq2str(zcross_pitch(sndlow, size=2*hop, hop=hop) / Hz):
+    for pitch in freq2str(dft_pitch(sndlow, size=2*hop, hop=hop) / Hz):
       yield pitch
 
 

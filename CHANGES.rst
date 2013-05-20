@@ -29,6 +29,8 @@ AudioLazy changes history
   - A somehow disturbing example based on Shepard "going higher" tone
   - Linear Periodically Time Variant filter example
   - Now the Bach choral player can play in loop
+  - New DFT-based pitch follower (guitar tuner like) and better ZCR-based
+    pitch follower by using a simple limiter
 
 + general:
 
