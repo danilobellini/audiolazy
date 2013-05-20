@@ -28,6 +28,7 @@ AudioLazy changes history
   - LPC plot with DFT, showing two formants (magnitude peaks)
   - A somehow disturbing example based on Shepard "going higher" tone
   - Linear Periodically Time Variant filter example
+  - Now the Bach choral player can play in loop
 
 + general:
 

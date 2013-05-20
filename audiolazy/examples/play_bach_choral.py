@@ -25,48 +25,87 @@ from __future__ import unicode_literals, print_function
 from music21 import corpus
 from music21.expressions import Fermata
 import audiolazy as lz
-import random
-import operator
+import random, operator, sys, time
 from functools import reduce
 
-def ks_mem(freq):
-  """ Alternative memory for Karplus-Strong """
-  return (sum(lz.sinusoid(x * freq) for x in [1, 3, 9]) +
-          lz.white_noise() + lz.Stream(-1, 1)) / 5
 
-# Configuration
-rate = 44100
-s, Hz = lz.sHz(rate)
-ms = 1e-3 * s
+def ks_synth(freq):
+  """
+  Synthesize the given frequency into a Stream by using a model based on
+  Karplus-Strong.
+  """
+  ks_mem = (sum(lz.sinusoid(x * freq) for x in [1, 3, 9]) +
+            lz.white_noise() + lz.Stream(-1, 1)) / 5
+  return lz.karplus_strong(freq, memory=ks_mem)
 
-beat = 90 # bpm
-step = 60. / beat * s
 
-# Open the choral file
-choral_file = corpus.getBachChorales()[random.randint(0, 399)]
-choral = corpus.parse(choral_file)
-print("Playing", choral.metadata.title)
+def get_random_choral(log=True):
+  """ Gets a choral from the J. S. Bach chorals corpus (in Music21). """
+  choral_file = corpus.getBachChorales()[random.randint(0, 399)]
+  choral = corpus.parse(choral_file)
+  if log:
+    print("Chosen choral:", choral.metadata.title)
+  return choral
 
-# Creates the score from the music21 data
-score = reduce(operator.concat,
-               [[(pitch.frequency * Hz, # Note
-                  note.offset * step, # Starting time
-                  note.quarterLength * step, # Duration
-                  Fermata in note.expressions) for pitch in note.pitches]
-                                               for note in choral.flat.notes]
-              )
 
-# Mix all notes into song
-song = lz.Streamix()
-last_start = 0
-for freq, start, dur, has_fermata in score:
-  delta = start - last_start
-  if has_fermata:
-    delta *= 2
-  song.add(delta, lz.karplus_strong(freq, memory=ks_mem(freq)).limit(dur))
-  last_start = start
+def m21_to_stream(score, synth=ks_synth, beat=90, fdur=2., pad_dur=.5,
+                  rate=lz.DEFAULT_SAMPLE_RATE):
+  """
+  Converts Music21 data to a Stream object.
+
+  Parameters
+  ----------
+  score :
+    A Music21 data, usually a music21.stream.Score instance.
+  synth :
+    A function that receives a frequency as input and should yield a Stream
+    instance with the note being played.
+  beat :
+    The BPM (beats per minute) value to be used in playing.
+  fdur :
+    Relative duration of a fermata. For example, 1.0 ignores the fermata, and
+    2.0 (default) doubles its duration.
+  pad_dur :
+    Duration in seconds, but not multiplied by ``s``, to be used as a
+    zero-padding ending event (avoids clicks at the end when playing).
+  rate :
+    The sample rate, given in samples per second.
+
+  """
+  # Configuration
+  s, Hz = lz.sHz(rate)
+  step = 60. / beat * s
+
+  # Creates a score from the music21 data
+  score = reduce(operator.concat,
+                 [[(pitch.frequency * Hz, # Note
+                    note.offset * step, # Starting time
+                    note.quarterLength * step, # Duration
+                    Fermata in note.expressions) for pitch in note.pitches]
+                                                 for note in score.flat.notes]
+                )
+
+  # Mix all notes into song
+  song = lz.Streamix()
+  last_start = 0
+  for freq, start, dur, has_fermata in score:
+    delta = start - last_start
+    if has_fermata:
+      delta *= 2
+    song.add(delta, synth(freq).limit(dur))
+    last_start = start
+
+  # Zero-padding and finishing
+  song.add(dur + pad_dur * s, lz.Stream([]))
+  return song
+
 
 # Play the song!
-with lz.AudioIO(True) as player:
-  song = song.append(lz.zeros(.5 * s)) # To avoid a click at the end
-  player.play(song, rate=rate)
+if __name__ == "__main__":
+  rate = 44100
+  while True:
+    with lz.AudioIO(True) as player:
+      player.play(m21_to_stream(get_random_choral(), rate=rate), rate=rate)
+    if not "loop" in sys.argv[1:]:
+      break
+    time.sleep(3)
