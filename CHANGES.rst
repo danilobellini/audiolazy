@@ -27,6 +27,7 @@ AudioLazy changes history
   - Pi with Madhava-Gregory-Leibniz series and Machin formula using Stream
   - LPC plot with DFT, showing two formants (magnitude peaks)
   - A somehow disturbing example based on Shepard "going higher" tone
+  - Linear Periodically Time Variant filter example
 
 + general:
 
