@@ -26,6 +26,7 @@ AudioLazy changes history
   - Pitch follower via zero-crossing rate with Tkinter GUI
   - Pi with Madhava-Gregory-Leibniz series and Machin formula using Stream
   - LPC plot with DFT, showing two formants (magnitude peaks)
+  - A somehow disturbing example based on Shepard "going higher" tone
 
 + general:
 
