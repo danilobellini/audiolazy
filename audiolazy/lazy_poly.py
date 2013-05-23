@@ -57,7 +57,7 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   def __unary__(cls, op):
     op_func = op.func
     def dunder(self):
-      return cls({k: op_func(v) for k, v in iteritems(self.data)},
+      return cls({k: op_func(v) for k, v in self.terms()},
                  zero=self.zero)
     return dunder
 
@@ -71,8 +71,10 @@ class Poly(meta(metaclass=PolyMeta)):
   The "terms" method allows casting to dict with dict(Poly.terms()), and give
   the terms sorted by their power value if used in a loop instead of casting.
 
-  The instances of this class should be seen as immutable, although there's
-  no enforcement for that.
+  Usually the instances of this class should be seen as immutable (this is
+  a hashable instance), although there's no enforcement for that (and item
+  set is allowed).
+
   You can use the ``x`` object and operators to create your own instances.
 
   Examples
@@ -113,27 +115,31 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     self.zero = 0. if zero is None else zero
     if isinstance(data, list):
-      self.data = {power: value for power, value in enumerate(data)}
+      self._data = {power: value for power, value in enumerate(data)}
     elif isinstance(data, dict):
-      self.data = dict(data)
+      self._data = dict(data)
     elif isinstance(data, Poly):
-      self.data = data.data.copy()
+      self._data = data._data.copy()
       self.zero = data.zero if zero is None else zero
     elif data is None:
-      self.data = {}
+      self._data = {}
     else:
-      self.data = {0: data}
+      self._data = {0: data}
 
     # Compact zeros
-    for key, value in list(iteritems(self.data)):
+    for key, value in list(iteritems(self._data)):
       if isinstance(key, float):
         if key.is_integer():
-          del self.data[key]
+          del self._data[key]
           key = rint(key)
-          self.data[key] = value
+          self._data[key] = value
       if not isinstance(value, Stream):
         if value == 0:
-          del self.data[key]
+          del self._data[key]
+
+  def __hash__(self):
+    self._hashed = True
+    return hash(tuple(self.terms()))
 
   def values(self):
     """
@@ -142,7 +148,7 @@ class Poly(meta(metaclass=PolyMeta)):
     reversed from the output of this function used as input to a list or a
     tuple constructor).
     """
-    if self.data:
+    if self._data:
       for key in xrange(self.order + 1):
         yield self[key]
 
@@ -151,20 +157,20 @@ class Poly(meta(metaclass=PolyMeta)):
     Pairs (2-tuple) generator where each tuple has a (power, value) term,
     sorted by power. Useful for casting as dict.
     """
-    for key in sorted(self.data):
-      yield key, self.data[key]
+    for key in sorted(self._data):
+      yield key, self._data[key]
 
   def __len__(self):
     """
     Number of terms, not values (be careful).
     """
-    return len(self.data)
+    return len(self._data)
 
   def is_polynomial(self):
     """
     Tells whether it is a linear combination of natural powers of ``x``.
     """
-    return all(isinstance(k, INT_TYPES) and k >= 0 for k in self.data)
+    return all(isinstance(k, INT_TYPES) and k >= 0 for k in self._data)
 
   def is_laurent(self):
     """
@@ -184,7 +190,7 @@ class Poly(meta(metaclass=PolyMeta)):
     False
 
     """
-    return all(isinstance(k, INT_TYPES) for k in self.data)
+    return all(isinstance(k, INT_TYPES) for k in self._data)
 
   @property
   def order(self):
@@ -207,7 +213,7 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     if not self.is_polynomial():
       raise AttributeError("Power needs to be positive integers")
-    return max(key for key in self.data) if self.data else 0
+    return max(key for key in self._data) if self._data else 0
 
   def copy(self, zero=None):
     """
@@ -225,14 +231,14 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     return Poly(reduce(lambda d, order: # Derivative order can be ignored
                          {k - 1: k * v for k, v in iteritems(d) if k != 0},
-                       xrange(n), self.data),
+                       xrange(n), self._data),
                 zero=self.zero)
 
   def integrate(self):
     """
     Integrate without adding an integration constant.
     """
-    if -1 in self.data:
+    if -1 in self._data:
       raise ValueError("Unable to integrate term that powers to -1")
     return Poly({k + 1: v / (k + 1) for k, v in self.terms()},
                 zero=self.zero)
@@ -244,9 +250,9 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     if isinstance(value, Poly):
       return Poly(sum(coeff * value ** power
-                      for power, coeff in iteritems(self.data)),
+                      for power, coeff in iteritems(self._data)),
                   self.zero)
-    if not self.data:
+    if not self._data:
       return self.zero
     if not isinstance(value, Stream):
       if value == 0:
@@ -255,17 +261,19 @@ class Poly(meta(metaclass=PolyMeta)):
     value = thub(value, len(self))
     return reduce(
       lambda old, new: (new[0], new[1] + old[1] * value ** (old[0] - new[0])),
-      sorted(iteritems(self.data), reverse=True) + [(0, 0)]
+      sorted(iteritems(self._data), reverse=True) + [(0, 0)]
     )[1]
 
   def __getitem__(self, item):
-    if item in self.data:
-      return self.data[item]
+    if item in self._data:
+      return self._data[item]
     else:
       return self.zero
 
   def __setitem__(self, power, item):
-    self.data[power] = item
+    if getattr(self, "_hashed", False):
+      raise TypeError("Used this Poly instance as a hashable before")
+    self._data[power] = item
 
   # ---------------------
   # Elementwise operators
@@ -273,10 +281,10 @@ class Poly(meta(metaclass=PolyMeta)):
   def __add__(self, other):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
-    intersect = [(key, self.data[key] + other.data[key])
-                 for key in set(self.data).intersection(other.data)]
-    return Poly(dict(it.chain(iteritems(self.data),
-                              iteritems(other.data), intersect)),
+    intersect = [(key, self._data[key] + other._data[key])
+                 for key in set(self._data).intersection(other._data)]
+    return Poly(dict(it.chain(iteritems(self._data),
+                              iteritems(other._data), intersect)),
                 zero=self.zero)
 
   def __sub__(self, other):
@@ -289,10 +297,10 @@ class Poly(meta(metaclass=PolyMeta)):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
     new_data = {}
-    thubbed_self = [(k, thub(v, len(other.data)))
-                    for k, v in iteritems(self.data)]
-    thubbed_other = [(k, thub(v, len(self.data)))
-                     for k, v in iteritems(other.data)]
+    thubbed_self = [(k, thub(v, len(other._data)))
+                    for k, v in iteritems(self._data)]
+    thubbed_other = [(k, thub(v, len(self._data)))
+                     for k, v in iteritems(other._data)]
     for k1, v1 in thubbed_self:
       for k2, v2 in thubbed_other:
         if k1 + k2 in new_data:
@@ -308,10 +316,8 @@ class Poly(meta(metaclass=PolyMeta)):
     if not isinstance(other, Poly):
       other = Poly(other, zero=self.zero) # The "other" is probably a number
 
-    def sorted_flattenizer(dictionary):
-      return reduce( operator.concat,
-                     sorted(iteritems(dictionary.data)),
-                     tuple() )
+    def sorted_flattenizer(instance):
+      return reduce(operator.concat, instance.terms(), tuple())
 
     def is_pair_equal(a, b):
       if isinstance(a, Stream) or isinstance(b, Stream):
@@ -341,27 +347,27 @@ class Poly(meta(metaclass=PolyMeta)):
       other = other[0]
     if other == 0:
       return Poly(1, zero=self.zero)
-    if len(self.data) == 0:
+    if len(self._data) == 0:
       return Poly(zero=self.zero)
-    if len(self.data) == 1:
+    if len(self._data) == 1:
       return Poly({k * other: 1 if v == 1 else v ** other # To avoid casting
-                   for k, v in iteritems(self.data)},
+                   for k, v in iteritems(self._data)},
                   zero=self.zero)
     return reduce(operator.mul, [self.copy()] * (other - 1) + [self])
 
   def __truediv__(self, other):
     if isinstance(other, Poly):
       if len(other) == 1:
-        delta, value = next(iteritems(other.data))
+        delta, value = next(iteritems(other._data))
         return Poly({(k - delta): operator.truediv(v, value)
-                     for k, v in iteritems(self.data)},
+                     for k, v in iteritems(self._data)},
                     zero=self.zero)
       elif len(other) == 0:
         raise ZeroDivisionError("Dividing Poly instance by zero")
       raise NotImplementedError("Can't divide general Poly instances")
     other = thub(other, len(self))
     return Poly({k: operator.truediv(v, other)
-                 for k, v in iteritems(self.data)},
+                 for k, v in iteritems(self._data)},
                 zero=self.zero)
 
   # ---------------------

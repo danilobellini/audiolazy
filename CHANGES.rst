@@ -75,6 +75,7 @@ AudioLazy changes history
 
   - ZFilter instances are now better prepared for Stream coeffs and
     operator-based filter creation, as well as a new copy helper method
+  - Filters are now hashable (e.g., they can be used in sets)
 
 + lazy_io:
 
@@ -84,8 +85,9 @@ AudioLazy changes history
 
 + lazy_itertools:
 
-  - New ``accumulate()`` itertool from Python 3, available also in Python 2
-    yielding a Stream
+  - New ``accumulate`` itertool from Python 3, available also in Python 2
+    yielding a Stream. This is a new StrategyDict with one more strategy in
+    Python 3
   - Strategy ``chain.from_iterable`` is now available (Stream version
     itertool), and ``chain`` is now a StrategyDict
   - Now ``izip`` is a StrategyDict, with ``izip.smallest`` (default) and
@@ -111,7 +113,9 @@ AudioLazy changes history
     instances, and the ``zero`` from the caller Poly is always kept in
     result (this includes many bugfixes)
   - Poly instances are now better prepared for Stream coeffs and evaluation,
-    including a helper ``Poly.copy()`` method and a set item method
+    including a helper ``Poly.copy()`` method
+  - Poly is now hashable and have __setitem__ (using both isn't allowed for
+    the same instance)
 
 + lazy_stream:
 
@@ -303,7 +307,7 @@ AudioLazy changes history
 + lazy_core:
 
   - MultiKeyDict: an "inversible" dict (i.e., a dict whose values must be
-    hasheable) that may have several keys for each value
+    hashable) that may have several keys for each value
   - StrategyDict: callable dict to store multiple function implementations
     in. Inherits from MultiKeyDict, so the same strategy may have multiple
     names. It's also an iterable on its values (functions)

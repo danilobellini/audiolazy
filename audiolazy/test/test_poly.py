@@ -470,6 +470,15 @@ class TestPoly(object):
     assert power == 0
     assert Poly(dict(term_iter)) == 5 * x ** 3 + x + x ** .2
 
+  def test_hash(self):
+    poly = x + 1
+    poly[3] = 1
+    my_set = {poly, 27, x}
+    with pytest.raises(TypeError):
+      poly[3] = 0
+    assert poly == x ** 3 + x + 1
+    assert poly in my_set
+
 
 class TestLagrange(object):
 

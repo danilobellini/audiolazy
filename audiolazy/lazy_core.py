@@ -521,13 +521,14 @@ class StrategyDict(MultiKeyDict):
     super(StrategyDict, self).__setitem__(key, value)
 
     # Also register strategy into module __test__ (allow doctests)
-    module_name = getattr(value, "__module__", False)
-    if module_name:
-      module = sys.modules[module_name]
-      if not hasattr(module, "__test__"):
-        setattr(module, "__test__", {})
-      strategy_name = ".".join([self.__name__, value.__name__])
-      module.__test__[strategy_name] = value
+    if "__doc__" in getattr(value, "__dict__", {}):
+      module_name = getattr(value, "__module__", False)
+      if module_name:
+        module = sys.modules[module_name]
+        if not hasattr(module, "__test__"):
+          setattr(module, "__test__", {})
+        strategy_name = ".".join([self.__name__, value.__name__])
+        module.__test__[strategy_name] = value
 
   def __call__(self, *args, **kwargs):
     return self.default(*args, **kwargs)

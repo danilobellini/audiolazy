@@ -22,7 +22,6 @@ Strings, reStructuredText, docstrings and other general text processing
 
 from __future__ import division
 
-import types
 import itertools as it
 from fractions import Fraction
 
@@ -321,10 +320,7 @@ def small_doc(obj, indent="", max_width=80):
   For other inputs, it will use themselves cast to string as their docstring.
 
   """
-  # Not something that normally have a docstring
-  from .lazy_core import StrategyDict
-  if not isinstance(obj, (StrategyDict, types.FunctionType, types.MethodType,
-                          types.ModuleType, type, property)):
+  if not "__doc__" in getattr(obj, "__dict__", {}):
     data = [el.strip() for el in str(obj).splitlines()]
     if len(data) == 1:
       if data[0].startswith("<audiolazy.lazy_"): # Instance
@@ -332,7 +328,7 @@ def small_doc(obj, indent="", max_width=80):
       else:
         data = "".join(["``", data[0], "``"])
     else:
-      data == " ".join(data)
+      data = " ".join(data)
 
   # No docstring
   elif (not obj.__doc__) or (obj.__doc__.strip() == ""):

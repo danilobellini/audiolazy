@@ -495,6 +495,14 @@ class TestZFilter(object):
     r, ex = result.take(length), expected.take(length)
     assert almost_eq(r, ex)
 
+  def test_hashable(self):
+    filt = 1 / (7 + z ** -1)
+    my_set = {filt, 17, z, z ** -1, object}
+    assert z in my_set
+    assert z ** -1 in my_set
+    assert filt in my_set
+    assert -z not in my_set
+
 
 @p("filt_class", [CascadeFilter, ParallelFilter])
 class TestCascadeAndParallelFilters(object):

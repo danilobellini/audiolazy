@@ -27,9 +27,31 @@ import operator
 from functools import reduce
 
 # Audiolazy internal imports
-from ..lazy_itertools import chain, izip, count
+from ..lazy_itertools import accumulate, chain, izip, count
 from ..lazy_stream import Stream
 from ..lazy_math import inf
+from ..lazy_poly import x
+
+
+@p("acc", accumulate)
+class TestAccumulate(object):
+
+  @p("empty", [[], tuple(), set(), Stream([])])
+  def test_empty_input(self, acc, empty):
+    data = acc(empty)
+    assert isinstance(data, Stream)
+    assert list(data) == []
+
+  def test_one_input(self, acc):
+    for k in [1, -5, 1e3, inf, x]:
+      data = acc([k])
+      assert isinstance(data, Stream)
+      assert list(data) == [k]
+
+  def test_few_numbers(self, acc):
+    data = acc(Stream([4, 7, 5, 3, -2, -3, -1, 12, 8, .5, -13]))
+    assert isinstance(data, Stream)
+    assert list(data) == [4, 11, 16, 19, 17, 14, 13, 25, 33, 33.5, 20.5]
 
 
 class TestCount(object):

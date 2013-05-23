@@ -135,6 +135,9 @@ class LinearFilter(LinearFilterProperties):
     yield self.numdict
     yield self.dendict
 
+  def __hash__(self):
+    return hash(tuple(self.numdict) + tuple(self.dendict))
+
   def __call__(self, seq, memory=None, zero=0.):
     """
     IIR, FIR and time variant linear filtering.

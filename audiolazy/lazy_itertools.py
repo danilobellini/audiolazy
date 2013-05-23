@@ -25,12 +25,13 @@ from collections import Iterator
 
 # Audiolazy internal imports
 from .lazy_stream import tostream, Stream
-from .lazy_compat import xrange, xzip
+from .lazy_compat import xrange, xzip, PYTHON2
 from .lazy_core import StrategyDict
+from .lazy_filters import z
 
 
 # "Decorates" all functions from itertools
-__all__ = ["tee", "chain", "izip"]
+__all__ = ["chain", "izip", "tee", "accumulate"]
 it_names = set(dir(it)).difference(__all__)
 for func in filter(callable, [getattr(it, name) for name in it_names]):
   name = func.__name__
@@ -60,18 +61,25 @@ for name, func in zip(["imap", "ifilter"], [map, filter]):
     locals()[name] = tostream(func, module_name=__name__)
 
 
-# Python 3 has an "accumulate" itertool, this makes it available in Python 2
-if "accumulate" not in __all__:
-  __all__.append("accumulate")
-  @tostream
-  def accumulate(iterable):
-    " Return series of accumulated sums. "
-    iterator = iter(iterable)
-    sum_data = next(iterator)
+accumulate = StrategyDict("accumulate")
+if not PYTHON2:
+  accumulate.strategy("accumulate", "itertools") \
+                     (tostream(it.accumulate, module_name=__name__))
+
+
+@accumulate.strategy("func", "pure_python")
+@tostream
+def accumulate(iterable):
+  " Return series of accumulated sums. "
+  iterator = iter(iterable)
+  sum_data = next(iterator)
+  yield sum_data
+  for el in iterator:
+    sum_data += el
     yield sum_data
-    for el in iterator:
-      sum_data += el
-      yield sum_data
+
+
+accumulate.strategy("z")(1 / (1 - z ** -1))
 
 
 def tee(data, n=2):
