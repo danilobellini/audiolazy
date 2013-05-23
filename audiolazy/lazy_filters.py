@@ -20,6 +20,8 @@
 Stream filtering module
 """
 
+from __future__ import division
+
 import operator
 from cmath import exp as complex_exp
 from collections import Iterable, OrderedDict
@@ -161,6 +163,14 @@ class LinearFilter(LinearFilterProperties):
                                               self.denpoly.terms())
           ):
       raise ValueError("Non-causal filter")
+    if isinstance(self.denpoly[0], Stream): # Variable output gain
+      den = self.denpoly
+      inv_gain = 1 / den[0]
+      den[0] = 0
+      den *= inv_gain.copy()
+      den[0] = 1
+      return ZFilter(self.numpoly * inv_gain, den)(seq, memory=memory,
+                                                   zero=zero)
     if self.denpoly[0] == 0:
       raise ZeroDivisionError("Invalid filter gain")
 
@@ -704,8 +714,8 @@ class ZFilter(meta(LinearFilter, metaclass=ZFilterMeta)):
     if isinstance(other, ZFilter):
       if self.denpoly == other.denpoly:
         return ZFilter(self.numpoly + other.numpoly, self.denpoly)
-      return ZFilter(self.numpoly * other.denpoly +
-                     other.numpoly * self.denpoly,
+      return ZFilter(self.numpoly * other.denpoly.copy() +
+                     other.numpoly * self.denpoly.copy(),
                      self.denpoly * other.denpoly)
     if isinstance(other, LinearFilter):
       raise ValueError("Filter equations have different domains")

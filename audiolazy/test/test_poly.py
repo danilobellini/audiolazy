@@ -456,6 +456,20 @@ class TestPoly(object):
                ) / count(2, 4)
     assert almost_eq(expected.limit(50), result.limit(50))
 
+  def test_setitem(self):
+    poly = x + 2
+    poly[3] = 5
+    assert poly == 5 * x ** 3 + x + 2
+    poly[.2] = 1
+    assert poly == 5 * x ** 3 + x + 2 + x ** .2
+    var_coeff = Stream(1, 2, 3)
+    poly[0] = var_coeff
+    term_iter = poly.terms()
+    power, item = next(term_iter)
+    assert item is var_coeff
+    assert power == 0
+    assert Poly(dict(term_iter)) == 5 * x ** 3 + x + x ** .2
+
 
 class TestLagrange(object):
 

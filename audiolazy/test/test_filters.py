@@ -34,7 +34,7 @@ from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
 from ..lazy_misc import almost_eq, zero_pad
 from ..lazy_compat import orange, xrange, xzip, xmap
 from ..lazy_itertools import cycle, chain
-from ..lazy_stream import Stream
+from ..lazy_stream import Stream, thub
 from ..lazy_math import dB10, dB20, inf
 
 from . import skipper
@@ -117,21 +117,21 @@ class TestZFilter(object):
 
   @p("a", alpha)
   @p("b", alpha)
-  @p("idx_num1", orange(-3,1))
-  @p("idx_den1", orange(-1,3,19))
-  @p("idx_num2", orange(-2,0,14))
-  @p("idx_den2", orange(-18,1))
-  def test_z_division(self, a, b, idx_num1, idx_den1, idx_num2, idx_den2):
-    fa, fb, fc, fd = (a * z ** idx_num1, 2 + b * z ** idx_den1,
-                      3 * z ** idx_num2, 1 + 5 * z ** idx_den2)
-    my_filter1 = fa / fb
-    my_filter2 = fc / fd
-    my_filter = my_filter1 / my_filter2
-    idx_corr = max(idx_num2, idx_num2 + idx_den1)
-    num_filter = fa * fd * (z ** -idx_corr)
-    den_filter = fb * fc * (z ** -idx_corr)
-    assert almost_eq(my_filter.numpoly.terms(), num_filter.numpoly.terms())
-    assert almost_eq(my_filter.denpoly.terms(), den_filter.numpoly.terms())
+  def test_z_division(self, a, b):
+    idx_den1 = -1
+    idx_num2 = -2
+    for idx_num1 in orange(-3,1):
+      for idx_den2 in orange(-18,1):
+        fa, fb, fc, fd = (a * z ** idx_num1, 2 + b * z ** idx_den1,
+                          3 * z ** idx_num2, 1 + 5 * z ** idx_den2)
+        my_filter1 = fa / fb
+        my_filter2 = fc / fd
+        my_filt = my_filter1 / my_filter2
+        idx_corr = max(idx_num2, idx_num2 + idx_den1)
+        num_filter = fa * fd * (z ** -idx_corr)
+        den_filter = fb * fc * (z ** -idx_corr)
+        assert almost_eq(my_filt.numpoly.terms(), num_filter.numpoly.terms())
+        assert almost_eq(my_filt.denpoly.terms(), den_filter.numpoly.terms())
 
   @p("filt", [1 / z / 1,
               (1 / z) ** 1,
@@ -307,6 +307,158 @@ class TestZFilter(object):
     assert isinstance(result_stream, Stream)
     result = result_stream.take(length)
     assert almost_eq(result, expected)
+
+  def test_variable_gain_in_denominator(self):
+    a = Stream(1, 2, 3)
+    filt = 1 / (a - z ** -1)
+    assert isinstance(filt, ZFilter)
+    ainv = Stream(1, .5, 1./3)
+    expected_filt1 = ainv.copy() / (1 - ainv.copy() * z ** -1)
+    assert isinstance(expected_filt1, ZFilter)
+    ai = thub(ainv, 2)
+    expected_filt2 = ai / (1 - ai * z ** -1)
+    assert isinstance(expected_filt2, ZFilter)
+    length = 50
+    expected1 = expected_filt1(cycle(self.data))
+    expected2 = expected_filt2(cycle(self.data))
+    result = filt(cycle(self.data))
+    assert isinstance(expected1, Stream)
+    assert isinstance(expected2, Stream)
+    assert isinstance(result, Stream)
+    r = result.take(length)
+    ex1, ex2 = expected1.take(length), expected2.take(length)
+    assert almost_eq(r, ex1)
+    assert almost_eq(r, ex2)
+    assert almost_eq(ex1, ex2)
+
+  @p("delay", delays)
+  def test_fir_time_variant_sum(self, delay):
+    gain1 = cycle(self.alpha)
+    gain2 = cycle(self.alpha[-2::-1])
+    filt = gain1 * z ** -delay + gain2 * z ** -self.delays[0]
+    length = 50
+    assert isinstance(filt, ZFilter)
+    data_stream1 = cycle(self.alpha) * zero_pad(cycle(self.data), left=delay)
+    data_stream2 = cycle(self.alpha[-2::-1]) * zero_pad(cycle(self.data),
+                                                        left=self.delays[0])
+    expected = data_stream1 + data_stream2
+    result = filt(cycle(self.data))
+    assert isinstance(expected, Stream)
+    assert isinstance(result, Stream)
+    r, ex = result.take(length), expected.take(length)
+    assert almost_eq(r, ex)
+
+  @p("delay", delays)
+  def test_iir_time_variant_sum(self, delay):
+    gain1 = cycle(self.alpha)
+    gain2 = cycle(self.alpha[-2::-1])
+    gain3 = Stream(1, 2, 3)
+    gain4 = Stream(.1, .7, -.5, -1e-3)
+    gain5 = Stream(.1, .2)
+    gain6 = Stream(3, 2, 1, 0)
+    num1 = gain1.copy() * z ** -delay + gain2.copy() * z ** -self.delays[0]
+    assert isinstance(num1, ZFilter)
+    den1 = 1 + gain3.copy() * z ** -(delay + 2)
+    assert isinstance(den1, ZFilter)
+    filt1 = num1 / den1
+    assert isinstance(filt1, ZFilter)
+    num2 = gain4.copy() * z ** -delay + gain5.copy() * z ** -self.delays[-1]
+    assert isinstance(num1, ZFilter)
+    den2 = 1 + gain6.copy() * z ** -(delay - 1)
+    assert isinstance(den2, ZFilter)
+    filt2 = num2 / den2
+    assert isinstance(filt2, ZFilter)
+    filt = filt1 + filt2
+    assert isinstance(filt, ZFilter)
+    length = 90
+    expected_filter = (
+      gain1.copy() * z ** -delay +
+      gain2.copy() * z ** -self.delays[0] +
+      gain1.copy() * gain6.copy() * z ** -(2 * delay - 1) +
+      gain2.copy() * gain6.copy() * z ** -(delay + self.delays[0] - 1) +
+      gain4.copy() * z ** -delay +
+      gain5.copy() * z ** -self.delays[-1] +
+      gain4.copy() * gain3.copy() * z ** -(2 * delay + 2) +
+      gain5.copy() * gain3.copy() * z ** -(delay + self.delays[-1] + 2)
+    ) / (
+      1 +
+      gain3.copy() * z ** -(delay + 2) +
+      gain6.copy() * z ** -(delay - 1) +
+      gain3.copy() * gain6.copy() * z ** -(2 * delay + 1)
+    )
+    assert isinstance(expected_filter, ZFilter)
+    expected = expected_filter(cycle(self.data))
+    result = filt(cycle(self.data))
+    assert isinstance(expected, Stream)
+    assert isinstance(result, Stream)
+    r, ex = result.take(length), expected.take(length)
+    assert almost_eq(r, ex)
+
+  @p("delay", delays)
+  def test_fir_time_variant_multiplication(self, delay):
+    gain1 = cycle(self.alpha)
+    gain2 = cycle(self.alpha[::2])
+    gain3 = 2 + cycle(self.alpha[::3])
+    filt1 = gain1.copy() * z ** -delay + gain2.copy() * z ** -(delay + 1)
+    filt2 = gain2.copy() * z ** -delay + gain3.copy() * z ** -(delay - 1)
+    filt = filt1 * filt2
+    expected_filter = (
+      (gain1.copy() + gain3.copy())* gain2.copy() * z ** -(2 * delay) +
+      gain1.copy() * gain3.copy() * z ** -(2 * delay - 1) +
+      gain2.copy() ** 2 * z ** -(2 * delay + 1)
+    )
+    length = 80
+    assert isinstance(filt1, ZFilter)
+    assert isinstance(filt2, ZFilter)
+    assert isinstance(expected_filter, ZFilter)
+    expected = expected_filter(cycle(self.data))
+    result = filt(cycle(self.data))
+    assert isinstance(expected, Stream)
+    assert isinstance(result, Stream)
+    r, ex = result.take(length), expected.take(length)
+    assert almost_eq(r, ex)
+
+  @p("delay", delays)
+  def test_iir_time_variant_multiplication(self, delay):
+    gain1 = cycle([4, 5, 6, 5, 4, 3])
+    gain2 = cycle(self.alpha[::-1])
+    gain3 = Stream(*(self.alpha + [1, 2, 3]))
+    gain4 = Stream(.1, -.2, .3)
+    gain5 = Stream(.1, .1, .1, -7)
+    gain6 = Stream(3, 2)
+    num1 = gain1.copy() * z ** -delay + gain2.copy() * z ** -self.delays[0]
+    assert isinstance(num1, ZFilter)
+    den1 = 1 + gain3.copy() * z ** -(delay - 1)
+    assert isinstance(den1, ZFilter)
+    filt1 = num1 / den1
+    assert isinstance(filt1, ZFilter)
+    num2 = gain4.copy() * z ** -delay + gain5.copy() * z ** -self.delays[-1]
+    assert isinstance(num1, ZFilter)
+    den2 = 1 + gain6.copy() * z ** -(delay + 5)
+    assert isinstance(den2, ZFilter)
+    filt2 = num2 / den2
+    assert isinstance(filt2, ZFilter)
+    filt = filt1 * filt2
+    assert isinstance(filt, ZFilter)
+    length = 90
+    expected_filter = (
+      gain1.copy() * gain4.copy() * z ** -(2 * delay) +
+      gain2.copy() * gain4.copy() * z ** -(delay + self.delays[0]) +
+      gain1.copy() * gain5.copy() * z ** -(delay + self.delays[-1]) +
+      gain2.copy() * gain5.copy() * z ** -(self.delays[0] + self.delays[-1])
+    ) / (
+      1 +
+      gain3.copy() * z ** -(delay - 1) +
+      gain6.copy() * z ** -(delay + 5) +
+      gain3.copy() * gain6.copy() * z ** -(2 * delay + 4)
+    )
+    assert isinstance(expected_filter, ZFilter)
+    expected = expected_filter(cycle(self.data))
+    result = filt(cycle(self.data))
+    assert isinstance(expected, Stream)
+    assert isinstance(result, Stream)
+    r, ex = result.take(length), expected.take(length)
+    assert almost_eq(r, ex)
 
 
 @p("filt_class", [CascadeFilter, ParallelFilter])

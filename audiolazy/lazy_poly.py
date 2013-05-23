@@ -264,6 +264,9 @@ class Poly(meta(metaclass=PolyMeta)):
     else:
       return self.zero
 
+  def __setitem__(self, power, item):
+    self.data[power] = item
+
   # ---------------------
   # Elementwise operators
   # ---------------------

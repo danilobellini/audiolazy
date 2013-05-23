@@ -34,10 +34,10 @@ AudioLazy changes history
 
 + general:
 
+  - Now with 82% code coverage in tests
   - Mock testing for audio output
   - Bugfixes (``envelope.abs``, ``midi2str``, ``StreamTeeHub.blocks``, etc.)
   - Extended domain for some functions by using ``inf`` and ``nan``
-  - Now with 5900+ tests and 82% code coverage
   - Removed deprecated ``Stream.tee()`` method
   - Constants ``DEFAULT_CHUNK_SIZE`` and ``LATEX_PI_SYMBOL`` were removed:
     the default values are now changeable and inside ``chunks`` and
@@ -70,6 +70,11 @@ AudioLazy changes history
     interface
   - Now StrategyDict changes the module ``__test__`` so that doctests from
     strategies are found by the doctest finder.
+
++ lazy_filters:
+
+  - ZFilter instances are now better prepared for Stream coeffs and
+    operator-based filter creation
 
 + lazy_io:
 
@@ -106,7 +111,7 @@ AudioLazy changes history
     instances, and the ``zero`` from the caller Poly is always kept in
     result (this includes many bugfixes)
   - Poly instances are now better prepared for Stream coeffs and evaluation,
-    including a helper ``Poly.copy()`` method
+    including a helper ``Poly.copy()`` method and a set item method
 
 + lazy_stream:
 
