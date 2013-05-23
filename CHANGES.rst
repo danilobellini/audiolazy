@@ -74,7 +74,7 @@ AudioLazy changes history
 + lazy_filters:
 
   - ZFilter instances are now better prepared for Stream coeffs and
-    operator-based filter creation
+    operator-based filter creation, as well as a new copy helper method
 
 + lazy_io:
 

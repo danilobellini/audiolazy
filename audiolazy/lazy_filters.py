@@ -314,6 +314,18 @@ class LinearFilter(LinearFilterProperties):
     """
     return all(delay >= 0 for delay, value in self.numpoly.terms())
 
+  def copy(self):
+    """
+    Returns a filter copy.
+
+    It'll return a LinearFilter instance (more specific class when
+    subclassing) with the same terms in both numerator and denominator, but
+    as a "T" (tee) copy when the coefficients are Stream instances, allowing
+    maths using a filter more than once.
+
+    """
+    return type(self)(self.numpoly.copy(), self.denpoly.copy())
+
   def linearize(self):
     """
     Linear interpolation of fractional delay values.

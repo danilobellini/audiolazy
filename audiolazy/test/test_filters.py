@@ -460,6 +460,41 @@ class TestZFilter(object):
     r, ex = result.take(length), expected.take(length)
     assert almost_eq(r, ex)
 
+  def test_copy(self):
+    filt1 = (2 + Stream(1, 2, 3) * z ** -1) / Stream(1, 5)
+    filt2 = filt1.copy()
+    assert isinstance(filt2, ZFilter)
+    assert filt1 is not filt2
+    filt_ex = Stream(2, .4) + Stream(1, .4, 3, .2, 2, .6) * z ** -1
+    length = 50
+    r1 = filt1(cycle(self.data[::-1])).take(length)
+    r2 = filt2(cycle(self.data[::-1])).take(length)
+    ex = filt_ex(cycle(self.data[::-1])).take(length)
+    assert almost_eq(r1, ex)
+    assert almost_eq(r2, ex)
+    assert almost_eq(r1, r2)
+
+  @p("delay", delays)
+  def test_iir_time_variant_sum_with_copy(self, delay):
+    k = thub(min(self.alpha) + 2 + cycle(self.alpha), 3)
+    filt = z ** -2 / k + Stream(5, 7) * z / (1 + z ** -delay)
+    filt += filt.copy()
+    filt *= z ** -1
+    assert isinstance(filt, ZFilter)
+    length = 40
+    expected_filter = (
+      2 / k * z ** -3 +
+      2 / k * z ** -(delay + 3) +
+      Stream(10, 14)
+    ) / (1 + z ** -delay)
+    assert isinstance(expected_filter, ZFilter)
+    expected = expected_filter(cycle(self.data))
+    result = filt(cycle(self.data))
+    assert isinstance(expected, Stream)
+    assert isinstance(result, Stream)
+    r, ex = result.take(length), expected.take(length)
+    assert almost_eq(r, ex)
+
 
 @p("filt_class", [CascadeFilter, ParallelFilter])
 class TestCascadeAndParallelFilters(object):
