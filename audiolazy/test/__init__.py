@@ -22,7 +22,7 @@ AudioLazy testing sub-package
 
 import pytest
 import types
-import sys
+from importlib import import_module, sys
 
 # Audiolazy internal imports
 from ..lazy_compat import meta
@@ -69,7 +69,9 @@ class XFailerModule(types.ModuleType):
   """
   def __init__(self, name):
     try:
-      exec("import {}".format(name))
+      if isinstance(import_module(name.split(".", 1)[0]), XFailerModule):
+        raise ImportError
+      import_module(name)
     except ImportError:
       sys.modules[name] = self
       self.__name__ = name
