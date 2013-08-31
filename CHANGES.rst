@@ -31,6 +31,7 @@ AudioLazy changes history
   - Now the Bach choral player can play in loop
   - New DFT-based pitch follower (guitar tuner like) and better ZCR-based
     pitch follower by using a simple limiter
+  - Butterworth filter from SciPy as a ZFilter instance, with plots
 
 + general:
 
