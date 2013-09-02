@@ -20,8 +20,9 @@
 """
 Butterworth filter from SciPy as a ZFilter instance, with plots
 
-One resonator (first order filter) is used for comparison with the given
-butterworth (third order filter).
+One resonator (first order filter) is used for comparison with the
+butterworth from the example (third order filter). Both has zeros at
+1 (DC level) and -1 (Nyquist).
 
 """
 
@@ -49,7 +50,7 @@ print("Bandpass ~3dB range (in Hz):", new_wp / Hz)
 # Resonator using only the frequency and bandwidth from the Butterworth filter
 freq = new_wp.mean()
 bw = new_wp[1] - new_wp[0]
-filt_reson = resonator(freq, bw)
+filt_reson = resonator.z_exp(freq, bw)
 
 # Plots with MatPlotLib
 kwargs = {
@@ -58,7 +59,7 @@ kwargs = {
   "rate": rate, # Ensure frequency unit in plot is Hz
 }
 filt_butter.plot(pylab.figure("From scipy.signal.butter"), **kwargs)
-filt_reson.plot(pylab.figure("From audiolazy.resonator"), **kwargs)
+filt_reson.plot(pylab.figure("From audiolazy.resonator.z_exp"), **kwargs)
 filt_butter.zplot(pylab.figure("Zeros/Poles from scipy.signal.butter"))
-filt_reson.zplot(pylab.figure("Zeros/Poles from audiolazy.resonator"))
+filt_reson.zplot(pylab.figure("Zeros/Poles from audiolazy.resonator.z_exp"))
 pylab.show()
