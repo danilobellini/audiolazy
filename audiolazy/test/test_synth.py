@@ -27,8 +27,8 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
-                          white_noise, TableLookup, fadein, fadeout,
-                          sin_table, saw_table)
+                          white_noise, gauss_noise, TableLookup, fadein,
+                          fadeout, sin_table, saw_table)
 from ..lazy_stream import Stream
 from ..lazy_misc import almost_eq, sHz, blocks, rint
 from ..lazy_compat import orange, xrange, xzip
@@ -162,21 +162,44 @@ class TestWhiteNoise(object):
     for el in my_stream.take(27):
       assert -1 <= el <= 1
 
-  def test_inf_input(self):
-    my_stream = white_noise(inf)
+  @p("high", [1, 0, -.042])
+  def test_inf_input(self, high):
+    my_stream = white_noise(inf, high=high)
     assert isinstance(my_stream, Stream)
     for el in my_stream.take(32):
-      assert -1 <= el <= 1
+      assert -1 <= el <= high
 
   @p("dur", [-1, 0, .4, .5, 1, 2, 10])
-  def test_finite_duration(self, dur):
-    my_stream = white_noise(dur)
+  @p("low", [0, .17])
+  def test_finite_duration(self, dur, low):
+    my_stream = white_noise(dur, low=low)
     assert isinstance(my_stream, Stream)
     dur_int = max(rint(dur), 0)
     my_list = list(my_stream)
     assert len(my_list) == dur_int
     for el in my_list:
-      assert -1 <= el <= 1
+      assert low <= el <= 1
+
+
+class TestGaussNoise(object):
+
+  def test_no_input(self):
+    my_stream = gauss_noise()
+    assert isinstance(my_stream, Stream)
+    assert len(my_stream.take(100)) == 100
+
+  def test_inf_input(self):
+    my_stream = gauss_noise(inf)
+    assert isinstance(my_stream, Stream)
+    assert len(my_stream.take(100)) == 100
+
+  @p("dur", [-1, 0, .4, .5, 1, 2, 10])
+  def test_finite_duration(self, dur):
+    my_stream = gauss_noise(dur)
+    assert isinstance(my_stream, Stream)
+    dur_int = max(rint(dur), 0)
+    my_list = list(my_stream)
+    assert len(my_list) == dur_int
 
 
 class TestTableLookup(object):

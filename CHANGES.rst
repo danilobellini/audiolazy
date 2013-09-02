@@ -138,6 +138,8 @@ AudioLazy changes history
   - Input "dur" in ``ones()``, ``zeros()``, ``white_noise()`` and
     ``impulse()`` now can be inf (besides None)
   - Impulse now have ``one=1.`` and ``zero=0.`` arguments
+  - New ``gauss_noise`` for Normal / Gaussian-distributed noise
+  - White-noise limits parametrization
 
 + lazy_text (*new!*):
 

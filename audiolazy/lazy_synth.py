@@ -29,11 +29,12 @@ from .lazy_stream import Stream, tostream, AbstractOperatorOverloaderMeta
 from .lazy_itertools import cycle
 from .lazy_filters import comb
 from .lazy_compat import meta, iteritems, xrange, xzip
+from .lazy_misc import rint
 
 __all__ = ["modulo_counter", "line", "fadein", "fadeout", "attack", "ones",
-           "zeros", "zeroes", "adsr", "white_noise", "TableLookupMeta",
-           "TableLookup", "DEFAULT_TABLE_SIZE", "sin_table", "saw_table",
-           "sinusoid", "impulse", "karplus_strong"]
+           "zeros", "zeroes", "adsr", "white_noise", "gauss_noise",
+           "TableLookupMeta", "TableLookup", "DEFAULT_TABLE_SIZE",
+           "sin_table", "saw_table", "sinusoid", "impulse", "karplus_strong"]
 
 
 @tostream
@@ -391,14 +392,16 @@ def adsr(dur, a, d, s, r):
 
 
 @tostream
-def white_noise(dur=None):
+def white_noise(dur=None, low=-1., high=1.):
   """
   White noise stream generator.
 
   Parameters
   ----------
   dur :
-    Duration, in number of samples; endless if not given.
+    Duration, in number of samples; endless if not given (or None).
+  low, high :
+    Lower and higher limits. Defaults to the [-1; 1] range.
 
   Returns
   -------
@@ -407,9 +410,45 @@ def white_noise(dur=None):
   """
   if dur is None or (isinf(dur) and dur > 0):
     while True:
-      yield random.uniform(-1.,1.)
-  for x in xrange(int(.5 + dur)):
-    yield random.uniform(-1.,1.)
+      yield random.uniform(low, high)
+  for x in xrange(rint(dur)):
+    yield random.uniform(low, high)
+
+
+@tostream
+def gauss_noise(dur=None, mu=0., sigma=1.):
+  """
+  Gaussian (normal) noise stream generator.
+
+  Parameters
+  ----------
+  dur :
+    Duration, in number of samples; endless if not given (or None).
+  mu :
+    Distribution mean. Defaults to zero.
+  sigma :
+    Distribution standard deviation. Defaults to one.
+
+  Returns
+  -------
+  Stream yielding Gaussian-distributed random numbers.
+
+  Warning
+  -------
+  This function can yield values outside the [-1; 1] range, and you might
+  need to clip its results.
+
+  See Also
+  --------
+  clip:
+    Clips the signal up to both a lower and a higher limit.
+
+  """
+  if dur is None or (isinf(dur) and dur > 0):
+    while True:
+      yield random.gauss(mu, sigma)
+  for x in xrange(rint(dur)):
+    yield random.gauss(mu, sigma)
 
 
 class TableLookupMeta(AbstractOperatorOverloaderMeta):
