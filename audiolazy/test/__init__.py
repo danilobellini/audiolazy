@@ -21,6 +21,7 @@ AudioLazy testing sub-package
 """
 
 import pytest
+from _pytest.skipping import XFailed
 import types
 from importlib import import_module, sys
 
@@ -61,6 +62,8 @@ class XFailer(meta(metaclass=XFailerMeta)):
   def __getattr__(self, name):
     return self.__call__
 
+  __iter__ = __call__
+
 
 class XFailerModule(types.ModuleType):
   """
@@ -72,7 +75,7 @@ class XFailerModule(types.ModuleType):
       if isinstance(import_module(name.split(".", 1)[0]), XFailerModule):
         raise ImportError
       import_module(name)
-    except ImportError:
+    except (ImportError, XFailed):
       sys.modules[name] = self
       self.__name__ = name
 
@@ -86,8 +89,8 @@ class XFailerModule(types.ModuleType):
 XFailerModule("numpy")
 XFailerModule("numpy.fft")
 XFailerModule("numpy.linalg")
-XFailerModule("pyaudio")
 XFailerModule("_portaudio")
+XFailerModule("pyaudio")
 XFailerModule("scipy")
 XFailerModule("scipy.optimize")
 XFailerModule("scipy.signal")
