@@ -320,7 +320,7 @@ def small_doc(obj, indent="", max_width=80):
   For other inputs, it will use themselves cast to string as their docstring.
 
   """
-  if not "__doc__" in getattr(obj, "__dict__", {}):
+  if not getattr(obj, "__doc__", False):
     data = [el.strip() for el in str(obj).splitlines()]
     if len(data) == 1:
       if data[0].startswith("<audiolazy.lazy_"): # Instance

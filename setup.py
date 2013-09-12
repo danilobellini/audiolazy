@@ -73,6 +73,7 @@ metadata["classifiers"] = [
     "GNU General Public License v3 (GPLv3)",
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS",
   "Operating System :: OS Independent",
   "Programming Language :: Python",
   "Programming Language :: Python :: 2",

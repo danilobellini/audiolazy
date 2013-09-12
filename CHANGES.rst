@@ -19,7 +19,7 @@
 AudioLazy changes history
 -------------------------
 
-*** Development ***
+*** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 
 + examples:
 
