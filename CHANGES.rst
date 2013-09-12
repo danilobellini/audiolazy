@@ -19,6 +19,9 @@
 AudioLazy changes history
 -------------------------
 
+*** Development ***
+
+
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 
 + examples:
@@ -143,9 +146,9 @@ AudioLazy changes history
 
 + lazy_text (*new!*):
 
- - Got all text/string formatting functions from lazy_misc.
- - Namespace clean-up: new StrategyDict ``float_str`` embraces older
-   rational/pi/auto formatters in one instance
+  - Got all text/string formatting functions from lazy_misc
+  - Namespace clean-up: new StrategyDict ``float_str`` embraces older
+    rational/pi/auto formatters in one instance
 
 *** Version 0.04 (Documentation, LPC, Plots!) ***
 
