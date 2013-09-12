@@ -21,7 +21,7 @@ AudioLazy
 
 Real-Time Expressive Digital Signal Processing (DSP) Package for Python!
 
-Lazyness and object representation
+Laziness and object representation
 ----------------------------------
 
 There are several tools and packages that let the Python use and
@@ -29,7 +29,7 @@ expressiveness look like languages such as MatLab and Octave. However, the
 eager evaluation done by most of these tools make it difficult, perhaps
 impossible, to use them for real time audio processing. To avoid such
 eagerness, one can make the calculations only when data is requested, not
-when the path to the data is given. This is the core idea in lazyness that
+when the path to the data is given. This is the core idea in laziness that
 allows:
 
 - Real-time application (you don't need to wait until all data is
@@ -168,7 +168,8 @@ might need:
   or roots from a polynomial;
 - MatPlotLib: needed for all default plotting, like in ``LinearFilter.plot``
   method and several examples;
-- SciPy (testing only): used as an oracle for LTI filter testing;
+- SciPy (testing and examples only): used as an oracle for LTI filter testing
+  and for the Butterworth filter example;
 - pytest, pytest-cov and pytest-timeout (testing only): runs test suite and
   shows code coverage status;
 - wxPython (example only): used by one example with FM synthesis in an
@@ -343,6 +344,5 @@ package works and how to use it.
 ----
 
 Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
-- danilo [dot] bellini [at] gmail [dot] com
 
 License is GPLv3. See COPYING.txt for more details.
