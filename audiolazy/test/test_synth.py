@@ -128,6 +128,19 @@ class TestModuloCounter(object):
                 15, 16, 18, 19, 21, 22, 24, 25, 0, 1, 3, 4, 6, 7]
     assert mc1.take(len(expected)) == mc2.take(len(expected)) == expected
 
+  classes = (float, Stream)
+
+  @p("start", [-1e-16, -1e-100])
+  @p("cstart", classes)
+  @p("cmodulo", classes)
+  @p("cstep", classes)
+  def test_bizarre_modulo(self, start, cstart, cmodulo, cstep):
+    # Not really a modulo counter issue, but used by modulo counter
+    for step in xrange(2, 900):
+      mc = modulo_counter(cstart(start),
+                          cmodulo(step),
+                          cstep(step))
+      assert all(mc.limit(4) < step)
 
 @p(("func", "data"),
    [(ones, 1.0),

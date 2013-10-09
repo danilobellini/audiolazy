@@ -56,14 +56,14 @@ def modulo_counter(start=0., modulo=256., step=1.):
       if isinstance(modulo, collections.Iterable):
         for p, m, s in xzip(start, modulo, step):
           c += p - lastp
-          c %= m
+          c = c % m % m
           yield c
           c += s
           lastp = p
       else:
         for p, s in xzip(start, step):
           c += p - lastp
-          c %= modulo
+          c = c % modulo % modulo
           yield c
           c += s
           lastp = p
@@ -71,30 +71,30 @@ def modulo_counter(start=0., modulo=256., step=1.):
       if isinstance(modulo, collections.Iterable):
         for p, m in xzip(start, modulo):
           c += p - lastp
-          c %= m
+          c = c % m % m
           yield c
           c += step
           lastp = p
       else: # Only start is iterable. This should be optimized!
         if step == 0:
           for p in start:
-            yield p % modulo
+            yield p % modulo % modulo
         else:
           steps = int(modulo / step)
           if steps > 1:
             n = 0
             for p in start:
               c += p - lastp
-              yield (c + n * step) % modulo
+              yield (c + n * step) % modulo % modulo
               lastp = p
               n += 1
               if n == steps:
                 n = 0
-                c = (c + steps * step) % modulo
+                c = (c + steps * step) % modulo % modulo
           else:
             for p in start:
               c += p - lastp
-              c %= modulo
+              c = c % modulo % modulo
               yield c
               c += step
               lastp = p
@@ -103,23 +103,23 @@ def modulo_counter(start=0., modulo=256., step=1.):
     if isinstance(step, collections.Iterable):
       if isinstance(modulo, collections.Iterable):
         for m, s in xzip(modulo, step):
-          c %= m
+          c = c % m % m
           yield c
           c += s
       else: # Only step is iterable. This should be optimized!
         for s in step:
-          c %= modulo
+          c = c % modulo % modulo
           yield c
           c += s
     else:
       if isinstance(modulo, collections.Iterable):
         for m in modulo:
-          c %= m
+          c = c % m % m
           yield c
           c += step
       else: # None is iterable
         if step == 0:
-          c = start % modulo
+          c = start % modulo % modulo
           while True:
             yield c
         else:
@@ -127,14 +127,14 @@ def modulo_counter(start=0., modulo=256., step=1.):
           if steps > 1:
             n = 0
             while True:
-              yield (c + n * step) % modulo
+              yield (c + n * step) % modulo % modulo
               n += 1
               if n == steps:
                 n = 0
-                c = (c + steps * step) % modulo
+                c = (c + steps * step) % modulo % modulo
           else:
             while True:
-              c %= modulo
+              c = c % modulo % modulo
               yield c
               c += step
 
