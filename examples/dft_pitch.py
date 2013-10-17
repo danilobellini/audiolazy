@@ -71,7 +71,8 @@ if __name__ == "__main__":
   tk = tkinter.Tk()
   tk.title(__doc__.strip().splitlines()[0])
   lbldata = tkinter.StringVar(tk)
-  lbltext = tkinter.Label(tk, textvariable=lbldata)
+  lbltext = tkinter.Label(tk, textvariable=lbldata, font=("Purisa", 72),
+                          width=10)
   lbltext.pack(expand=True, fill=tkinter.BOTH)
   btnclose = tkinter.Button(tk, text="Close", command=tk.destroy,
                             default="active")

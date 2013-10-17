@@ -21,6 +21,10 @@ AudioLazy changes history
 
 *** Development ***
 
++ examples:
+
+  - Aesthetics for the Tkinter GUI examples
+
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 
