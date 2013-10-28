@@ -24,6 +24,7 @@ AudioLazy changes history
 + examples:
 
   - Formant synthesis for voiced "ah-eh-ee-oh-oo"
+  - Musical keyboard synth example with a QWERTY keyboard
   - Aesthetics for the Tkinter GUI examples
 
 
