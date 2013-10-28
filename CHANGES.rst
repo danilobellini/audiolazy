@@ -23,6 +23,7 @@ AudioLazy changes history
 
 + examples:
 
+  - Formant synthesis for voiced "ah-eh-ee-oh-oo"
   - Aesthetics for the Tkinter GUI examples
 
 
