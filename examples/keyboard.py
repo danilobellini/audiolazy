@@ -31,8 +31,9 @@ except ImportError:
 keys = "awsedftgyhujkolp;" # Chromatic scale
 first_note = str2midi("C3")
 
-pairs = list(enumerate(keys.upper(), 12)) + list(enumerate(keys))
-notes = {k: midi2freq(first_note + idx) for idx, k in pairs}
+pairs = list(enumerate(keys.upper(), first_note + 12)) + \
+        list(enumerate(keys, first_note))
+notes = {k: midi2freq(idx) for idx, k in pairs}
 synth = saw_table
 
 txt = """
@@ -74,7 +75,15 @@ class ChangeableStream(Stream):
     while True:
       yield next(self._data)
 
+has_after = None
+
 def on_key_down(evt):
+  # Ignores key up if it came together with a key down (debounce)
+  global has_after
+  if has_after:
+    tk.after_cancel(has_after)
+    has_after = None
+
   ch = evt.char
   if not ch in cstreams and ch in notes:
     # Prepares the synth
@@ -83,16 +92,19 @@ def on_key_down(evt):
     env = line(attack, 0, level).append(cs)
     snd = env * synth(freq * Hz)
 
-    # Mix it, storing the Control so that
+    # Mix it, storing the ChangeableStream to be changed afterwards
     cstreams[ch] = cs
     smix.add(0, snd)
 
 def on_key_up(evt):
+  global has_after
+  has_after = tk.after_idle(on_key_up_process, evt)
+
+def on_key_up_process(evt):
   ch = evt.char
   if ch in cstreams:
     cstreams[ch].limit(0).append(line(release, level, 0))
     del cstreams[ch]
-
 
 tk.bind("<KeyPress>", on_key_down)
 tk.bind("<KeyRelease>", on_key_up)
