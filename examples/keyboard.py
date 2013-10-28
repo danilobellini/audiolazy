@@ -21,7 +21,8 @@
 Musical keyboard synth example with a QWERTY keyboard
 """
 
-from audiolazy import *
+from audiolazy import (str2midi, midi2freq, saw_table, sHz, Streamix, Stream,
+                       line, AudioIO)
 try:
   import tkinter
 except ImportError:
@@ -32,7 +33,6 @@ first_note = str2midi("C3")
 
 pairs = list(enumerate(keys.upper(), 12)) + list(enumerate(keys))
 notes = {k: midi2freq(first_note + idx) for idx, k in pairs}
-threads = {}
 synth = saw_table
 
 txt = """
@@ -57,23 +57,46 @@ lbl.pack(expand=True, fill=tkinter.BOTH)
 rate = 44100
 s, Hz = sHz(rate)
 ms = 1e-3 * s
+attack = 30 * ms
+release = 50 * ms
+level = .2 # Highest amplitude value per note
+
+smix = Streamix(True)
+cstreams = {}
+
+class ChangeableStream(Stream):
+  """
+  Stream that can be changed after being used if the limit/append methods are
+  called while playing. It uses an iterator that keep taking samples from the
+  Stream instead of an iterator to the internal data itself.
+  """
+  def __iter__(self):
+    while True:
+      yield next(self._data)
+
+def on_key_down(evt):
+  ch = evt.char
+  if not ch in cstreams and ch in notes:
+    # Prepares the synth
+    freq = notes[ch]
+    cs = ChangeableStream(level)
+    env = line(attack, 0, level).append(cs)
+    snd = env * synth(freq * Hz)
+
+    # Mix it, storing the Control so that
+    cstreams[ch] = cs
+    smix.add(0, snd)
+
+def on_key_up(evt):
+  ch = evt.char
+  if ch in cstreams:
+    cstreams[ch].limit(0).append(line(release, level, 0))
+    del cstreams[ch]
+
+
+tk.bind("<KeyPress>", on_key_down)
+tk.bind("<KeyRelease>", on_key_up)
 
 with AudioIO() as player:
-
-  def on_key_down(evt):
-    ch = evt.char
-    if not ch in threads and ch in notes:
-      freq = notes[ch]
-      snd = line(50 * ms, 0, .2).append(.2) * synth(freq * Hz)
-      threads[ch] = player.play(snd, rate=rate)
-
-  def on_key_up(evt):
-    ch = evt.char
-    if ch in threads:
-      threads[ch].stop()
-      del threads[ch]
-
-  tk.bind("<KeyPress>", on_key_down)
-  tk.bind("<KeyRelease>", on_key_up)
-
+  player.play(smix, rate=rate)
   tk.mainloop()
