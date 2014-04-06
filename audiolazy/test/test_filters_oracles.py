@@ -17,7 +17,7 @@
 # Created on Sat Oct 06 2012
 # danilo [dot] bellini [at] gmail [dot] com
 """
-Testing module for the lazy_filters module by using scipy as an oracle
+Testing module for the lazy_filters module by using Numpy/Scipy as oracles
 """
 
 import pytest
@@ -26,12 +26,15 @@ p = pytest.mark.parametrize
 from scipy.signal import lfilter
 from scipy.optimize import fminbound
 from math import cos, pi, sqrt
+from numpy import mat
 
 # Audiolazy internal imports
-from ..lazy_filters import ZFilter, resonator
+from ..lazy_filters import ZFilter, resonator, z
 from ..lazy_misc import almost_eq
-from ..lazy_compat import orange, xrange
+from ..lazy_compat import orange, xrange, xzip
 from ..lazy_math import dB20
+from ..lazy_itertools import repeat, cycle, count
+from ..lazy_stream import Stream
 
 
 class TestZFilterScipy(object):
@@ -74,3 +77,43 @@ class TestResonatorScipy(object):
 
     else: # Given frequency is the resonance frequency
       assert almost_eq(freq, resonance_freq)
+
+
+class TestZFilterMatrixNumpy(object):
+
+  def test_matrix_coefficients_multiplication(self):
+    m = mat([[1, 2], [2, 2]])
+    n1 = mat([[1.2, 3.2], [1.2, 1.1]])
+    n2 = mat([[-1, 2], [-1, 2]])
+    a = mat([[.3, .4], [.5, .6]])
+
+    # Time-varying filter with 2x2 matrices as coeffs
+    mc = repeat(m)
+    nc = cycle([n1, n2])
+    ac = repeat(a)
+    filt = (mc + nc * z ** -1) / (1 - ac * z ** -1)
+
+    # For a time-varying 2x3 matrix signal
+    data = [
+      Stream(1, 2),
+      count(),
+      count(start=1, step=2),
+      cycle([.2, .33, .77, pi, cos(3)]),
+      repeat(pi),
+      count(start=sqrt(2), step=pi/3),
+    ]
+
+    data_copy = [el.copy() for el in data]
+    sig = Stream(mat(vect).reshape(2, 3) for vect in xzip(*data))
+    zero = mat([[0, 0, 0], [0, 0, 0]])
+    result = filt(sig, zero=zero).limit(30)
+
+    in_sample = old_out_sample = zero
+    n, not_n = n1, n2
+    for expected_out_sample in result:
+      old_in_sample = in_sample
+      in_sample = mat([s.take() for s in data_copy]).reshape(2, 3)
+      out_sample = m * in_sample + n * old_in_sample + a * old_out_sample
+      assert almost_eq(out_sample.tolist(), expected_out_sample.tolist())
+      n, not_n = not_n, n
+      old_out_sample = out_sample

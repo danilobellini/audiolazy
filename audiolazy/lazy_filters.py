@@ -201,19 +201,19 @@ class LinearFilter(LinearFilterProperties):
     for delay, coeff in iteritems(self.numdict):
       if isinstance(coeff, Iterable):
         num_iterables.append(delay)
-        data_sum.append("d{idx} * next(b{idx})".format(idx=delay))
+        data_sum.append("next(b{idx}) * d{idx}".format(idx=delay))
       elif coeff == 1:
         data_sum.append("d{idx}".format(idx=delay))
       elif coeff == -1:
         data_sum.append("-d{idx}".format(idx=delay))
       elif coeff != 0:
-        data_sum.append("d{idx} * {value}".format(idx=delay, value=coeff))
+        data_sum.append("{value} * d{idx}".format(idx=delay, value=coeff))
 
     den_iterables = []
     for delay, coeff in iteritems(self.dendict):
       if isinstance(coeff, Iterable):
         den_iterables.append(delay)
-        data_sum.append("-m{idx} * next(a{idx})".format(idx=delay))
+        data_sum.append("-next(a{idx}) * m{idx}".format(idx=delay))
       elif delay == 0:
         gain = coeff
       elif coeff == -1:
@@ -221,11 +221,11 @@ class LinearFilter(LinearFilterProperties):
       elif coeff == 1:
         data_sum.append("-m{idx}".format(idx=delay))
       elif coeff != 0:
-        data_sum.append("-m{idx} * {value}".format(idx=delay, value=coeff))
+        data_sum.append("-{value} * m{idx}".format(idx=delay, value=coeff))
 
     # Creates the generator function for this call
     if len(data_sum) == 0:
-      gen_func =  ["def gen(seq):",
+      gen_func =  ["def gen(seq, memory, zero):",
                    "  for unused in seq:",
                    "    yield {zero}".format(zero=zero)
                   ]
@@ -236,14 +236,18 @@ class LinearFilter(LinearFilterProperties):
       elif gain != 1:
         expr = "({expr}) / {gain}".format(expr=expr, gain=gain)
 
-      arg_names = ["seq"]
+      arg_names = ["seq", "memory", "zero"]
       arg_names.extend("b{idx}".format(idx=idx) for idx in num_iterables)
       arg_names.extend("a{idx}".format(idx=idx) for idx in den_iterables)
       gen_func =  ["def gen({args}):".format(args=", ".join(arg_names))]
-      gen_func += ["  m{idx} = {value}".format(idx=idx, value=value)
-                   for idx, value in enumerate(memory, 1)]
-      gen_func += ["  d{idx} = {value}".format(idx=idx, value=zero)
-                   for idx in xrange(1, lb)]
+      if la > 1:
+        gen_func += ["  {m_vars} = memory".format(m_vars=" ".join(
+                      ["m{} ,".format(el) for el in xrange(1, la)]
+                    ))]
+      if lb > 1:
+        gen_func += ["  {d_vars} = zero".format(d_vars=" = ".join(
+                      ["d{}".format(el) for el in xrange(1, lb)]
+                    ))]
       gen_func += ["  for d0 in seq:",
                    "    m0 = {expr}".format(expr=expr),
                    "    yield m0"]
@@ -254,7 +258,7 @@ class LinearFilter(LinearFilterProperties):
 
     # Uses the generator function to return the desired values
     gen = _exec_eval("\n".join(gen_func), "gen")
-    arguments = [iter(seq)]
+    arguments = [iter(seq), memory, zero]
     arguments.extend(iter(self.numpoly[idx]) for idx in num_iterables)
     arguments.extend(iter(self.denpoly[idx]) for idx in den_iterables)
     return Stream(gen(*arguments))
