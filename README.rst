@@ -170,7 +170,8 @@ might need:
   method and several examples;
 - SciPy (testing and examples only): used as an oracle for LTI filter testing
   and for the Butterworth filter example;
-- pytest, pytest-cov and pytest-timeout (testing only): runs test suite and
+- tox for testing all at once, or pytest, pytest-cov and pytest-timeout for
+  testing in a single environment (testing only): runs test suite and
   shows code coverage status;
 - wxPython (example only): used by one example with FM synthesis in an
   interactive GUI;

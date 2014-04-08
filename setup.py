@@ -22,7 +22,18 @@ AudioLazy package setup file
 """
 
 from setuptools import setup
+from setuptools.command.test import test as TestClass
 import os
+
+class Tox(TestClass):
+    def finalize_options(self):
+        TestClass.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+    def run_tests(self):
+        import sys, tox, os
+        os.chdir("audiolazy")
+        sys.exit(tox.cmdline(self.test_args))
 
 path = os.path.split(__file__)[0]
 pkgname = "audiolazy"
@@ -96,4 +107,6 @@ metadata["classifiers"] = [
 # Finish
 metadata["name"] = pkgname
 metadata["packages"] = [pkgname]
+metadata["tests_require"] = ["tox"]
+metadata["cmdclass"] = {"test": Tox}
 setup(**metadata)
