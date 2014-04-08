@@ -170,6 +170,8 @@ might need:
   method and several examples;
 - SciPy (testing and examples only): used as an oracle for LTI filter testing
   and for the Butterworth filter example;
+- Sympy (testing only): used for testing linear filters with time-varying
+  matrices of symbolic coeffs where the Stream samples are these matrices;
 - tox for testing all at once, or pytest, pytest-cov and pytest-timeout for
   testing in a single environment (testing only): runs test suite and
   shows code coverage status;
