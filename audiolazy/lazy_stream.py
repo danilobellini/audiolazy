@@ -84,7 +84,7 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
   >>> z = 2*x + y
   Traceback (most recent call last):
       ...
-  TypeError: unsupported operand type(s) for *: 'int' and 'itertools.count'
+  TypeError: unsupported operand type(s) for *: 'int' and ...
 
   That won't work with standard itertools. That's an error, and not only
   __mul__ but also __add__ isn't supported by their types. On the other hand,
