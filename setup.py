@@ -26,14 +26,17 @@ from setuptools.command.test import test as TestClass
 import os
 
 class Tox(TestClass):
-    def finalize_options(self):
-        TestClass.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-    def run_tests(self):
-        import sys, tox, os
-        os.chdir("audiolazy")
-        sys.exit(tox.cmdline(self.test_args))
+  user_options = []
+
+  def finalize_options(self):
+    TestClass.finalize_options(self)
+    self.test_args = ["-v"] if self.verbose else []
+    self.test_suite = True
+
+  def run_tests(self):
+    import sys, tox, os
+    os.chdir("audiolazy")
+    sys.exit(tox.cmdline(self.test_args))
 
 path = os.path.split(__file__)[0]
 pkgname = "audiolazy"
@@ -57,8 +60,8 @@ for idx, el in enumerate(readme_data[1:]):
     break
 
 # Then gets the data
-title, descr, ldescr = readme_data.split("\n\n", 2)
-ldescr = "\n\n".join([title, ldescr]).rsplit("----", 1)[0].strip()
+title, travis, descr, ldescr = readme_data.split("\n\n", 3)
+ldescr = "\n\n".join([title, travis, ldescr]).rsplit("----", 1)[0].strip()
 metadata["description"] = descr
 
 # Correction for image links

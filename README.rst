@@ -19,6 +19,9 @@
 AudioLazy
 =========
 
+.. image:: https://travis-ci.org/danilobellini/audiolazy.svg?branch=master
+  :target: https://travis-ci.org/danilobellini/audiolazy
+
 Real-Time Expressive Digital Signal Processing (DSP) Package for Python!
 
 Laziness and object representation

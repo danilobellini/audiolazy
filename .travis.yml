@@ -1,0 +1,17 @@
+language: python
+
+env:
+  - TOXENV=py27
+  - TOXENV=py32
+  - TOXENV=py33
+  - TOXENV=py34
+  - TOXENV=pypy
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev
+                             gfortran python3.4-complete
+
+install: pip install tox --use-mirrors
+script: python setup.py test -v
+
