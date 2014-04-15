@@ -1318,7 +1318,7 @@ def lowpass(cutoff):
 def lowpass(cutoff):
   """
   Low-pass filter with one pole and no zeros (constant numerator), with
-  exponential approximation for cut-off frequency calculation, found by a
+  exponential approximation for cut-off frequency calculation, found by
   matching the one-pole Laplace lowpass filter.
 
   Parameters
@@ -1335,6 +1335,7 @@ def lowpass(cutoff):
   A ZFilter object.
   Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
   frequency (zero rad/sample).
+  Cut-off frequency is unreliable outside the [0; pi / 6] range.
 
   """
   cutoff = thub(cutoff, 1)
@@ -1372,4 +1373,33 @@ def highpass(cutoff):
   x = thub(x,2)
   R = x - sqrt(x ** 2 - 1)
   R = thub(R, 2)
+  return (1 - R) / (1 + R * z ** -1)
+
+
+@highpass.strategy("pole_exp")
+def highpass(cutoff):
+  """
+  High-pass filter with one pole and no zeros (constant numerator), with
+  exponential approximation for cut-off frequency calculation, found by
+  matching the one-pole Laplace lowpass filter and mirroring the resulting
+  pole to be negative.
+
+  Parameters
+  ----------
+  cutoff :
+    Cut-off frequency in rad/sample following the equation:
+
+      ``R = exp(cutoff - pi)``
+
+    where R is the pole amplitude (radius).
+
+  Returns
+  -------
+  A ZFilter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the Nyquist
+  frequency (pi rad/sample).
+  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
+
+  """
+  R = thub(exp(thub(cutoff - pi, 1)), 2)
   return (1 - R) / (1 + R * z ** -1)

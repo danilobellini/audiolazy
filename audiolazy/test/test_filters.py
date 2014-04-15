@@ -36,6 +36,7 @@ from ..lazy_compat import orange, xrange, xzip, xmap
 from ..lazy_itertools import cycle, chain
 from ..lazy_stream import Stream, thub
 from ..lazy_math import dB10, dB20, inf
+from ..lazy_synth import line
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -608,4 +609,38 @@ class TestLowpassHighpass(object):
   def test_3dB_gain(self, filt_func, freq):
     filt = filt_func(freq)
     ref_gain = dB10(.5) # -3.0103 dB
-    assert almost_eq.diff(dB20(filt.freq_response(freq)), ref_gain)
+    assert almost_eq(dB20(filt.freq_response(freq)), ref_gain)
+
+  @p("sdict", [lowpass, highpass])
+  @p(("freq", "tol"), list(xzip(
+    [pi/300, pi / 30, pi / 15, pi/10, 2 * pi/15, pi / 6],
+    [7, 13, 15, 16, 17, 18] # At least 5 significand bits should be ok!
+  )))
+  def test_pole_exp_for_small_cutoff_frequencies(self, sdict, freq, tol):
+    if sdict is highpass:
+      freq = pi - freq # To use the reliable range
+    filt = sdict.pole_exp(freq)
+    expected = sdict.pole(freq)
+    assert almost_eq(filt.numerator, expected.numerator, tol=tol)
+    assert almost_eq(filt.denominator, expected.denominator, tol=tol)
+    assert almost_eq(abs(filt.freq_response(freq)), .5 ** .5, tol=tol)
+    assert almost_eq.diff(dB20(filt.freq_response(freq)), dB10(.5),
+                          max_diff=.1)
+
+  @p("filt_func", lowpass)
+  @p("freq", [pi * k / 7 for k in xrange(1, 7)])
+  def test_lowpass_is_lowpass(self, filt_func, freq):
+    filt = filt_func(freq)
+    assert almost_eq(abs(filt.freq_response(0.)), 1.)
+    freqs = line(50, 0, pi)
+    for a, b in filt.freq_response(freqs).map(abs).blocks(size=2, hop=1):
+      assert b < a
+
+  @p("filt_func", highpass)
+  @p("freq", [pi * k / 7 for k in xrange(1, 7)])
+  def test_highpass_is_highpass(self, filt_func, freq):
+    filt = filt_func(freq)
+    assert almost_eq(abs(filt.freq_response(pi)), 1.)
+    freqs = line(50, 0, pi)
+    for a, b in filt.freq_response(freqs).map(abs).blocks(size=2, hop=1):
+      assert a < b
