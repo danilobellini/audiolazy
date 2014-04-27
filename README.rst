@@ -21,6 +21,12 @@ AudioLazy
 
 .. image:: https://travis-ci.org/danilobellini/audiolazy.svg?branch=master
   :target: https://travis-ci.org/danilobellini/audiolazy
+.. image:: https://coveralls.io/repos/danilobellini/audiolazy/badge.png
+  :target: https://coveralls.io/r/danilobellini/audiolazy
+.. image:: https://pypip.in/d/audiolazy/badge.png
+  :target: https://pypi.python.org/pypi/audiolazy/
+.. image:: https://pypip.in/v/audiolazy/badge.png
+  :target: https://pypi.python.org/pypi/audiolazy/
 
 Real-Time Expressive Digital Signal Processing (DSP) Package for Python!
 
