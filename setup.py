@@ -34,8 +34,7 @@ class Tox(TestClass):
     self.test_suite = True
 
   def run_tests(self):
-    import sys, tox, os
-    os.chdir("audiolazy")
+    import sys, tox
     sys.exit(tox.cmdline(self.test_args))
 
 path = os.path.split(__file__)[0]

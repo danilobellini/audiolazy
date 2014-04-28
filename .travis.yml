@@ -14,5 +14,5 @@ before_install:
   - pip install python-coveralls
 install: pip install tox --use-mirrors
 script: python setup.py test -v
-after_success: coveralls -b audiolazy
+after_success: coveralls
 
