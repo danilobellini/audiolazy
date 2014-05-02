@@ -28,6 +28,17 @@ AudioLazy changes history
   - Random synthesis with saving and memoization
   - Aesthetics for the Tkinter GUI examples
 
++ general:
+
+  - Tox for testing with CPython 2.7, 3.2, 3.3 and 3.4, as well as PyPy
+  - Continuous integration wih Travis CI and Coveralls
+
++ lazy_filters:
+
+  - LinearFilter coefficients can now be a Stream of Numpy matrices, as well
+    as Sympy symbols (including symbolic matrices).
+  - New highpass filter strategy ``highpass.pole_exp``
+
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 

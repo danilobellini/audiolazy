@@ -59,8 +59,8 @@ for idx, el in enumerate(readme_data[1:]):
     break
 
 # Then gets the data
-title, travis, descr, ldescr = readme_data.split("\n\n", 3)
-ldescr = "\n\n".join([title, travis, ldescr]).rsplit("----", 1)[0].strip()
+title, pins, descr, ldescr = readme_data.split("\n\n", 3)
+ldescr = "\n\n".join([title, pins, ldescr]).rsplit("----", 1)[0].strip()
 metadata["description"] = descr
 
 # Correction for image links
