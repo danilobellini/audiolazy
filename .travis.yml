@@ -10,8 +10,9 @@ env:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq libatlas-dev libatlas-base-dev liblapack-dev
-                             gfortran python3.4-complete
+                             gfortran
   - pip install python-coveralls
+
 install: pip install tox --use-mirrors
 script: python setup.py test -v
 after_success: coveralls
