@@ -27,7 +27,7 @@ import array
 # Audiolazy internal imports
 from .lazy_stream import Stream
 from .lazy_misc import DEFAULT_SAMPLE_RATE, blocks
-from .lazy_compat import xrange
+from .lazy_compat import xrange, xmap
 from .lazy_math import inf
 from .lazy_core import StrategyDict
 
@@ -171,7 +171,7 @@ class AudioIO(object):
 
   """
 
-  def __init__(self, wait=False):
+  def __init__(self, wait=False, api=None):
     """
     Constructor to PyAudio Multi-thread manager audio IO interface.
     The "wait" input is a boolean about the behaviour on closing the
@@ -180,7 +180,7 @@ class AudioIO(object):
     called.
     """
     import pyaudio
-    self._pa = pyaudio.PyAudio()
+    self._pa = pa = pyaudio.PyAudio()
     self._threads = []
     self.wait = wait # Wait threads to finish at end (constructor parameter)
     self._recordings = []
@@ -189,6 +189,16 @@ class AudioIO(object):
     self.halting = threading.Lock() # Only for "close" method
     self.lock = threading.Lock() # "_threads" access locking
     self.finished = False
+
+    # Choosing the PortAudio API (needed to use Jack)
+    if not (api is None):
+      api_count = pa.get_host_api_count()
+      apis_gen = xmap(pa.get_host_api_info_by_index, xrange(api_count))
+      try:
+        self.api = next(el for el in apis_gen
+                           if el["name"].lower().startswith(api))
+      except StopIteration:
+        raise RuntimeError("API '{}' not found".format(api))
 
   def __del__(self):
     """
@@ -282,7 +292,8 @@ class AudioIO(object):
   def record(self, chunk_size = None,
                    dfmt = "f",
                    nchannels = 1,
-                   rate = DEFAULT_SAMPLE_RATE
+                   rate = DEFAULT_SAMPLE_RATE,
+                   **kwargs
             ):
     """
     Records audio from device into a Stream.
@@ -305,12 +316,17 @@ class AudioIO(object):
     """
     if chunk_size is None:
       chunk_size = chunks.size
+
+    if hasattr(self, "api"):
+      kwargs.setdefault("input_device_index", self.api["defaultInputDevice"])
+
     input_stream = RecStream(self,
                              self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
                                            channels=nchannels,
                                            rate=rate,
                                            frames_per_buffer=chunk_size,
-                                           input=True),
+                                           input=True,
+                                           **kwargs),
                              chunk_size,
                              dfmt
                             )
@@ -332,7 +348,8 @@ class AudioThread(threading.Thread):
                      dfmt = "f",
                      nchannels = 1,
                      rate = DEFAULT_SAMPLE_RATE,
-                     daemon = True # This shouldn't survive after crashes
+                     daemon = True, # This shouldn't survive after crashes
+                     **kwargs
               ):
     """
     Sets a new thread to play the given audio.
@@ -372,12 +389,17 @@ class AudioThread(threading.Thread):
     import _portaudio # Just to be slightly faster (per chunk!)
     self.write_stream = _portaudio.write_stream
 
+    if hasattr(device_manager, "api"):
+      kwargs.setdefault("output_device_index",
+                        device_manager.api["defaultOutputDevice"])
+
     # Open a new audio output stream
     self.stream = device_manager._pa.open(format=_STRUCT2PYAUDIO[dfmt],
                                           channels=nchannels,
                                           rate=rate,
                                           frames_per_buffer=self.chunk_size,
-                                          output=True)
+                                          output=True,
+                                          **kwargs)
 
   def run(self):
     """
@@ -386,6 +408,7 @@ class AudioThread(threading.Thread):
     """
     # From now on, it's multi-thread. Let the force be with them.
     st = self.stream._stream
+
     for chunk in chunks(self.audio,
                         size=self.chunk_size*self.nchannels,
                         dfmt=self.dfmt):

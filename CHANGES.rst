@@ -39,6 +39,13 @@ AudioLazy changes history
     as Sympy symbols (including symbolic matrices).
   - New highpass filter strategy ``highpass.pole_exp``
 
++ lazy_io:
+
+  - New ``api`` keyword argument for AudioIO, allowing e.g. integration with
+    JACK (for now this needs ``chunks.size = 1``)
+  - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to be
+    passed directly to PyAudio
+
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 
