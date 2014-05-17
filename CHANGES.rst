@@ -33,6 +33,12 @@ AudioLazy changes history
   - Tox for testing with CPython 2.7, 3.2, 3.3 and 3.4, as well as PyPy
   - Continuous integration wih Travis CI and Coveralls
 
++ lazy_analysis:
+
+  - New ``overlap_add`` function, allowing resynth after block
+    processing/analysis (using Numpy arrays internally), featuring block
+    size auto-detection and window normalization to keep the [-1; 1] range
+
 + lazy_filters:
 
   - LinearFilter coefficients can now be a Stream of Numpy matrices, as well
@@ -43,8 +49,8 @@ AudioLazy changes history
 
   - New ``api`` keyword argument for AudioIO, allowing e.g. integration with
     JACK (for now this needs ``chunks.size = 1``)
-  - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to be
-    passed directly to PyAudio
+  - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to
+    be passed directly to PyAudio
 
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***

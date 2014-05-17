@@ -20,8 +20,10 @@
 Audio analysis and block processing module
 """
 
+from __future__ import division
+
 from math import cos, pi
-from collections import deque
+from collections import deque, Sequence, Iterable
 
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
@@ -31,7 +33,8 @@ from .lazy_filters import lowpass, z
 from .lazy_compat import xrange
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf"]
+           "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf",
+           "overlap_add"]
 
 
 window = StrategyDict("window")
@@ -601,3 +604,82 @@ def amdf(lag, size):
     return maverage(size)(lzabs(filt(sig, zero=zero)), zero=zero)
 
   return amdf_filter
+
+
+@tostream
+def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
+                normalize=True):
+  """
+  Overlap-add algorithm using Numpy arrays.
+
+  Parameters
+  ----------
+  blk_sig :
+    An iterable of blocks (sequences), such as the ``Stream.blocks`` result.
+  size :
+    Block size for each ``blk_sig`` element, in samples.
+  hop :
+    Number of samples for two adjacent blocks (defaults to the size).
+  wnd :
+    Windowing function to be applied to each block (defaults to
+    ``window.triangular``), or any iterable with exactly ``size``
+    elements. If ``None``, applies a rectangular window.
+  normalize :
+    Flag whether the window should be normalized so that the process could
+    happen in the [-1; 1] range, dividing the window by its hop gain.
+    Default is ``True``.
+
+  Returns
+  -------
+  A Stream instance with the blocks overlapped and added.
+
+  See Also
+  --------
+  Stream.blocks :
+    Splits the Stream instance into blocks with given size and hop.
+  blocks :
+    Same to Stream.blocks but for without using the Stream class.
+
+  Note
+  ----
+  Each block has the window function applied to it and the result is the
+  sum of the blocks without any edge-case special treatment for the first
+  and last few blocks.
+  """
+  import numpy as np
+
+  # Finds the size from data, if needed
+  if size is None:
+    blk_sig = Stream(blk_sig)
+    size = len(blk_sig.peek())
+  if hop is None:
+    hop = size
+
+  # Find the right windowing function to be applied
+  if wnd is None:
+    wnd = np.ones(size)
+  elif callable(wnd) and not isinstance(wnd, Stream):
+    wnd = wnd(size)
+  if isinstance(wnd, Sequence):
+    wnd = np.array(wnd)
+  elif isinstance(wnd, Iterable):
+    wnd = np.hstack(wnd)
+  else:
+    raise TypeError("Window should be an iterable or a callable")
+
+  # Normalization to the [-1; 1] range
+  if normalize:
+    steps = Stream(wnd).blocks(hop).map(np.array)
+    gain = np.sum(np.abs(np.vstack(steps)), 0).max()
+    if gain: # If gain is zero, normalization couldn't have any effect
+      wnd = wnd / gain # Can't use "/=" nor "*=" as Numpy would keep datatype
+
+  # Overlap-add algorithm
+  old = np.zeros(size)
+  for blk in (wnd * blk for blk in blk_sig):
+    blk[:-hop] += old[hop:]
+    for el in blk[:hop]:
+      yield el
+    old = blk
+  for el in old[hop:]: # No more blocks, finish yielding the last one
+    yield el
