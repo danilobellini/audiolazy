@@ -64,62 +64,13 @@ This package was created by Danilo J. S. Bellini and is a free software,
 under the terms of the GPLv3.
 """
 
-import os
-import sys
+# Some dunders and summary docstrings initialization
+__modules__, __all__, __doc__ = \
+  __import__(__name__ + "._internals", fromlist=[__name__]
+            )._init_package(__path__, __name__, __doc__)
 
-# Find all module names
-if "__path__" not in locals(): # Happens with Sphinx
-  __path__ = os.path.split(__file__)[:1]
-__modules_prefix__ = "lazy_"
-__modules__ = sorted({_mname.split(".")[0]
-                      for _mname in os.listdir(__path__[0])
-                      if _mname.startswith(__modules_prefix__)
-                     })
-
-# Imports all modules to the main namespace
-_pkg_name = os.path.split(__path__[0])[1]
-__modules_refs__ = []
-__all__ = []
-for _mname in __modules__:
-  exec("from .{0} import *".format(_mname))
-  _mref = sys.modules[".".join([_pkg_name, _mname])] # The module, actually
-  __modules_refs__.append(_mref)
-  __all__ += _mref.__all__ # __all__ don't include module names
-
-# Updates module docs (now small_doc and rst_table are already in namespace)
-_mdocs_pairs = []
-_maxmlen = 78 - max(len(_mname) for _mname in __modules__)
-for _mname, _mref in zip(__modules__, __modules_refs__):
-  _mref.__doc__ += "\nSummary of module contents: \n\n"
-  _maxclen = 78 - max(len(_obj_name) for _obj_name in _mref.__all__)
-  _table = [(_obj_name, small_doc(getattr(_mref, _obj_name),
-                                  max_width=_maxclen)
-            ) for _obj_name in _mref.__all__]
-  _mref.__doc__ += "\n".join(rst_table(_table, ("Name", "Description")))
-  _mref.__doc__ += "\n"
-
-  # Creates table w/ docstring data from each module
-  _mdocs_pairs.append((_mname, small_doc(_mref, max_width=_maxmlen)))
-
-# Edits the package docstring
-__doc__ += "\nSummary of package modules: \n\n"
-__doc__ += "\n".join(rst_table(_mdocs_pairs, ("Module", "Description")))
-__doc__ += "\n"
-
-# Remove references just for namespace clean-up
-if "_mname" in locals(): # Not all interpreters keep the for loop variable
-  del _mname
-if "_mref" in locals():
-  del _mref
-del _mdocs_pairs
-del _pkg_name
-del _table # At least one module should exist, so this should have existed
-if "_obj_name" in locals():
-  del _obj_name
-del _maxclen
-del _maxmlen
-del os
-del sys
+# Import all modules contents to the main namespace
+exec(("from .{} import *\n" * len(__modules__)).format(*__modules__))
 
 
 #

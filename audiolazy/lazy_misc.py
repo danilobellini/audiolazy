@@ -28,7 +28,7 @@ from math import pi
 import operator
 
 # Audiolazy internal imports
-from .internals import _deprecate
+from ._internals import _deprecate
 from .lazy_compat import (xrange, xzip_longest, STR_TYPES, SOME_GEN_TYPES,
                           iteritems)
 from .lazy_core import StrategyDict

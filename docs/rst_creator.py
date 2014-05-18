@@ -275,7 +275,7 @@ first_line = ":mod:`audiolazy` Package"
 data = [
   first_line,
   "=" * len(first_line),
-  ".. automodule:: audiolazy.__init__",
+  ".. automodule:: audiolazy",
 ]
 save_to_rst("audiolazy", "\n".join(data).strip())
 
