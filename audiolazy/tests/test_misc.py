@@ -26,7 +26,7 @@ p = pytest.mark.parametrize
 import itertools as it
 
 # Audiolazy internal imports
-from ..lazy_misc import rint, elementwise
+from ..lazy_misc import rint, elementwise, freq2lag, lag2freq, almost_eq
 from ..lazy_compat import INT_TYPES, orange, xrange
 
 
@@ -74,3 +74,31 @@ class TestElementwise(object):
     assert type(fg) == type(gen)
     assert list(fx) == orange(0,42*2,2)
     assert list(fg) == list(gen)
+
+
+class TestConverters(object):
+
+  def test_freq_lag_converters_are_inverses(self):
+    for v in [37, 12, .5, -2, 1, .18, 4, 1e19, 2.7e-34]:
+      assert freq2lag(v) == lag2freq(v)
+      values = [lag2freq(freq2lag(v)), freq2lag(lag2freq(v)), v]
+      for a, b in it.permutations(values, 2):
+        assert almost_eq(a, b)
+
+  def test_freq_lag_converters_with_some_values(self):
+    eq = 2.506628274631
+    data = {
+      2.5: 2.5132741228718345,
+       30: 0.20943951023931953,
+        2: 3.141592653589793,
+       eq: eq,
+    } # This doesn't deserve to count as more than one test...
+    for k, v in data.items():
+      assert almost_eq(freq2lag(k), v)
+      assert almost_eq(lag2freq(k), v)
+      assert almost_eq(freq2lag(v), k)
+      assert almost_eq(lag2freq(v), k)
+      assert almost_eq(freq2lag(-k), -v)
+      assert almost_eq(lag2freq(-k), -v)
+      assert almost_eq(freq2lag(-v), -k)
+      assert almost_eq(lag2freq(-v), -k)

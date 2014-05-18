@@ -41,7 +41,7 @@ package contents:
 
   >>> from audiolazy import *
   >>> s, Hz = sHz(44100)
-  >>> delay_a4 = freq_to_lag(440 * Hz)
+  >>> delay_a4 = freq2lag(440 * Hz)
   >>> filt = ParallelFilter(comb.tau(delay_a4, 20 * s),
   ...                       resonator(440 * Hz, bandwidth=100 * Hz)
   ...                      )

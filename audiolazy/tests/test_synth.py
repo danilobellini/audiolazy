@@ -30,10 +30,9 @@ from ..lazy_synth import (modulo_counter, line, impulse, ones, zeros, zeroes,
                           white_noise, gauss_noise, TableLookup, fadein,
                           fadeout, sin_table, saw_table)
 from ..lazy_stream import Stream
-from ..lazy_misc import almost_eq, sHz, blocks, rint
+from ..lazy_misc import almost_eq, sHz, blocks, rint, lag2freq
 from ..lazy_compat import orange, xrange, xzip
 from ..lazy_itertools import count
-from ..lazy_analysis import lag_to_freq
 from ..lazy_math import pi, inf
 
 
@@ -240,7 +239,7 @@ class TestTableLookup(object):
     assert saw_table[0] == -1
     assert saw_table[-1] == 1
     assert saw_table[1] - saw_table[0] > 0
-    data = saw_table(lag_to_freq(30)).take(30)
+    data = saw_table(lag2freq(30)).take(30)
     first_step = data[1] - data[0]
     assert first_step > 0
     for d0, d1 in blocks(data, size=2, hop=1):

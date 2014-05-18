@@ -23,7 +23,7 @@ Random synthesis with saving and memoization
 
 from __future__ import division
 from audiolazy import (sHz, octaves, chain, adsr, gauss_noise, sin_table, pi,
-                       sinusoid, lag_to_freq, Streamix, zeros, clip, lowpass,
+                       sinusoid, lag2freq, Streamix, zeros, clip, lowpass,
                        TableLookup, line, inf, xrange, thub, chunks)
 from random import choice, uniform, randint
 from functools import wraps
@@ -163,7 +163,7 @@ def unpitched_low(dur, idx):
   A list with the synthesized note.
 
   """
-  env = sinusoid(lag_to_freq(dur * 2)).limit(dur) ** 2
+  env = sinusoid(lag2freq(dur * 2)).limit(dur) ** 2
   freq = 40 + 20 * sinusoid(1000 * Hz, phase=uniform(-pi, pi)) # Hz
   result = (low_table(freq * Hz) + low_table(freq * 1.1 * Hz)) * env * .5
   return list(result)

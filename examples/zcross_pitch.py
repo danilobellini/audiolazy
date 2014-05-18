@@ -24,7 +24,7 @@ Pitch follower via zero-crossing rate with Tkinter GUI
 # ------------------------
 # AudioLazy pitch follower
 # ------------------------
-from audiolazy import (tostream, zcross, lag_to_freq, AudioIO, freq2str, sHz,
+from audiolazy import (tostream, zcross, lag2freq, AudioIO, freq2str, sHz,
                        lowpass, envelope, pi, maverage, Stream, thub)
 
 def limiter(sig, threshold=.1, size=256, env=envelope.rms, cutoff=pi/2048):
@@ -36,7 +36,7 @@ def limiter(sig, threshold=.1, size=256, env=envelope.rms, cutoff=pi/2048):
 def zcross_pitch(sig, size=2048, hop=None):
   for blk in zcross(sig, hysteresis=.01).blocks(size=size, hop=hop):
     crossings = sum(blk)
-    yield 0. if crossings == 0 else lag_to_freq(2. * size / crossings)
+    yield 0. if crossings == 0 else lag2freq(2. * size / crossings)
 
 
 def pitch_from_mic(upd_time_in_ms):

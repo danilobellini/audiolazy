@@ -31,11 +31,10 @@ from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp, ceil, abs as lzabs
 from .lazy_filters import lowpass, z
-from .lazy_compat import xrange, xmap, xzip, xzip_longest
+from .lazy_compat import xrange, xmap, xzip
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf",
-           "overlap_add"]
+           "maverage", "clip", "unwrap", "amdf", "overlap_add"]
 
 
 window = StrategyDict("window")
@@ -562,16 +561,6 @@ def unwrap(sig, max_delta=pi, step=2*pi):
     d0 = d1
 
 
-def freq_to_lag(x):
-  """
-  Converts between frequency (rad/sample) and lag (number of samples).
-
-  """
-  return 2 * pi / x
-
-lag_to_freq = freq_to_lag
-
-
 def amdf(lag, size):
   """
   Average Magnitude Difference Function non-linear filter for a given
@@ -580,7 +569,7 @@ def amdf(lag, size):
   Parameters
   ----------
   lag :
-    Time lag, in samples. See ``freq_to_lag`` if needs conversion from
+    Time lag, in samples. See ``freq2lag`` if needs conversion from
     frequency values.
   size :
     Moving average size.
@@ -594,7 +583,7 @@ def amdf(lag, size):
 
   See Also
   --------
-  freq_to_lag :
+  freq2lag :
     Frequency to lag and lag to frequency converter.
 
   """
