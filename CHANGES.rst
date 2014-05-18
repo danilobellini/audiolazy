@@ -47,8 +47,17 @@ AudioLazy changes history
     normalization to keep the output in the [-1; 1] range. Has 2
     implementations keeping the same interface:
 
-    * ``numpy`` (*default*): needs Numpy arrays internally.
+    * ``numpy`` (*default*): needs Numpy arrays internally
     * ``list``: uses lists instead, doesn't need Numpy and was tested on Pypy
+
++ lazy_core:
+
+  - ``OpMethod.get()`` now accepts numbers ``"1"`` and ``"2"`` as strings for
+    unary and binary query for operators, and ``"all"`` is the new default, so
+    ``OpMethod.get(without="2 ~")`` would get all operators but the [reversed
+    or not] binary ones and the invert operator, which means it would yield
+    only the unary ``"+"`` (pos) and ``-`` (neg), as probably was expected;
+    OpMethod also had a bug fix regarding the shift operators
 
 + lazy_filters:
 

@@ -38,7 +38,7 @@ class OpMethod(object):
   Internal class to represent an operator method metadata.
 
   You can acess operator methods directly by using the OpMethod.get() class
-  method, which always returns a list from a query.
+  method, which always returns a generator from a query.
   This might be helpful if you need to acess the operator module from
   symbols. Given an instance "op", it has the following data:
 
@@ -47,30 +47,47 @@ class OpMethod(object):
   ========= ===========================================================
   op.name   Operator name string, e.g. ``"radd"``.
   op.dname  Dunder name string, e.g. ``"__radd__"``.
-  op.func   Function reference, e.g. ``operator.add``.
+  op.func   Function reference, e.g. ``operator.__add__``.
   op.symbol Operator symbol if in a code as a string, e.g. ``"+"``.
   op.rev    Boolean telling if the operator is reversed, e.g. ``True``.
   op.arity  Number of operands, e.g. ``2``.
   ========= ===========================================================
 
-  See the OpMethod.get docstring for more information and examples.
+  See the ``OpMethod.get`` docstring for more information and examples.
 
   """
   _all = {}
 
   @classmethod
-  def get(cls, key=None, without=None):
+  def get(cls, key="all", without=None):
     """
     Returns a list with every OpMethod instance that match the key.
+
+    The valid values for query parameters are:
+
+    * Operator method names such as ``add`` or ``radd`` or ``pos``, with or
+      without the double underscores. These would select only one operator;
+    * Strings with the operator symbols such as ``"+"``, ``"&"`` or ``"**"``.
+      These would select all the binary, reversed binary and unary operators
+      when these apply;
+    * ``"all"`` for selecting every operator available;
+    * ``"r"`` gets only the reversed operators;
+    * ``1`` or ``"1"`` for unary operators;
+    * ``2`` or ``"2"`` for binary operators (including reversed binary);
+    * ``None`` for no operators at all;
+    * Operator functions from the ``operator`` module with the double
+      underscores (e.g. ``operator.__add__``), for all the operations
+      that use the operator function (it and the reversed);
 
     Parameters
     ----------
     key :
-      String with whitespace-separated operator names or symbols, or an
-      iterable with names, symbols or functions from the operator class.
+      A query value, a string with whitespace-separated query names, or an
+      iterable with valid query values (as listed above). This parameter
+      defaults to "all".
     without :
-      The same of the key, but used to tell the query something that
-      shouldn't appear in the result.
+      The same as key, but used to tell the query something that shouldn't
+      appear in the result. Defaults to None.
 
     Returns
     -------
@@ -120,13 +137,13 @@ class OpMethod(object):
     33
 
     """
+    ignore = set() if without is None else set(cls.get(without))
     if key is None:
       return
-    ignore = set() if without is None else set(cls.get(without))
     if isinstance(key, STR_TYPES) or not isinstance(key, Iterable):
       key = [key]
-    key = it.chain(*[el.split() if isinstance(el, STR_TYPES) else [el]
-                     for el in key])
+    key = it.chain.from_iterable(el.split() if isinstance(el, STR_TYPES)
+                                            else [el] for el in key)
     for op_descr in key:
       try:
         for op in cls._all[op_descr]:
@@ -135,7 +152,7 @@ class OpMethod(object):
       except KeyError:
         if op_descr in ["div", "__div__", "rdiv", "__rdiv__"]:
           raise ValueError("Use only 'truediv' for division")
-        raise ValueError("Operator '{}' not found".format(op_descr))
+        raise ValueError("Operator '{}' unknown".format(op_descr))
 
   @classmethod
   def _insert(cls, name, symbol):
@@ -148,7 +165,8 @@ class OpMethod(object):
     self.func = getattr(operator, "__{}__".format(name[self.rev:]))
 
     # Updates the "all" dictionary
-    keys = ["all", self.symbol, self.name, self.dname, self.func, self.arity]
+    keys = ["all", self.symbol, self.name, self.dname, self.func,
+            self.arity, str(self.arity)]
     if self.rev:
       keys.append("r")
     for key in keys:
@@ -171,8 +189,8 @@ class OpMethod(object):
       // floordiv rfloordiv
       % mod rmod
       ** pow rpow
-      >> lshift rlshift
-      << rshift rlshift
+      >> rshift rrshift
+      << lshift rlshift
       ~ invert
       & and rand
       | or ror
