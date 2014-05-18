@@ -34,8 +34,11 @@ AudioLazy changes history
   - Continuous integration wih Travis CI and Coveralls
   - Renamed ``freq2lag`` and ``lag2freq`` to use ``2`` instead of ``_to_``,
     and moved to keep the unit converters on lazy_misc
-  - New ``internals.py`` module to avoid exposing package internals together
-    with the API
+  - New ``_internals.py`` module to avoid exposing package internals together
+    with the API, which also allowed the new simplified ``__init__.py``
+  - Renewed setup.py in both its internalities (e.g. using AST instead of
+    string manipulation to avoid importing the package before installation)
+    and its interface (e.g. the ``test`` command now calls ``tox``)
 
 + lazy_analysis:
 

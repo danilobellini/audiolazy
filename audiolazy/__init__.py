@@ -72,12 +72,7 @@ __modules__, __all__, __doc__ = \
 # Import all modules contents to the main namespace
 exec(("from .{} import *\n" * len(__modules__)).format(*__modules__))
 
-
-#
-# <SETUP.PY> #
-# Metadata (see setup.py for more information about these)
-# This section should not reference anything from before!
-#
+# Metadata (used by setup.py); Should use only local assignments!
 __version__ = "0.1dev"
 __author__ = "Danilo de Jesus da Silva Bellini"
 __author_email__  = "danilo [dot] bellini [at] gmail [dot] com"

@@ -23,7 +23,7 @@ AudioLazy package setup file
 
 from setuptools import setup
 from setuptools.command.test import test as TestClass
-import os
+import os, ast
 
 class Tox(TestClass):
   user_options = []
@@ -37,78 +37,112 @@ class Tox(TestClass):
     import sys, tox
     sys.exit(tox.cmdline(self.test_args))
 
+
+def ast_has_dunder_import(node):
+  """ AST depth search looking for a ``__import__`` ast.Name node """
+  is_field = lambda n: isinstance(n, ast.AST)
+  is_d_import = lambda n: isinstance(n, ast.Name) and n.id == "__import__"
+  childs = filter(is_field, (getattr(node, name) for name in dir(node)))
+  return any(is_d_import(c) or ast_has_dunder_import(c) for c in childs)
+
+def exec23(stmts, globals_, locals_):
+  exec(stmts, globals_, locals_) # Just to avoid a SyntaxError on Python 2
+
+def pseudo_import(fname):
+  """ Namespace dict from assignments in the file without ``__import__`` """
+  with open(fname, "r") as f:
+    astree = ast.parse(f.read(), filename=fname)
+  astree.body = [node for node in astree.body
+                      if isinstance(node, ast.Assign)
+                      and not ast_has_dunder_import(node)]
+  namespace = {}
+  exec23(compile(astree, fname, mode="exec"), {}, namespace)
+  return namespace
+
+
+def read_rst_and_process(fname, line_process=lambda line: line):
+  """
+  The reStructuredText string in file ``fname``, without the starting ``..``
+  comment and with ``line_process`` function applied to every line.
+  """
+  with open(fname, "r") as f:
+    data = f.read().splitlines()
+  first_idx = next(idx for idx, line in enumerate(data) if line.strip())
+  if data[first_idx].strip() == "..":
+    next_idx = first_idx + 1
+    first_idx = next(idx for idx, line in enumerate(data[next_idx:], next_idx)
+                         if line.strip() and not line.startswith(" "))
+  return "\n".join(map(line_process, data[first_idx:]))
+
+def image_path_processor_factory(path):
+  """ Processor for concatenating the ``path`` to relative path images """
+  def processor(line):
+    markup = ".. image::"
+    if line.startswith(markup):
+      fname = line[len(markup):].strip()
+      if not(fname.startswith("/") or "://" in fname):
+        return "{} {}{}".format(markup, path, fname)
+    return line
+  return processor
+
+def read_description(readme_file, changes_file, images_url):
+  updater = image_path_processor_factory(images_url)
+  readme_data = read_rst_and_process(readme_file, updater)
+  changes_data = read_rst_and_process(changes_file, updater)
+  title, pins, descr, sections_and_ending = readme_data.split("\n\n", 3)
+  sections = sections_and_ending.rsplit("----", 1)[0]
+  long_descr_blocks = ["", title, "", pins, "", sections, "", changes_data]
+  return descr, "\n".join(block.strip() for block in long_descr_blocks)
+
+
 path = os.path.split(__file__)[0]
-pkgname = "audiolazy"
-metadata_file = "__init__.py"
+package_name = "audiolazy"
 
-# Get metadata from the package file without actually importing it
-with open(os.path.join(path, pkgname, metadata_file), "r") as f:
-  package_metadata_src = f.read()
-ns = {}
-exec(package_metadata_src.split("# <SETUP.PY> #", 1)[1], ns)
-metadata = {k.strip("_"): ns[k] for k in ns if k != "__builtins__"}
+fname_init = os.path.join(path, package_name, "__init__.py")
+fname_readme = os.path.join(path, "README.rst")
+fname_changes = os.path.join(path, "CHANGES.rst")
+images_url = "https://raw.github.com/danilobellini/audiolazy/master/"
 
-# Description is all from README.rst, but the ending copyright message
-with open(os.path.join(path, "README.rst"), "r") as fr:
-  readme_data = fr.read().splitlines()
-
-# First cuts the copyright message
-for idx, el in enumerate(readme_data[1:]):
-  if el.strip() != "" and not el.startswith(" "):
-    readme_data = "\n".join(readme_data[idx:])
-    break
-
-# Then gets the data
-title, pins, descr, ldescr = readme_data.split("\n\n", 3)
-ldescr = "\n\n".join([title, pins, ldescr]).rsplit("----", 1)[0].strip()
-metadata["description"] = descr
-
-# Correction for image links
-url_links = "https://raw.github.com/danilobellini/audiolazy/master/"
-img_string = ".. image:: "
-ldescr = ldescr.replace(img_string, img_string + url_links)
-
-# Append long description with the change log from CHANGES.rst
-with open(os.path.join(path, "CHANGES.rst"), "r") as fc:
-  changes_data = fc.read()
-changes_data = changes_data.replace("\r\n", "\n")
-metadata["long_description"] = "\n".join(["", ldescr, "", changes_data])
-
-# Classifiers and license
+metadata = {k.strip("_") : v for k, v in pseudo_import(fname_init).items()}
+metadata["description"], metadata["long_description"] = \
+  read_description(fname_readme, fname_changes, images_url)
+metadata["classifiers"] = """
+Development Status :: 3 - Alpha
+Intended Audience :: Developers
+Intended Audience :: Education
+Intended Audience :: Science/Research
+Intended Audience :: Other Audience
+License :: OSI Approved :: GNU General Public License v3 (GPLv3)
+Operating System :: MacOS
+Operating System :: Microsoft :: Windows
+Operating System :: POSIX :: Linux
+Operating System :: OS Independent
+Programming Language :: Python
+Programming Language :: Python :: 2
+Programming Language :: Python :: 2.7
+Programming Language :: Python :: 3
+Programming Language :: Python :: 3.2
+Programming Language :: Python :: 3.3
+Programming Language :: Python :: 3.4
+Programming Language :: Python :: Implementation :: CPython
+Programming Language :: Python :: Implementation :: PyPy
+Topic :: Artistic Software
+Topic :: Multimedia :: Sound/Audio
+Topic :: Multimedia :: Sound/Audio :: Analysis
+Topic :: Multimedia :: Sound/Audio :: Capture/Recording
+Topic :: Multimedia :: Sound/Audio :: Editors
+Topic :: Multimedia :: Sound/Audio :: Mixers
+Topic :: Multimedia :: Sound/Audio :: Players
+Topic :: Multimedia :: Sound/Audio :: Sound Synthesis
+Topic :: Multimedia :: Sound/Audio :: Speech
+Topic :: Scientific/Engineering
+Topic :: Software Development
+Topic :: Software Development :: Libraries
+Topic :: Software Development :: Libraries :: Python Modules
+""".strip().splitlines()
 metadata["license"] = "GPLv3"
-metadata["classifiers"] = [
-  "Development Status :: 3 - Alpha",
-  "Intended Audience :: Developers",
-  "Intended Audience :: Education",
-  "Intended Audience :: Science/Research",
-  "Intended Audience :: Other Audience",
-  "License :: OSI Approved :: "
-    "GNU General Public License v3 (GPLv3)",
-  "Operating System :: Microsoft :: Windows",
-  "Operating System :: POSIX :: Linux",
-  "Operating System :: MacOS",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 2",
-  "Programming Language :: Python :: 2.7",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.2",
-  "Programming Language :: Python :: 3.3",
-  "Topic :: Artistic Software",
-  "Topic :: Multimedia :: Sound/Audio",
-  "Topic :: Multimedia :: Sound/Audio :: Analysis",
-  "Topic :: Multimedia :: Sound/Audio :: Capture/Recording",
-  "Topic :: Multimedia :: Sound/Audio :: Players",
-  "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
-  "Topic :: Scientific/Engineering",
-  "Topic :: Software Development",
-  "Topic :: Software Development :: Libraries",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-]
-
-# Finish
-metadata["name"] = pkgname
-metadata["packages"] = [pkgname]
+metadata["name"] = package_name
+metadata["packages"] = [package_name]
 metadata["tests_require"] = ["tox"]
 metadata["cmdclass"] = {"test": Tox}
 setup(**metadata)
