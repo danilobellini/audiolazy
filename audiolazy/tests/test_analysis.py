@@ -181,6 +181,7 @@ class TestAMDF(object):
     assert list(filt(sig, zero=zero)) == [zero for el in sig]
 
 
+@p("oadd", overlap_add)
 class TestOverlapAdd(object):
 
   # A list of 7-sized lists (blocks) without any zero
@@ -190,10 +191,10 @@ class TestOverlapAdd(object):
                [-.3,  .54, .12,  .1, -.8, -.3,   .8],
                [.04, -.8, -.43,  .2,  .1,  .9,  -.5]]
 
-  def test_simple_size_7_hop_3_from_lists(self):
+  def test_simple_size_7_hop_3_from_lists(self, oadd):
     wnd = [.1, .2, .3, .4, .3, .2, .1]
     ratio = .6 # Expected normalization ratio
-    result = overlap_add(self.list_data, hop=3, wnd=wnd, normalize=False)
+    result = oadd(self.list_data, hop=3, wnd=wnd, normalize=False)
     assert isinstance(result, Stream)
     result_list = list(result)
     # Resulting size is (number of blocks - 1) * hop + size
@@ -202,7 +203,7 @@ class TestOverlapAdd(object):
 
     # Try applying the window externally
     wdata = [[w * r for w, r in xzip(wnd, row)] for row in self.list_data]
-    pre_windowed_result = overlap_add(wdata, hop=3, wnd=None, normalize=False)
+    pre_windowed_result = oadd(wdata, hop=3, wnd=None, normalize=False)
     assert result_list == list(pre_windowed_result)
 
     # Overlapping and adding manually to a list (for size=7 and hop=3)
@@ -214,28 +215,28 @@ class TestOverlapAdd(object):
     assert expected == result_list
 
     # Try comparing with the normalized version
-    result_norm = overlap_add(self.list_data, hop=3, wnd=wnd, normalize=True)
+    result_norm = oadd(self.list_data, hop=3, wnd=wnd, normalize=True)
     assert almost_eq(expected[0] / result_norm.peek(), ratio)
     assert almost_eq(result_list, list(result_norm * ratio))
 
-  def test_empty(self):
-    data = overlap_add([])
+  def test_empty(self, oadd):
+    data = oadd([])
     assert isinstance(data, Stream)
     assert list(data) == []
 
   @p("wnd", [None, window.rect, window.triangular])
-  def test_size_1_hop_1_sameness(self, wnd):
+  def test_size_1_hop_1_sameness(self, oadd, wnd):
     raw_data = [1., -4., 3., -1., 5., -4., 2., 3.]
     blk_sig = Stream(raw_data).blocks(size=1, hop=1)
-    data = overlap_add(blk_sig).take(200)
+    data = oadd(blk_sig).take(200)
     assert list(data) ==  raw_data
 
   @p("size", [512, 128, 12, 2])
   @p("dur", [1038, 719, 18])
-  def test_ones_detect_size_with_hop_half_no_normalize(self, size, dur):
+  def test_ones_detect_size_with_hop_half_no_normalize(self, oadd, size, dur):
     hop = size // 2
     blk_sig = ones(dur).blocks(size, hop)
-    result = overlap_add(blk_sig, hop=hop, wnd=None, normalize=False)
+    result = oadd(blk_sig, hop=hop, wnd=None, normalize=False)
     data = list(result)
     length = int(ceil(dur / hop) * hop) if dur >= hop else 0
     assert len(data) == length
@@ -248,10 +249,10 @@ class TestOverlapAdd(object):
 
   @p("wnd", [None, window.rect])
   @p("normalize", [True, False])
-  def test_size_5_hop_2_rect_window(self, wnd, normalize):
+  def test_size_5_hop_2_rect_window(self, oadd, wnd, normalize):
     raw_data = [5, 4, 3, -2, -3, 4] * 7 # 42-sampled example
     blk_sig = Stream(raw_data).blocks(size=5, hop=2) # 43 (1-sample zero pad)
-    result = overlap_add(blk_sig, size=5, hop=2, wnd=wnd, normalize=normalize)
+    result = oadd(blk_sig, size=5, hop=2, wnd=wnd, normalize=normalize)
     assert isinstance(result, Stream)
     result_list = result.take(100)
     weights = [1, 1, 2] + Stream(2, 3).take(37) + [2, 1]
@@ -267,10 +268,11 @@ class TestOverlapAdd(object):
   @p("size", [8, 6, 4, 17])
   @p("wnd", [window.triangle, window.hamming, window.hann, window.bartlett])
   @p("data", [data1, data2])
-  def test_size_minus_hop_3_detectsize_no_normalize(self, size, wnd, data):
+  def test_size_minus_hop_is_3_and_detect_size_no_normalize(self, oadd, size,
+                                                            wnd, data):
     hop = size - 3
-    result = overlap_add(Stream(data).blocks(size=size, hop=hop),
-                         hop=hop, wnd=wnd, normalize=False).take(inf)
+    result = oadd(Stream(data).blocks(size=size, hop=hop),
+                  hop=hop, wnd=wnd, normalize=False).take(inf)
     wnd_list = wnd(size)
     expected = None
     for blk in Stream(data).blocks(size=size, hop=hop):
@@ -303,11 +305,11 @@ class TestOverlapAdd(object):
     lambda n: (line(n, -2, 1) ** 3).take(inf),    # Negative value
     lambda n: [-el for el in window.triangle(n)], # Negative-only value
   ])
-  def test_normalize(self, size, hop, wnd):
+  def test_normalize(self, oadd, size, hop, wnd):
     # Apply the overlap_add
     length = 719
-    result = overlap_add(ones(length).blocks(size=size, hop=hop),
-                         hop=hop, wnd=wnd, normalize=True).take(inf)
+    result = oadd(ones(length).blocks(size=size, hop=hop),
+                  hop=hop, wnd=wnd, normalize=True).take(inf)
     assert len(result) >= length
 
     # Content verification
@@ -340,8 +342,8 @@ class TestOverlapAdd(object):
 
       else: # Can subtract, do it all again with the abs(wnd)
         wnd_pos = list(xmap(abs, wnd_list))
-        rmax = overlap_add(ones(length).blocks(size=size, hop=hop),
-                           hop=hop, wnd=wnd_pos, normalize=True).take(inf)
+        rmax = oadd(ones(length).blocks(size=size, hop=hop),
+                    hop=hop, wnd=wnd_pos, normalize=True).take(inf)
 
         assert all(-1 <= el <= 1 for el in rmax[:length]) # Need no tolerance!
         assert len(rmax) == len(result)
@@ -354,8 +356,8 @@ class TestOverlapAdd(object):
           assert all(el > 0 for el in rmax[:length])
 
   @p("wnd", [25, lambda n: 42, lambda n: None])
-  def test_invalid_window(self, wnd):
-    result = overlap_add(ones(500).blocks(1), wnd=wnd)
+  def test_invalid_window(self, oadd, wnd):
+    result = oadd(ones(500).blocks(1), wnd=wnd)
     with pytest.raises(TypeError) as exc:
       result.take()
     msg_words = ["window", "should", "iterable", "callable"]
@@ -365,8 +367,8 @@ class TestOverlapAdd(object):
   @p("wdclass", [float, int])
   @p("sdclass", [float, int])
   @p("wconstructor", [tuple, list, Stream, iter])
-  def test_float_ints_for_iterable_window_and_signal(self, wdclass, sdclass,
-                                                     wconstructor):
+  def test_float_ints_for_iterable_window_and_signal(self, oadd, wdclass,
+                                                     sdclass, wconstructor):
     size = 3 # For a [1, 2, 3] window
     hop = 2
 
@@ -374,10 +376,10 @@ class TestOverlapAdd(object):
     wnd_normalized = wconstructor([.25, .5, .75]) # This can't be int
 
     sig = thub(Stream(7, 9, -2, 1).map(sdclass), 2)
-    result_no_norm = overlap_add(sig.blocks(size=size, hop=hop),
-                                 hop=hop, wnd=wnd_normalized, normalize=False)
-    result_norm = overlap_add(sig.blocks(size=size, hop=hop),
-                              hop=hop, wnd=wnd, normalize=True)
+    result_no_norm = oadd(sig.blocks(size=size, hop=hop),
+                          hop=hop, wnd=wnd_normalized, normalize=False)
+    result_norm = oadd(sig.blocks(size=size, hop=hop),
+                       hop=hop, wnd=wnd, normalize=True)
     expected = chain([1], Stream(2, 4)) * Stream(7, 9, -2, 1) * .25
 
     # Powers of 2 in wnd_normalized allows equalness testing for floats
@@ -385,16 +387,22 @@ class TestOverlapAdd(object):
     assert result_no_norm.take(400) == result_norm.take(400)
 
   @p("size", [8, 6]) # Actual size of each block in list_data is 7
-  def test_wrong_size(self, size):
-    result = overlap_add(self.list_data, size=size, hop=3)
+  def test_wrong_declared_size(self, oadd, size):
+    result = oadd(self.list_data, size=size, hop=3)
     with pytest.raises(ValueError):
       result.peek()
 
-  def test_no_hop(self):
+  @p("size", [8, 6])
+  def test_wrong_window_size(self, oadd, size):
+    result = oadd(self.list_data, hop=3, wnd=window.triangle(size))
+    with pytest.raises(ValueError):
+      result.peek()
+
+  def test_no_hop(self, oadd):
     concat = lambda seq: reduce(lambda a, b: a + b, seq)
     wnd = window.triangle(len(self.list_data[0]))
     wdata = [[w * r for w, r in xzip(wnd, row)] for row in self.list_data]
-    result_no_wnd = overlap_add(self.list_data, wnd=None)
-    result_wnd = overlap_add(self.list_data, wnd=wnd)
+    result_no_wnd = oadd(self.list_data, wnd=None)
+    result_wnd = oadd(self.list_data, wnd=wnd)
     assert concat(self.list_data) == list(result_no_wnd)
     assert concat(wdata) == list(result_wnd)

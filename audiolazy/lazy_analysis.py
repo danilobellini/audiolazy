@@ -24,13 +24,14 @@ from __future__ import division
 
 from math import cos, pi
 from collections import deque, Sequence, Iterable
+import operator
 
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
-from .lazy_math import cexp, abs as lzabs
+from .lazy_math import cexp, ceil, abs as lzabs
 from .lazy_filters import lowpass, z
-from .lazy_compat import xrange
+from .lazy_compat import xrange, xmap, xzip, xzip_longest
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
            "maverage", "clip", "unwrap", "freq_to_lag", "lag_to_freq", "amdf",
@@ -606,6 +607,10 @@ def amdf(lag, size):
   return amdf_filter
 
 
+overlap_add = StrategyDict("overlap_add")
+
+
+@overlap_add.strategy("numpy")
 @tostream
 def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
                 normalize=True):
@@ -682,4 +687,61 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
       yield el
     old = blk
   for el in old[hop:]: # No more blocks, finish yielding the last one
+    yield el
+
+
+@overlap_add.strategy("list")
+@tostream
+def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
+                normalize=True):
+  """
+  Overlap-add algorithm using lists instead of Numpy arrays. The behavior
+  is the same to the ``overlap_add.numpy`` strategy.
+  """
+  # Finds the size from data, if needed
+  if size is None:
+    blk_sig = Stream(blk_sig)
+    size = len(blk_sig.peek())
+  if hop is None:
+    hop = size
+
+  # Find the window to be applied, resulting on a list or None
+  if wnd is not None:
+    if callable(wnd) and not isinstance(wnd, Stream):
+      wnd = wnd(size)
+    if isinstance(wnd, Iterable):
+      wnd = list(wnd)
+    else:
+      raise TypeError("Window should be an iterable or a callable")
+
+  # Normalization to the [-1; 1] range
+  if normalize:
+    if wnd:
+      steps = Stream(wnd).map(abs).blocks(hop).map(tuple)
+      gain = max(xmap(sum, xzip(*steps)))
+      if gain: # If gain is zero, normalization couldn't have any effect
+        wnd[:] = (w / gain for w in wnd)
+    else:
+      wnd = [1 / ceil(size / hop)] * size
+
+  # Window application
+  if wnd:
+    mul = operator.mul
+    if len(wnd) != size:
+      raise ValueError("Incompatible window size")
+    wnd = wnd + [0.] # Allows detecting when block size is wrong
+    blk_sig = (xmap(mul, wnd, blk) for blk in blk_sig)
+
+  # Overlap-add algorithm
+  add = operator.add
+  mem = [0.] * size
+  s_h = size - hop
+  for blk in xmap(iter, blk_sig):
+    mem[:s_h] = xmap(add, mem[hop:], blk)
+    mem[s_h:] = blk # Remaining elements
+    if len(mem) != size:
+      raise ValueError("Wrong block size or declared")
+    for el in mem[:hop]:
+      yield el
+  for el in mem[hop:]: # No more blocks, finish yielding the last one
     yield el

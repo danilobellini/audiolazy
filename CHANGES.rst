@@ -35,9 +35,13 @@ AudioLazy changes history
 
 + lazy_analysis:
 
-  - New ``overlap_add`` function, allowing resynth after block
-    processing/analysis (using Numpy arrays internally), featuring block
-    size auto-detection and window normalization to keep the [-1; 1] range
+  - New ``overlap_add`` StrategyDict instance, allowing resynth after block
+    processing/analysis, featuring block size auto-detection and window
+    normalization to keep the output in the [-1; 1] range. Has 2
+    implementations keeping the same interface:
+
+    * ``numpy`` (default): needs Numpy arrays internally.
+    * ``list``: uses lists instead, doesn't need Numpy and was tested on Pypy
 
 + lazy_filters:
 
