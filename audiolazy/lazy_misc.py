@@ -28,7 +28,7 @@ from math import pi
 import operator
 
 # Audiolazy internal imports
-from ._internals import _deprecate
+from . import _internals
 from .lazy_compat import (xrange, xzip_longest, STR_TYPES, SOME_GEN_TYPES,
                           iteritems)
 from .lazy_core import StrategyDict
@@ -322,10 +322,10 @@ def sHz(rate):
 def freq2lag(v):
   """ Converts from frequency (rad/sample) to lag (number of samples). """
   return 2 * pi / v
-freq_to_lag = _deprecate(freq2lag)
+freq_to_lag = _internals.deprecate(freq2lag)
 
 
 def lag2freq(v):
   """ Converts from lag (number of samples) to frequency (rad/sample). """
   return 2 * pi / v
-lag_to_freq = _deprecate(freq2lag)
+lag_to_freq = _internals.deprecate(freq2lag)

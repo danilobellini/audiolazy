@@ -36,7 +36,7 @@ AudioLazy changes history
     and moved to keep the unit converters on lazy_misc
   - New ``_internals.py`` module to avoid exposing package internals together
     with the API, which also allowed the new simplified ``__init__.py``
-  - Renewed setup.py in both its internalities (e.g. using AST instead of
+  - Renewed setup.py in both its internals (e.g. using AST instead of
     string manipulation to avoid importing the package before installation)
     and its interface (e.g. the ``test`` command now calls ``tox``)
 
@@ -47,7 +47,7 @@ AudioLazy changes history
     normalization to keep the output in the [-1; 1] range. Has 2
     implementations keeping the same interface:
 
-    * ``numpy`` (default): needs Numpy arrays internally.
+    * ``numpy`` (*default*): needs Numpy arrays internally.
     * ``list``: uses lists instead, doesn't need Numpy and was tested on Pypy
 
 + lazy_filters:
@@ -136,14 +136,14 @@ AudioLazy changes history
     Python 3
   - Strategy ``chain.from_iterable`` is now available (Stream version
     itertool), and ``chain`` is now a StrategyDict
-  - Now ``izip`` is a StrategyDict, with ``izip.smallest`` (default) and
+  - Now ``izip`` is a StrategyDict, with ``izip.smallest`` (*default*) and
     ``izip.longest`` strategies
 
 + lazy_misc:
 
   - New ``rint`` for "round integer" operations as well as other higher step
     integer quantization
-  - Now ``almost_eq`` is a single StrategyDict with both ``bits`` (default,
+  - Now ``almost_eq`` is a single StrategyDict with both ``bits`` (*default*,
     comparison by significand/mantissa bits) and ``diff`` (absolute value
     difference) strategies
 
@@ -233,8 +233,8 @@ AudioLazy changes history
   - New LinearFilter.plot() directly plots the frequency response of a LTI
     filter to a MatPlotLib figure. Configurable:
 
-    * Linear (default) or logarithmic frequency scale
-    * Linear, squared or dB (default) magnitude scale
+    * Linear (*default*) or logarithmic frequency scale
+    * Linear, squared or dB (*default*) magnitude scale
     * Plots together the DFT of a given block, if needed. Useful for LPC
     * Phase unwrapping (defaults to True)
     * Allows frequency in Hz and in rad/sample. When using radians units,
@@ -256,7 +256,7 @@ AudioLazy changes history
   - New ``ParallelFilter`` class, inheriting from FilterList
   - Now comb is a StrategyDict too, with 3 strategies:
 
-    * ``comb.fb`` (default): Feedback comb filter (IIR or time variant)
+    * ``comb.fb`` (*default*): Feedback comb filter (IIR or time variant)
     * ``comb.tau``: Same to the feedback strategy, but with a time decay
       ``tau`` parameter (time in samples up to ``1/e`` amplitude, or
       -8.686 dB) instead of a gain ``alpha``
@@ -266,7 +266,7 @@ AudioLazy changes history
 
   - Linear Predictive Coding (LPC) coefficients as a ZFilter from:
 
-    * ``lpc.autocor`` (default): Auto-selects autocorrelation implementation
+    * ``lpc.autocor`` (*default*): Auto-selects autocorrelation implementation
       (Faster)
     * ``lpc.nautocor``: Autocorrelation, with linear system solved by NumPy
       (Safer)
@@ -337,7 +337,7 @@ AudioLazy changes history
 
   - New ``window`` StrategyDict instance, with:
 
-    * Hamming (default)
+    * Hamming (*default*)
     * Hann
     * Rectangular
     * Bartlett (triangular with zero endpoints)

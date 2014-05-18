@@ -19,8 +19,9 @@
 """
 AudioLazy internals module
 
-The resources found here aren't DSP related and doesn't take part of the
-main ``audiolazy`` namespace.
+The resources found here aren't DSP related nor take part of the main
+``audiolazy`` namespace. Unless you're changing or trying to understand
+the AudioLazy internals, you probably don't need to know about this.
 """
 
 from functools import wraps, reduce
@@ -30,17 +31,21 @@ from operator import concat
 import os
 
 
-def _deprecate(func):
+def deprecate(func):
   """ A deprecation warning emmiter as a decorator. """
   @wraps(func)
   def wrapper(*args, **kwargs):
-    warn("Deprecated, this will be removed in th future", DeprecationWarning)
+    warn("Deprecated, this will be removed in the future", DeprecationWarning)
     return func(*args, **kwargs)
   wrapper.__doc__ = "Deprecated.\n" + wrapper.__doc__
   return wrapper
 
 
-def _get_module_names(package_path, pattern="lazy_*.py*"):
+#
+# __init__.py importing resources
+#
+
+def get_module_names(package_path, pattern="lazy_*.py*"):
   """
   All names in the package directory that matches the given glob, without
   their extension. Repeated names should appear only once.
@@ -50,35 +55,53 @@ def _get_module_names(package_path, pattern="lazy_*.py*"):
   no_ext_names = (os.path.splitext(name)[0] for name in relative_path_names)
   return sorted(set(no_ext_names))
 
-def _get_modules(package_name, module_names):
+def get_modules(package_name, module_names):
   """ List of module objects from the package, keeping the name order. """
   def get_module(name):
     return __import__(".".join([package_name, name]), fromlist=[package_name])
   return [get_module(name) for name in module_names]
 
-def _dunder_all_concat(modules):
+def dunder_all_concat(modules):
+  """ Single list with all ``__all__`` lists from the modules. """
   return reduce(concat, (getattr(m, "__all__", []) for m in modules), [])
 
 
-def _summary_table(pairs, key_header):
-  from .lazy_text import rst_table, small_doc
-  max_width = 78 - max(len(k) for k, v in pairs)
-  table = [(k, small_doc(v, max_width=max_width)) for k, v in pairs]
-  return rst_table(table, (key_header, "Description"))
+#
+# Resources for module/package summary tables on doctring
+#
 
-def _docstring_with_summary(docstring, pairs, key_header, summary_type):
+def summary_table(pairs, key_header, descr_header="Description", width=78):
+  """
+  List of one-liner strings containing a reStructuredText summary table
+  for the given pairs ``(name, object)``.
+  """
+  from .lazy_text import rst_table, small_doc
+  max_width = width - max(len(k) for k, v in pairs)
+  table = [(k, small_doc(v, max_width=max_width)) for k, v in pairs]
+  return rst_table(table, (key_header, descr_header))
+
+def docstring_with_summary(docstring, pairs, key_header, summary_type):
+  """ Return a string joining the docstring with the pairs summary table. """
   return "\n".join(
     [docstring, "Summary of {}:".format(summary_type), ""] +
-    _summary_table(pairs, key_header) + [""]
+    summary_table(pairs, key_header) + [""]
   )
 
-def _append_summary_to_module_docstring(module):
+def append_summary_to_module_docstring(module):
+  """
+  Change the ``module.__doc__`` docstring to include a summary table based
+  on its contents as declared on ``module.__all__``.
+  """
   pairs = [(name, getattr(module, name)) for name in module.__all__]
   kws = dict(key_header="Name", summary_type="module contents")
-  module.__doc__ = _docstring_with_summary(module.__doc__, pairs, **kws)
+  module.__doc__ = docstring_with_summary(module.__doc__, pairs, **kws)
 
 
-def _init_package(package_path, package_name, docstring):
+#
+# Package initialization, first function to be called internally
+#
+
+def init_package(package_path, package_name, docstring):
   """
   Package initialization, to be called only by ``__init__.py``.
 
@@ -93,12 +116,12 @@ def _init_package(package_path, package_name, docstring):
   A 4-length tuple ``(modules, __all__, __doc__)``. The first one can be
   used by the package to import every module into the main package namespace.
   """
-  module_names = _get_module_names(package_path)
-  modules = _get_modules(package_name, module_names)
-  dunder_all = _dunder_all_concat(modules)
+  module_names = get_module_names(package_path)
+  modules = get_modules(package_name, module_names)
+  dunder_all = dunder_all_concat(modules)
   for module in modules:
-    _append_summary_to_module_docstring(module)
+    append_summary_to_module_docstring(module)
   pairs = list(zip(module_names, modules))
   kws = dict(key_header="Module", summary_type="package modules")
-  new_docstring = _docstring_with_summary(docstring, pairs, **kws)
+  new_docstring = docstring_with_summary(docstring, pairs, **kws)
   return module_names, dunder_all, new_docstring
