@@ -38,26 +38,27 @@ class Tox(TestClass):
     sys.exit(tox.cmdline(self.test_args))
 
 
-def ast_has_dunder_import(node):
+def has_d_import(node):
   """ AST depth search looking for a ``__import__`` ast.Name node """
-  is_field = lambda n: isinstance(n, ast.AST)
+  is_ast_node = lambda n: isinstance(n, ast.AST)
   is_d_import = lambda n: isinstance(n, ast.Name) and n.id == "__import__"
-  childs = filter(is_field, (getattr(node, name) for name in dir(node)))
-  return any(is_d_import(c) or ast_has_dunder_import(c) for c in childs)
+  attrs = (getattr(node, name) for name in node._fields) # vars(node).values()
+  ast_node_childs = filter(is_ast_node, attrs)           # was empty on pypy
+  return any(is_d_import(c) or has_d_import(c) for c in ast_node_childs)
 
-def exec23(stmts, globals_, locals_):
-  exec(stmts, globals_, locals_) # Just to avoid a SyntaxError on Python 2
+def locals_from_exec(code):
+  """ Run code in a qualified exec, returning the resulting locals dict """
+  namespace = {}
+  exec(code, {}, namespace)
+  return namespace
 
 def pseudo_import(fname):
   """ Namespace dict from assignments in the file without ``__import__`` """
   with open(fname, "r") as f:
     astree = ast.parse(f.read(), filename=fname)
-  astree.body = [node for node in astree.body
-                      if isinstance(node, ast.Assign)
-                      and not ast_has_dunder_import(node)]
-  namespace = {}
-  exec23(compile(astree, fname, mode="exec"), {}, namespace)
-  return namespace
+  astree.body = [node for node in astree.body if isinstance(node, ast.Assign)
+                                                 and not has_d_import(node)]
+  return locals_from_exec(compile(astree, fname, mode="exec"))
 
 
 def read_rst_and_process(fname, line_process=lambda line: line):
