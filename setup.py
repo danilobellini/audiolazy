@@ -38,14 +38,6 @@ class Tox(TestClass):
     sys.exit(tox.cmdline(self.test_args))
 
 
-def has_d_import(node):
-  """ AST depth search looking for a ``__import__`` ast.Name node """
-  is_ast_node = lambda n: isinstance(n, ast.AST)
-  is_d_import = lambda n: isinstance(n, ast.Name) and n.id == "__import__"
-  attrs = (getattr(node, name) for name in node._fields) # vars(node).values()
-  ast_node_childs = filter(is_ast_node, attrs)           # was empty on pypy
-  return any(is_d_import(c) or has_d_import(c) for c in ast_node_childs)
-
 def locals_from_exec(code):
   """ Run code in a qualified exec, returning the resulting locals dict """
   namespace = {}
@@ -54,10 +46,12 @@ def locals_from_exec(code):
 
 def pseudo_import(fname):
   """ Namespace dict from assignments in the file without ``__import__`` """
+  is_d_import = lambda n: isinstance(n, ast.Name) and n.id == "__import__"
+  is_assign = lambda n: isinstance(n, ast.Assign)
+  is_valid = lambda n: is_assign(n) and not any(map(is_d_import, ast.walk(n)))
   with open(fname, "r") as f:
     astree = ast.parse(f.read(), filename=fname)
-  astree.body = [node for node in astree.body if isinstance(node, ast.Assign)
-                                                 and not has_d_import(node)]
+  astree.body = [node for node in astree.body if is_valid(node)]
   return locals_from_exec(compile(astree, fname, mode="exec"))
 
 
