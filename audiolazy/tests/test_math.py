@@ -27,7 +27,7 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_math import (factorial, dB10, dB20, inf, ln, log, log2, log10,
-                         log1p, pi, e)
+                         log1p, pi, e, absolute)
 from ..lazy_misc import almost_eq
 
 
@@ -102,3 +102,14 @@ class TestDB10DB20(object):
   def test_zero(self, func):
     assert func(0) == -inf
 
+
+class TestAbsolute(object):
+
+  def test_absolute(self):
+    assert absolute(25) == 25
+    assert absolute(-2) == 2
+    assert absolute(-4j) == 4.
+    assert almost_eq(absolute(3 + 4j), 5)
+    assert absolute([5, -12, 14j, -2j, 0]) == [5, 12, 14., 2., 0]
+    assert almost_eq(absolute([1.2, -1.57e-3, -(pi ** 2), -2j,  8 - 4j]),
+                     [1.2, 1.57e-3, pi ** 2, 2., 4 * 5 ** .5])

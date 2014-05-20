@@ -30,19 +30,19 @@ from functools import reduce
 from .lazy_misc import elementwise
 from .lazy_compat import INT_TYPES
 
-__all__ = ["abs", "pi", "e", "cexp", "ln", "log", "log1p", "log10", "log2",
-           "factorial", "dB10", "dB20", "inf", "nan", "phase", "sign"]
+__all__ = ["absolute", "pi", "e", "cexp", "ln", "log", "log1p", "log10",
+           "log2", "factorial", "dB10", "dB20", "inf", "nan", "phase", "sign"]
 
 # All functions from math with one numeric input
-math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
-              "cos", "cosh", "degrees", "erf", "erfc", "exp", "expm1",
-              "fabs", "floor", "frexp", "gamma", "isinf", "isnan", "lgamma",
-              "modf", "radians", "sin", "sinh", "sqrt", "tan", "tanh",
-              "trunc"]
-__all__.extend(math_names)
+_math_names = ["acos", "acosh", "asin", "asinh", "atan", "atanh", "ceil",
+               "cos", "cosh", "degrees", "erf", "erfc", "exp", "expm1",
+               "fabs", "floor", "frexp", "gamma", "isinf", "isnan", "lgamma",
+               "modf", "radians", "sin", "sinh", "sqrt", "tan", "tanh",
+               "trunc"]
+__all__.extend(_math_names)
 
 
-for func in [getattr(math, name) for name in math_names]:
+for func in [getattr(math, name) for name in _math_names]:
   locals()[func.__name__] = elementwise("x", 0)(func)
 
 
@@ -85,7 +85,7 @@ def log2(x):
 
 
 ln = log
-abs = elementwise("number", 0)(abs)
+absolute = elementwise("number", 0)(abs)
 pi = math.pi
 e = math.e
 cexp = elementwise("x", 0)(cmath.exp)

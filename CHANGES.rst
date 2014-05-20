@@ -72,6 +72,11 @@ AudioLazy changes history
   - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to
     be passed directly to PyAudio
 
++ lazy_math:
+
+  - Renamed ``abs`` to ``absolute``, so no Python built-in name is ever
+    replaced when importing with ``from audiolazy import *``.
+
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
 

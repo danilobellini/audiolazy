@@ -29,7 +29,7 @@ import operator
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
-from .lazy_math import cexp, ceil, abs as lzabs
+from .lazy_math import cexp, ceil, absolute
 from .lazy_filters import lowpass, z
 from .lazy_compat import xrange, xmap, xzip
 
@@ -368,7 +368,7 @@ def envelope(sig, cutoff=pi/512):
     Moving average linear filter.
 
   """
-  return lowpass(cutoff)(lzabs(thub(sig, 1)))
+  return lowpass(cutoff)(absolute(thub(sig, 1)))
 
 
 @envelope.strategy("squared")
@@ -591,7 +591,7 @@ def amdf(lag, size):
 
   @tostream
   def amdf_filter(sig, zero=0.):
-    return maverage(size)(lzabs(filt(sig, zero=zero)), zero=zero)
+    return maverage(size)(absolute(filt(sig, zero=zero)), zero=zero)
 
   return amdf_filter
 
