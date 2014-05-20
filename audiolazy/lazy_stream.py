@@ -24,6 +24,7 @@ import itertools as it
 from collections import Iterable, deque
 from functools import wraps
 from warnings import warn
+from math import isinf
 
 # Audiolazy internal imports
 from .lazy_misc import blocks, rint
@@ -283,10 +284,10 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
     """
     if n is None:
       return next(self._data)
-    if n is inf:
+    if isinf(n) and n > 0:
       return constructor(self._data)
     if isinstance(n, float):
-      n = rint(n)
+      n = rint(n) if n > 0 else 0 # So this works with -inf and nan
     return constructor(next(self._data) for _ in xrange(n))
 
   def copy(self):

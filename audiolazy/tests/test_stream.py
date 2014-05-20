@@ -26,12 +26,13 @@ p = pytest.mark.parametrize
 import itertools as it
 import operator
 import warnings
+from collections import deque
 
 # Audiolazy internal imports
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
 from ..lazy_misc import almost_eq
 from ..lazy_compat import orange, xrange, xzip, xmap, xfilter, NEXT_NAME
-from ..lazy_math import inf
+from ..lazy_math import inf, nan
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -289,6 +290,70 @@ class TestStream(object):
     assert ds.skip(1 - noise).take(2 + noise) == data[5:7]
     assert ds.peek(inf) == data[7:]
     assert ds.take(inf) == data[7:]
+
+  def test_take_peek_inf(self):
+    data = list(xrange(30))
+    ds1 = Stream(data)
+    ds1.take(3)
+    assert ds1.peek(inf) == data[3:]
+    assert ds1.take(inf) == data[3:]
+    ds2 = Stream(data)
+    ds2.take(4)
+    assert ds2.peek(inf * 2e-18) == data[4:] # Positive float
+    assert ds2.take(inf * 1e-25) == data[4:]
+    ds3 = Stream(data)
+    ds3.take(1)
+    assert ds3.peek(inf * 43) == data[1:] # Positive int
+    assert ds3.take(inf * 200) == data[1:]
+
+  def test_take_peek_nan(self):
+    for dur in [nan, nan * 23, nan * -5, nan * .3, nan * -.18, nan * 0]:
+      assert Stream(29).take(dur) == []
+      assert Stream([23]).peek(dur) == []
+
+  def test_take_peek_negative_or_zero(self):
+    for dur in [-inf, inf * -1e-16, -1, -2, -.18, 0, 0., -0.]:
+      assert Stream(1, 2, 3).take(dur) == []
+      assert Stream(-1, -23).peek(dur) == []
+
+  def test_take_peek_not_int_nor_float(self):
+    for dur in [Stream, it, [], (2, 3), 3j]:
+      with pytest.raises(TypeError):
+        Stream([]).take(dur)
+      with pytest.raises(TypeError):
+        Stream([128]).peek(dur)
+
+  def test_take_peek_none(self):
+    data = Stream([Stream, it, [], (2, 3), 3j])
+    assert data.peek() is Stream
+    assert data.take() is Stream
+    assert data.peek() is it
+    assert data.take() is it
+    assert data.peek() == []
+    assert data.take() == []
+    assert data.peek() == (2, 3)
+    assert data.take() == (2, 3)
+    assert data.peek() == 3j
+    assert data.take() == 3j
+    with pytest.raises(StopIteration):
+      data.peek()
+    with pytest.raises(StopIteration):
+      data.take()
+
+  @p("constructor", [list, tuple, set, deque])
+  def test_take_peek_constructor(self, constructor):
+    ds = Stream([1, 2, 3] * 12)
+    assert ds.peek(constructor=constructor) == 1
+    assert ds.take(constructor=constructor) == 1
+    assert ds.peek(constructor=constructor) == 2
+    assert ds.take(constructor=constructor) == 2
+    assert ds.peek(3, constructor=constructor) == constructor([3, 1, 2])
+    assert ds.take(4, constructor=constructor) == constructor([3, 1, 2, 3])
+    remain = constructor([1, 2, 3] * 10)
+    assert ds.peek(inf, constructor=constructor) == remain
+    assert ds.take(inf, constructor=constructor) == remain
+    assert ds.peek(3, constructor=constructor) == constructor()
+    assert ds.take(5, constructor=constructor) == constructor()
 
 
 class TestEveryMapFilter(object):
