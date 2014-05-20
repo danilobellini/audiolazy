@@ -584,7 +584,7 @@ def amdf(lag, size):
   See Also
   --------
   freq2lag :
-    Frequency to lag and lag to frequency converter.
+    Frequency (in rad/sample) to lag (in samples) converter.
 
   """
   filt = (1 - z ** -lag).linearize()
@@ -633,6 +633,10 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
     Splits the Stream instance into blocks with given size and hop.
   blocks :
     Same to Stream.blocks but for without using the Stream class.
+  chain :
+    Lazily joins all iterables given as parameters.
+  chain.from_iterable :
+    Same to ``chain(*data)``, but the ``data`` evaluation is lazy.
 
   Note
   ----

@@ -287,6 +287,9 @@ class LinearFilter(LinearFilterProperties):
       amplitude.
     phase :
       Phase from complex data.
+    LinearFilter.plot :
+      Method to plot the LTI filter frequency and phase response into a
+      Matplotlib figure.
 
     """
     z_ = complex_exp(-1j * freq)
@@ -410,6 +413,16 @@ class LinearFilter(LinearFilterProperties):
       Second and hertz constants from samples/second rate.
     LinearFilter.zplot :
       Zeros-poles diagram plotting.
+    dB20 :
+      Elementwise casting from an amplitude value to a logarithmic power
+      gain (in decibels).
+    phase :
+      Phase from complex data.
+    LinearFilter.freq_response :
+      Get the complex frequency response of a filter for specific frequency
+      values.
+    LinearFilter.zplot :
+      Filter zero-pole plane plot.
 
     """
     if not self.is_lti():
@@ -1077,14 +1090,14 @@ comb = StrategyDict("comb")
 @comb.strategy("fb", "alpha", "fb_alpha", "feedback_alpha")
 def comb(delay, alpha=1):
   """
-  Feedback comb filter for a given alpha (and delay).
+  Feedback comb filter for a given alpha and delay.
 
     ``y[n] = x[n] + alpha * y[n - delay]``
 
   Parameters
   ----------
   delay :
-    Feedback delay, in number of samples.
+    Feedback delay (lag), in number of samples.
   alpha :
     Exponential decay gain. You can find it from time decay ``tau`` in the
     impulse response, bringing us ``alpha = e ** (-delay / tau)``. See
@@ -1093,6 +1106,11 @@ def comb(delay, alpha=1):
   Returns
   -------
   A ZFilter instance with the comb filter.
+
+  See Also
+  --------
+  freq2lag :
+    Frequency (in rad/sample) to delay (in samples) converter.
 
   """
   return 1 / (1 - alpha * z ** -delay)
@@ -1108,7 +1126,7 @@ def comb(delay, tau=inf):
   Parameters
   ----------
   delay :
-    Feedback delay, in number of samples.
+    Feedback delay (lag), in number of samples.
   tau :
     Time decay (up to ``1/e``, or -8.686 dB), in number of samples, which
     allows finding ``alpha = e ** (-delay / tau)``. Defaults to ``inf``
@@ -1117,6 +1135,11 @@ def comb(delay, tau=inf):
   Returns
   -------
   A ZFilter instance with the comb filter.
+
+  See Also
+  --------
+  freq2lag :
+    Frequency (in rad/sample) to delay (in samples) converter.
 
   """
   alpha = e ** (-delay / tau)
@@ -1133,13 +1156,18 @@ def comb(delay, alpha=1):
   Parameters
   ----------
   delay :
-    Feedback delay, in number of samples.
+    Feedback delay (lag), in number of samples.
   alpha :
     Memory value gain.
 
   Returns
   -------
   A ZFilter instance with the comb filter.
+
+  See Also
+  --------
+  freq2lag :
+    Frequency (in rad/sample) to delay (in samples) converter.
 
   """
   return 1 + alpha * z ** -delay

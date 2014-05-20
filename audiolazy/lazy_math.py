@@ -123,7 +123,7 @@ def dB10(data):
 @elementwise("data", 0)
 def dB20(data):
   """
-  Convert a gain value to dB, from a amplitude value to a power gain.
+  Convert a gain value to dB, from an amplitude value to a power gain.
   """
   return 20 * math.log10(abs(data)) if data != 0 else -inf
 
