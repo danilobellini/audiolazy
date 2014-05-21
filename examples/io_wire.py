@@ -19,10 +19,21 @@
 # danilo [dot] bellini [at] gmail [dot] com
 """
 Simple I/O wire example, connecting the input directly to the output
+
+This example uses the default PortAudio API, however you can change it by
+using the "api" keyword argument in AudioIO creation, like
+
+  with AudioIO(True, api="jack") as pr:
+
+obviously, you can use another API instead (like "alsa").
+
+Note
+----
+When using JACK, keep chunks.size = 1
 """
 
-from audiolazy import AudioIO
+from audiolazy import chunks, AudioIO
 
-with AudioIO(True) as player_recorder:
-  input_data = player_recorder.record(chunk_size=16)
-  player_recorder.play(input_data, chunk_size=16)
+chunks.size = 16 # Amount of samples per chunk to be sent to PortAudio
+with AudioIO(True) as pr: # A player-recorder
+  pr.play(pr.record())
