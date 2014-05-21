@@ -27,6 +27,7 @@ AudioLazy changes history
   - Musical keyboard synth example with a QWERTY keyboard
   - Random synthesis with saving and memoization
   - Aesthetics for the Tkinter GUI examples
+  - Matplotlib animated plot with mic input data (also works via jack!)
 
 + general:
 
