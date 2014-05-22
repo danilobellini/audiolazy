@@ -26,7 +26,7 @@ from audiolazy import (sHz, octaves, chain, adsr, gauss_noise, sin_table, pi,
                        sinusoid, lag2freq, Streamix, zeros, clip, lowpass,
                        TableLookup, line, inf, xrange, thub, chunks)
 from random import choice, uniform, randint
-from functools import wraps
+from functools import wraps, reduce
 from contextlib import closing
 import operator, wave
 
@@ -60,7 +60,7 @@ def save_to_16bit_wave_file(fname, sig, rate):
     wave_file.setnchannels(1)
     wave_file.setsampwidth(2)
     wave_file.setframerate(rate)
-    for chunk in chunks((clip(sig) * 2 ** 15).map(int), dfmt="h"):
+    for chunk in chunks((clip(sig) * 2 ** 15).map(int), dfmt="h", padval=0):
       wave_file.writeframes(chunk)
 
 

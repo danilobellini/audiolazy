@@ -24,7 +24,7 @@ AudioLazy changes history
 + examples:
 
   - Formant synthesis for voiced "ah-eh-ee-oh-oo"
-  - Musical keyboard synth example with a QWERTY keyboard
+  - Musical keyboard synth example with a QWERTY keyboard (also via jack!)
   - Random synthesis with saving and memoization
   - Aesthetics for the Tkinter GUI examples
   - Matplotlib animated plot with mic input data (also works via jack!)

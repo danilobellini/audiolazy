@@ -30,7 +30,7 @@ import sys
 # Some initialization
 # ===================
 num_tests = 30
-is_pypy = sys.subversion[0] == "PyPy"
+is_pypy = any(name.startswith("pypy") for name in dir(sys))
 if is_pypy:
   print("PyPy detected!")
   print()

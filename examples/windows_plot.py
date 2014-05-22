@@ -28,7 +28,9 @@ M = 256
 
 for func in window:
   plt.plot(func(M), label=func.__name__)
+
 plt.legend(loc="best")
 plt.axis(xmin=-5, xmax=M + 5 - 1, ymin=-.05, ymax=1.05)
 plt.title("AudioLazy windows for size of {M} samples".format(M=M))
+plt.tight_layout()
 plt.show()

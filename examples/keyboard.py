@@ -22,7 +22,8 @@ Musical keyboard synth example with a QWERTY keyboard
 """
 
 from audiolazy import (str2midi, midi2freq, saw_table, sHz, Streamix, Stream,
-                       line, AudioIO)
+                       line, AudioIO, chunks)
+import sys
 try:
   import tkinter
 except ImportError:
@@ -109,6 +110,9 @@ def on_key_up_process(evt):
 tk.bind("<KeyPress>", on_key_down)
 tk.bind("<KeyRelease>", on_key_up)
 
-with AudioIO() as player:
+api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+chunks.size = 1 if api == "jack" else 16
+
+with AudioIO(api=api) as player:
   player.play(smix, rate=rate)
   tk.mainloop()
