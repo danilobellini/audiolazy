@@ -30,6 +30,7 @@ AudioLazy changes history
   - Matplotlib animated plot with mic input data (also works via jack!)
   - Perceptual experiment with butterworth filters (Scipy) applied to white
     noise (based on the Demonstrations to Auditory Scene Analysis)
+  - ISO/FDIS 226:2003 equal loudness contour curves plotting
 
 + general:
 
@@ -52,6 +53,11 @@ AudioLazy changes history
 
     * ``numpy`` (*default*): needs Numpy arrays internally
     * ``list``: uses lists instead, doesn't need Numpy and was tested on Pypy
+
++ lazy_auditory:
+
+  - New ``phon2dB`` StrategyDict instance with the ISO/FDIS 226:2003 model
+    for getting a SPL (Sound Pressure Level) in dBs from a phon value
 
 + lazy_core:
 

@@ -20,14 +20,17 @@
 Peripheral auditory modeling module
 """
 
+import math
+
 # Audiolazy internal imports
 from .lazy_core import StrategyDict
 from .lazy_misc import elementwise
 from .lazy_filters import z, CascadeFilter, ZFilter, resonator
 from .lazy_math import pi, exp, cos, sin, sqrt, factorial
 from .lazy_stream import thub
+from .lazy_compat import xzip
 
-__all__ = ["erb", "gammatone", "gammatone_erb_constants"]
+__all__ = ["erb", "gammatone", "gammatone_erb_constants", "phon2dB"]
 
 
 erb = StrategyDict("erb")
@@ -254,3 +257,109 @@ def gammatone(freq, bandwidth):
   freq = thub(freq, 4)
   resons = [resonator.z_exp, resonator.poles_exp] * 2
   return CascadeFilter(reson(freq, bw2) for reson in resons)
+
+
+phon2dB = StrategyDict("phon2dB")
+
+
+@phon2dB.strategy("iso226", "iso226_2003", "iso_fdis_226_2003")
+def phon2dB(loudness=None):
+  """
+  Loudness in phons to Sound Pressure Level (SPL) in dB using the
+  ISO/FDIS 226:2003 model.
+
+  This function needs Scipy, as ``scipy.interpolate.UnivariateSpline``
+  objects are used as interpolators.
+
+  Parameters
+  ----------
+  loudness :
+    The loudness value in phons to be converted, or None (default) to get
+    the threshold of hearing.
+
+  Returns
+  -------
+  A callable that returns the SPL dB value for each given frequency in hertz.
+
+  Note
+  ----
+  See ``phon2dB.iso226.schema`` and ``phon2dB.iso226.table`` to know the
+  original frequency used for the result. The result for any other value is
+  an interpolation (spline). Don't trust on values nor lower nor higher than
+  the frequency limits there (20Hz and 12.5kHz) as they're not part of
+  ISO226 and no value was collected to estimate them (they're just a spline
+  interpolation to reach 1000dB at -30Hz and 32kHz). Likewise, the trustful
+  loudness input range is from 20 to 90 phon, as written on ISO226, although
+  other values aren't found by a spline interpolation but by using the
+  formula on section 4.1 of ISO226.
+
+  Hint
+  ----
+  The ``phon2dB.iso226.table`` also have other useful information, such as
+  the threshold values in SPL dB.
+
+  """
+  from scipy.interpolate import UnivariateSpline
+
+  table = phon2dB.iso226.table
+  schema = phon2dB.iso226.schema
+  freqs = [row[schema.index("freq")] for row in table]
+
+  if loudness is None: # Threshold levels
+    spl = [row[schema.index("threshold")] for row in table]
+
+  else: # Curve for a specific phon value
+    def get_pressure_level(freq, alpha, loudness_base, threshold):
+      return 10 / alpha * math.log10(
+        4.47e-3 * (10 ** (.025 * loudness) - 1.14) +
+        (.4 * 10 ** ((threshold + loudness_base) / 10 - 9)) ** alpha
+      ) - loudness_base + 94
+
+    spl = [get_pressure_level(**dict(xzip(schema, args))) for args in table]
+
+  interpolator = UnivariateSpline(freqs, spl, s=0)
+  interpolator_low = UnivariateSpline([-30] + freqs, [1e3] + spl, s=0)
+  interpolator_high = UnivariateSpline(freqs + [32000], spl + [1e3], s=0)
+
+  @elementwise("freq", 0)
+  def freq2dB_spl(freq):
+    if freq < 20:
+      return interpolator_low(freq)
+    if freq > 12500:
+      return interpolator_high(freq)
+    return interpolator(freq)
+  return freq2dB_spl
+
+# ISO226 Table 1
+phon2dB.iso226.schema = ("freq", "alpha", "loudness_base", "threshold")
+phon2dB.iso226.table = (
+  (   20, 0.532, -31.6, 78.5),
+  (   25, 0.506, -27.2, 68.7),
+  ( 31.5, 0.480, -23.0, 59.5),
+  (   40, 0.455, -19.1, 51.1),
+  (   50, 0.432, -15.9, 44.0),
+  (   63, 0.409, -13.0, 37.5),
+  (   80, 0.387, -10.3, 31.5),
+  (  100, 0.367,  -8.1, 26.5),
+  (  125, 0.349,  -6.2, 22.1),
+  (  160, 0.330,  -4.5, 17.9),
+  (  200, 0.315,  -3.1, 14.4),
+  (  250, 0.301,  -2.0, 11.4),
+  (  315, 0.288,  -1.1,  8.6),
+  (  400, 0.276,  -0.4,  6.2),
+  (  500, 0.267,   0.0,  4.4),
+  (  630, 0.259,   0.3,  3.0),
+  (  800, 0.253,   0.5,  2.2),
+  ( 1000, 0.250,   0.0,  2.4),
+  ( 1250, 0.246,  -2.7,  3.5),
+  ( 1600, 0.244,  -4.1,  1.7),
+  ( 2000, 0.243,  -1.0, -1.3),
+  ( 2500, 0.243,   1.7, -4.2),
+  ( 3150, 0.243,   2.5, -6.0),
+  ( 4000, 0.242,   1.2, -5.4),
+  ( 5000, 0.242,  -2.1, -1.5),
+  ( 6300, 0.245,  -7.1,  6.0),
+  ( 8000, 0.254, -11.2, 12.6),
+  (10000, 0.271, -10.7, 13.9),
+  (12500, 0.301,  -3.1, 12.3),
+)
