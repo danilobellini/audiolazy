@@ -28,6 +28,8 @@ AudioLazy changes history
   - Random synthesis with saving and memoization
   - Aesthetics for the Tkinter GUI examples
   - Matplotlib animated plot with mic input data (also works via jack!)
+  - Perceptual experiment with butterworth filters (Scipy) applied to white
+    noise (based on the Demonstrations to Auditory Scene Analysis)
 
 + general:
 
