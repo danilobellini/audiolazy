@@ -400,6 +400,9 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
   def register_ignored_class(cls, ignore):
     cls.__ignored_classes__ += (ignore,)
 
+  def __abs__(self):
+    return self.map(abs)
+
 
 def avoid_stream(cls):
   """

@@ -31,9 +31,8 @@ from functools import reduce
 from ..lazy_lpc import (toeplitz, levinson_durbin, lpc, parcor,
                         parcor_stable, lsf, lsf_stable)
 from ..lazy_misc import almost_eq
-from ..lazy_compat import xrange
+from ..lazy_compat import xrange, xmap
 from ..lazy_filters import z, ZFilter
-from ..lazy_math import absolute
 
 
 class TestLPCParcorLSFAndStability(object):
@@ -199,7 +198,7 @@ class TestLPC(object):
 
     # See if a PARCOR is "almost one" (stability test isn't "stable")
     except AssertionError:
-      assert max(absolute(parcor(filt))) + 1e-7 > 1.
+      assert max(xmap(abs, parcor(filt))) + 1e-7 > 1.
 
   @p(("blk", "order"), kcovar_valid_cases)
   def test_equalness_covar_kcovar_valid_scenario(self, blk, order):

@@ -32,7 +32,7 @@ from collections import deque
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
 from ..lazy_misc import almost_eq
 from ..lazy_compat import orange, xrange, xzip, xmap, xfilter, NEXT_NAME
-from ..lazy_math import inf, nan
+from ..lazy_math import inf, nan, pi
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -354,6 +354,21 @@ class TestStream(object):
     assert ds.take(inf, constructor=constructor) == remain
     assert ds.peek(3, constructor=constructor) == constructor()
     assert ds.take(5, constructor=constructor) == constructor()
+
+  def test_abs_step_by_step(self):
+    data = [-1, 5, 2 + 3j, 8, -.7]
+    ds = abs(Stream(data))
+    assert isinstance(ds, Stream)
+    assert ds.take(len(data)) == [abs(el) for el in data]
+    assert ds.take(1) == [] # Finished
+
+  def test_abs_take_peek(self):
+    assert abs(Stream([])).peek(9) == [] # From empty Stream
+    assert abs(Stream([5, -12, 14j, -2j, 0])).take(inf) == [5, 12, 14., 2., 0]
+    data = abs(Stream([1.2, -1.57e-3, -(pi ** 2), -2j,  8 - 4j]))
+    assert almost_eq(data.peek(inf), [1.2, 1.57e-3, pi ** 2, 2., 4 * 5 ** .5])
+    assert data.take() == 1.2
+    assert almost_eq(data.take(), 1.57e-3)
 
 
 class TestEveryMapFilter(object):

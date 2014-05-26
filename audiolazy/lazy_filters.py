@@ -36,8 +36,7 @@ from .lazy_text import (float_str, multiplication_formatter,
 from .lazy_compat import meta, iteritems, xrange, im_func
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
-from .lazy_math import (exp, sin, cos, sqrt, pi, nan, dB20, phase,
-                        absolute, e, inf)
+from .lazy_math import exp, sin, cos, sqrt, pi, nan, dB20, phase, e, inf
 
 __all__ = ["LinearFilterProperties", "LinearFilter", "ZFilterMeta", "ZFilter",
            "z", "FilterListMeta", "FilterList", "CascadeFilter",
@@ -462,8 +461,8 @@ class LinearFilter(LinearFilterProperties):
     else:
       mag_plot.set_xscale(fscale)
     mag_plot.set_title("Frequency response")
-    mag = {"linear": absolute,
-           "squared": lambda x: [abs(xi) ** 2 for xi in x],
+    mag = {"linear": lambda v: [abs(vi) for vi in v],
+           "squared": lambda v: [abs(vi) ** 2 for vi in v],
            "dB": dB20
           }[mscale]
     if blk is not None:

@@ -36,8 +36,6 @@ AudioLazy changes history
 
   - Tox for testing with CPython 2.7, 3.2, 3.3 and 3.4, as well as PyPy
   - Continuous integration wih Travis CI and Coveralls
-  - Renamed ``freq2lag`` and ``lag2freq`` to use ``2`` instead of ``_to_``,
-    and moved them to keep the unit converters on lazy_misc
   - New ``_internals.py`` module to avoid exposing package internals together
     with the API, which also allowed the new simplified ``__init__.py``
   - Renewed setup.py in both its internals (e.g. using AST instead of
@@ -81,10 +79,14 @@ AudioLazy changes history
   - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to
     be passed directly to PyAudio
 
-+ lazy_math:
++ multiple modules:
 
-  - Renamed ``abs`` to ``absolute``, so no Python built-in name is ever
-    replaced when importing with ``from audiolazy import *``.
+  - (*lazy_math and lazy_stream*) Renamed the elementwised ``abs`` to
+    ``absolute``, so no Python built-in name is ever replaced when importing
+    with ``from audiolazy import *``. Also, the built-in ``abs`` now can be
+    used directly with Stream instances
+  - (*lazy_analysis and lazy_misc*) Renamed ``freq2lag`` and ``lag2freq`` to
+    use ``2`` instead of ``_to_``, and moved them to lazy_misc
 
 
 *** Version 0.05 (Python 2 & 3, more examples, refactoring, polinomials) ***
