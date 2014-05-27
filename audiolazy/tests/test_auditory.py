@@ -20,17 +20,21 @@
 Testing module for the lazy_auditory module
 """
 
+from __future__ import division
+
 import pytest
 p = pytest.mark.parametrize
 
 import itertools as it
+import os, json
 
 # Audiolazy internal imports
-from ..lazy_auditory import erb, gammatone_erb_constants, gammatone
+from ..lazy_auditory import erb, gammatone_erb_constants, gammatone, phon2dB
 from ..lazy_misc import almost_eq, sHz
 from ..lazy_math import pi
 from ..lazy_filters import CascadeFilter
 from ..lazy_stream import Stream
+from ..lazy_compat import iteritems
 
 
 class TestERB(object):
@@ -89,3 +93,20 @@ class TestGammatone(object):
     assert len(cfilt) == 4
     for filt in cfilt:
       assert len(filt.denominator) == 3
+
+
+class TestPhon2DB(object):
+
+  # Values from image analysis over the figure A.1 in the ISO/FDIS 226:2003
+  # Annex A, page 5
+  directory = os.path.split(__file__)[0]
+  iso226_json_filename = os.path.join(directory, "iso226.json")
+  with open(iso226_json_filename) as f:
+    iso226_image_data = {None if k == "None" else int(k): v
+                         for k, v in iteritems(json.load(f))}
+
+  @p(("loudness", "curve_data"), iso226_image_data.items())
+  def test_match_curve_from_image_data(self, loudness, curve_data):
+    freq2dB = phon2dB(loudness)
+    for freq, spl in curve_data:
+      assert almost_eq.diff(freq2dB(freq), spl, max_diff=.5)

@@ -94,6 +94,7 @@ XFailerModule("pyaudio")
 XFailerModule("scipy")
 XFailerModule("scipy.optimize")
 XFailerModule("scipy.signal")
+XFailerModule("scipy.interpolate")
 XFailerModule("sympy")
 
 # The two Numpy mocks below are due to lazy_synth.line doctest in pypy (without

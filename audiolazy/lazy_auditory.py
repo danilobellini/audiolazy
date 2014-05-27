@@ -324,10 +324,10 @@ def phon2dB(loudness=None):
   @elementwise("freq", 0)
   def freq2dB_spl(freq):
     if freq < 20:
-      return interpolator_low(freq)
+      return interpolator_low(freq).tolist()
     if freq > 12500:
-      return interpolator_high(freq)
-    return interpolator(freq)
+      return interpolator_high(freq).tolist()
+    return interpolator(freq).tolist()
   return freq2dB_spl
 
 # ISO226 Table 1
