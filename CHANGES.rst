@@ -52,6 +52,30 @@ AudioLazy changes history
     * ``numpy`` (*default*): needs Numpy arrays internally
     * ``list``: uses lists instead, doesn't need Numpy and was tested on Pypy
 
+  - New ``stft`` StrategyDict instance, allowing Short Time Fourier Transform
+    block processors / phase vocoder by:
+
+    * Passing a function as the first parameter
+    * Using a ``stft`` strategies as a decorator
+    * Creating new strategies by avoiding the only positional parameter
+
+    It was created with three Numpy-based strategies:
+
+    * ``rfft``, ``real`` or ``base`` (*default*): needs ``numpy.fft.rfft``
+      internally, as well as its inverse, to process a block in the
+      frequency domain with values up to the Nyquist frequency, by assuming
+      the input signal is real
+    * ``cfft`` or ``complex``: Alike to the default approach but uses the
+      ``numpy.fft.fft`` for a full complex-valued block in frequency domain,
+      which means the output is a complex signal
+    * ``cfftr`` or ``complex_real``: same to ``stft.cfft`` strategy, but
+      keeps only the real part of the result
+
+    Parameters allows changing the default zero-phase behavior (``before``
+    and ``after`` functions), the transform and inverse transform functions,
+    the overlap-add strategy (as well as its parameters), and obviously the
+    time block, padding and hop sizes.
+
 + lazy_auditory:
 
   - New ``phon2dB`` StrategyDict instance with the ISO/FDIS 226:2003 model

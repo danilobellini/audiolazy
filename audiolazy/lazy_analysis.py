@@ -24,6 +24,8 @@ from __future__ import division
 
 from math import cos, pi
 from collections import deque, Sequence, Iterable
+from functools import wraps, reduce
+from itertools import chain
 import operator
 
 # Audiolazy internal imports
@@ -31,10 +33,10 @@ from .lazy_core import StrategyDict
 from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp, ceil
 from .lazy_filters import lowpass, z
-from .lazy_compat import xrange, xmap, xzip
+from .lazy_compat import xrange, xmap, xzip, iteritems
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip", "unwrap", "amdf", "overlap_add"]
+           "maverage", "clip", "unwrap", "amdf", "overlap_add", "stft"]
 
 
 window = StrategyDict("window")
@@ -738,3 +740,209 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
       yield el
   for el in mem[hop:]: # No more blocks, finish yielding the last one
     yield el
+
+
+stft = StrategyDict("stft")
+
+
+@stft.strategy("rfft", "base", "real")
+def stft(func=None, **kwparams):
+  """
+  Short Time Fourier Transform block processor / phase vocoder wrapper.
+
+  This function can be used in many ways:
+
+  * Directly as a signal processor builder, wrapping a spectrum block/grain
+    processor function;
+  * Directly as a decorator to a block processor;
+  * Called without the ``func`` parameter for a partial evalution style
+    changing the defaults.
+
+  Parameters
+  ----------
+  func :
+    The block/grain processor function that receives a transformed block in
+    the frequency domain (the ``transform`` output) and should return the
+    processed data (it will be the ``inverse_transform`` input). This
+    parameter shouldn't appear when this function is used as a decorator.
+  size :
+    Block size for the STFT process, in samples.
+  hop :
+    Duration in samples between two blocks. Defaults to the ``size`` value.
+  padded_size :
+    Second parameter for the transform functions. Defaults to the ``size``
+    value.
+  transform :
+    Function that receives the windowed block (in time domain) and the
+    ``padded_size`` as two positional inputs and should return the block in
+    frequency domain. Defaults to ``numpy.fft.rfft``.
+  inverse_transform :
+    Function that receives the processed block (in frequency domain) and the
+    ``padded_size`` as two positional inputs and should return the block in
+    time domain. Defaults to ``numpy.fft.irfft``.
+  wnd :
+    Window function to be called as ``wnd(size)`` or window iterable with
+    length equals to ``size``. The windowing/apodization values are used
+    before taking the FFT of each block. Defaults to None, which means no
+    window should be applied (same behavior of a rectangular window).
+  before :
+    Function to be applied just before taking the transform, after the
+    windowing. Defaults to the ``numpy.fft.fftshift``. Together with
+    the ``after`` default, this results in zero-phased transforms.
+  after :
+    Function to be applied just after the inverse transform, before calling
+    the overlap-add (as well as before its windowing, if any). Defaults to
+    the ``numpy.fft.fftshift``. Together with the ``before`` default, this
+    results in zero-phased transforms.
+  ola :
+    Overlap-add strategy. Uses the ``overlap_add`` default strategy when
+    not given. The strategy should allow at least size and hop keyword
+    arguments, besides a first positional argument with the iterable with
+    blocks.
+  ola_* :
+    Extra keyword parameters for the overlap-add strategy. The extra
+    ``ola_`` prefix is removed when calling it. See the overlap-add strategy
+    docs for more information about the valid parameters.
+
+  Returns
+  -------
+  A function with the same parameters above, besides ``func``, which is
+  replaced by the signal input (if func was given). The parameters used when
+  building the function should be seen as defaults that can be changed when
+  calling the resulting function with the respective keyword arguments.
+
+  Note
+  ----
+  Parameters should be passed as keyword arguments. The only exception
+  is ``func`` for this function and ``sig`` for the returned function,
+  which are always the first positional argument, ald also the one that
+  shouldn't appear when using this function as a decorator.
+
+  Hint
+  ----
+
+  1. When using Numpy FFT, one can keep data in place and return the
+     changed input block to save time;
+  2. Actually, there's nothing in this function that imposes FFT or Numpy
+     besides the default values. One can still use this even for other
+     transforms that have nothing to do with the Fourier Transform.
+  """
+  # Using as a decorator or to "replicate" this function with other defaults
+  if func is None:
+    cfi = chain.from_iterable
+    mix_dict = lambda *dicts: dict(cfi(iteritems(d) for d in dicts))
+    result = lambda f=None, **new_kws: stft(f, **mix_dict(kwparams, new_kws))
+    return result
+
+  # Using directly
+  @tostream
+  @wraps(func)
+  def wrapper(sig, **kwargs):
+    kws = kwparams.copy()
+    kws.update(kwargs)
+
+    if "size" not in kws:
+      raise TypeError("Missing 'size' argument")
+    if "hop" in kws and kws["hop"] > kws["size"]:
+      raise ValueError("Hop value can't be higher than size")
+
+    blk_params = {"size": kws.pop("size")}
+    blk_params["hop"] = kws.pop("hop", None)
+    ola_params = blk_params.copy() # Size and hop
+
+    blk_params["wnd"] = kws.pop("wnd", None)
+    padded_size = kws.pop("padded_size", blk_params["size"])
+    ola = kws.pop("ola", overlap_add)
+
+    class NotSpecified(object):
+      pass
+    for name in ["transform", "inverse_transform", "before", "after"]:
+      blk_params[name] = kws.pop(name, NotSpecified)
+
+    for k, v in kws.items():
+      if k.startswith("ola_"):
+        ola_params[k[len("ola_"):]] = v
+      else:
+        raise TypeError("Unknown '{}' extra argument".format(k))
+
+    def blk_gen(size, hop, wnd, transform, inverse_transform, before, after):
+      if transform is NotSpecified:
+        from numpy.fft import rfft as transform
+      if inverse_transform is NotSpecified:
+        from numpy.fft import irfft as inverse_transform
+      if before is NotSpecified:
+        from numpy.fft import fftshift as before
+      if after is NotSpecified:
+        from numpy.fft import fftshift as after
+
+      # Find the right windowing function to be applied
+      if callable(wnd) and not isinstance(wnd, Stream):
+        wnd = wnd(size)
+      if isinstance(wnd, Iterable):
+        wnd = list(wnd)
+        if len(wnd) != size:
+          raise ValueError("Incompatible window size")
+      elif wnd is not None:
+        raise TypeError("Window should be an iterable or a callable")
+
+      # Pad size lambdas
+      trans = transform and (lambda blk: transform(blk, padded_size))
+      itrans = inverse_transform and (lambda blk:
+                                        inverse_transform(blk, padded_size))
+
+      # Continuation style calling
+      funcs = [f for f in [before, trans, func, itrans, after]
+                 if f is not None]
+      process = lambda blk: reduce(lambda data, f: f(data), funcs, blk)
+
+      if wnd is None:
+        for blk in Stream(sig).blocks(size=size, hop=hop):
+          yield process(blk)
+      else:
+        blk_with_wnd = wnd[:]
+        mul = operator.mul
+        for blk in Stream(sig).blocks(size=size, hop=hop):
+          blk_with_wnd[:] = xmap(mul, blk, wnd)
+          yield process(blk_with_wnd)
+
+    return ola(blk_gen(**blk_params), **ola_params)
+
+  return wrapper
+
+
+@stft.strategy("cfft", "complex")
+def stft(func=None, **kwparams):
+  """
+  Short Time Fourier Transform for complex data.
+
+  Same to the default STFT strategy, but with new defaults. This is the same
+  to:
+
+  .. code-block:: python
+
+    stft.base(transform=numpy.fft.fft, inverse_transform=numpy.fft.ifft)
+
+  See ``stft.base`` docs for more.
+  """
+  from numpy.fft import fft, ifft
+  return stft.base(transform=fft, inverse_transform=ifft)(func, **kwparams)
+
+
+@stft.strategy("cfftr", "complex_real")
+def stft(func=None, **kwparams):
+  """
+  Short Time Fourier Transform for real data keeping the full FFT block.
+
+  Same to the default STFT strategy, but with new defaults. This is the same
+  to:
+
+  .. code-block:: python
+
+    stft.base(transform=numpy.fft.fft,
+              inverse_transform=lambda *args: numpy.fft.ifft(*args).real)
+
+  See ``stft.base`` docs for more.
+  """
+  from numpy.fft import fft, ifft
+  ifft_r = lambda *args: ifft(*args).real
+  return stft.base(transform=fft, inverse_transform=ifft_r)(func, **kwparams)
