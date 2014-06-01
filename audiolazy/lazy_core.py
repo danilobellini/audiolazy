@@ -524,7 +524,7 @@ class StrategyDict(MultiKeyDict):
 
     return StrategyDictInstance(name)
 
-  default = lambda: NotImplemented
+  default = lambda *args, **kwargs: NotImplemented
 
   def strategy(self, *names):
     def decorator(func):
@@ -534,27 +534,14 @@ class StrategyDict(MultiKeyDict):
     return decorator
 
   def __setitem__(self, key, value):
-    if "default" not in self.__dict__: # Avoiding hasattr due to __getattr__
+    if "default" not in vars(self):
       self.default = value
     super(StrategyDict, self).__setitem__(key, value)
-
-    # Also register strategy into module __test__ (allow doctests)
-    if "__doc__" in getattr(value, "__dict__", {}):
-      module_name = getattr(value, "__module__", False)
-      if module_name:
-        module = sys.modules[module_name]
-        if not hasattr(module, "__test__"):
-          setattr(module, "__test__", {})
-        strategy_name = ".".join([self.__name__, value.__name__])
-        module.__test__[strategy_name] = value
+    for k in key if isinstance(key, tuple) else (key,):
+      setattr(self, k, value)
 
   def __call__(self, *args, **kwargs):
     return self.default(*args, **kwargs)
-
-  def __getattr__(self, name):
-    if name in self._keys_dict:
-      return self[name]
-    raise AttributeError("Unknown attribute '{0}'".format(name))
 
   def __iter__(self):
     return itervalues(self)

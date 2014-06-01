@@ -25,6 +25,7 @@ p = pytest.mark.parametrize
 
 from types import GeneratorType
 import operator
+from functools import reduce
 
 # Audiolazy internal imports
 from ..lazy_core import OpMethod, AbstractOperatorOverloaderMeta, StrategyDict
@@ -304,3 +305,52 @@ class TestStrategyDict(object):
       assert sd(-19, 3) == -16
     sd.default = sd[mul_names[0]]
     assert sd(-19, 3) == -57
+
+  def test_strategies_names_introspection(self):
+    sd = StrategyDict()
+    sd.strategy("first", "abc")(lambda val: "abc" + val)
+    sd.strategy("second", "def")(lambda val: "def" + val) # Neglect 2nd name
+    sd.strategy("third", "123")(lambda val: "123" + val) # Neglect 2nd name
+
+    # Nothing new here: strategies do what they should...
+    assert sd("x") == "abcx"
+    assert sd.default("p") == "abcp"
+
+    assert sd.first("w") == "abcw" == sd["first"]("w")
+    assert sd.second("zsc") == "defzsc" == sd["second"]("zsc")
+    assert sd.third("blah") == "123blah" == sd["third"]("blah")
+
+    assert sd.abc("y") == "abcy" == sd["abc"]("y")
+    assert sd["def"]("few") == "deffew"
+    assert sd["123"]("lots") == "123lots"
+
+    # Valid names for attributes
+    all_names = {"first", "second", "third", "abc", "def", "123"}
+    assert all(name in dir(sd) for name in all_names)
+    assert all(name in vars(sd) for name in all_names)
+    assert "default" in dir(sd)
+    assert "default" in vars(sd)
+    all_keys_tuples = sd.keys()
+    all_keys = reduce(operator.concat, all_keys_tuples)
+    assert set(all_keys) == all_names # Default not in keys
+    assert set(all_keys_tuples) == {("first", "abc"),
+                                    ("second", "def"),
+                                    ("third", "123")}
+
+    # First name is the __name__
+    assert sd["abc"].__name__ == "first"
+    assert sd["def"].__name__ == "second"
+    assert sd["123"].__name__ == "third"
+
+  def test_empty(self):
+    sd = StrategyDict() # No strategy implemented!
+    assert "default" in dir(sd)
+    assert "default" not in vars(sd) # Only in the class
+    assert sd.default() == NotImplemented
+    assert sd() == NotImplemented
+    assert sd.default(a_key_param="Something") == NotImplemented
+    assert sd(some_key_param="Anything") == NotImplemented
+    assert sd.default(12) == NotImplemented
+    assert sd(34) == NotImplemented
+    assert list(sd.keys()) == []
+    assert list(iter(sd)) == []
