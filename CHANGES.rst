@@ -89,6 +89,9 @@ AudioLazy changes history
     or not] binary ones and the invert operator, which means it would yield
     only the unary ``"+"`` (pos) and ``-`` (neg), as probably was expected;
     OpMethod also had a bug fix regarding the shift operators
+  - Strategy name autocomplete works on IPython since StrategyDict now
+    changes its instance dictionary (e.g. ``vars(window)``) instead of
+    depending on the ``__getattr__`` method
 
 + lazy_filters:
 

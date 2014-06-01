@@ -354,3 +354,38 @@ class TestStrategyDict(object):
     assert sd(34) == NotImplemented
     assert list(sd.keys()) == []
     assert list(iter(sd)) == []
+
+  def test_delitem(self):
+    sd = StrategyDict()
+    sd.strategy("sum")(lambda *args: reduce(operator.add, args))
+    sd.strategy("prod")(lambda *args: reduce(operator.mul, args))
+
+    # They work...
+    assert sd.sum(7, 2, 3) == 12
+    assert sd.prod(7, 2, 3) == 42
+    assert sd["sum"](2, 3) == 5
+    assert sd["prod"](2, 3) == 6
+
+    # Their names are there
+    assert set(sd.keys()) == {("sum",), ("prod",)}
+    assert "sum" in dir(sd)
+    assert "prod" in dir(sd)
+    assert "sum" in vars(sd)
+    assert "prod" in vars(sd)
+
+    # Not anymore!
+    del sd["sum"]
+    assert "sum" not in dir(sd)
+    assert "sum" not in vars(sd)
+    with pytest.raises(AttributeError):
+      sd.sum(-1, 2, 3)
+    with pytest.raises(KeyError):
+      sd["sum"](5, 4)
+
+    # But prod is still there
+    assert list(sd.keys()) == [("prod",)]
+    assert len(sd) == 1
+    assert "prod" in dir(sd)
+    assert "prod" in vars(sd)
+    assert sd.prod(-1, 2, 3) == -6
+    assert sd["prod"](5, 4) == 20

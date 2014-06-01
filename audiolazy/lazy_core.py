@@ -540,6 +540,11 @@ class StrategyDict(MultiKeyDict):
     for k in key if isinstance(key, tuple) else (key,):
       setattr(self, k, value)
 
+  def __delitem__(self, key):
+    super(StrategyDict, self).__delitem__(key)
+    for k in key if isinstance(key, tuple) else (key,):
+      delattr(self, k)
+
   def __call__(self, *args, **kwargs):
     return self.default(*args, **kwargs)
 
