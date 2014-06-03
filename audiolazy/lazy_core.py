@@ -540,10 +540,14 @@ class StrategyDict(MultiKeyDict):
 
   default = lambda *args, **kwargs: NotImplemented
 
-  def strategy(self, *names):
+  def strategy(self, *names, **kwargs):
     def decorator(func):
-      func.__name__ = str(names[0])
+      if not kwargs.pop("keep_name", False):
+        func.__name__ = str(names[0])
       self[names] = func
+      if kwargs:
+        key = next(iter(kwargs))
+        raise TypeError("Unknown keyword argument '{}'".format(key))
       return self
     return decorator
 
@@ -556,8 +560,8 @@ class StrategyDict(MultiKeyDict):
 
   def __delitem__(self, key):
     super(StrategyDict, self).__delitem__(key)
-    for k in key if isinstance(key, tuple) else (key,):
-      super(StrategyDict, self).__delattr__(k)
+    if hasattr(self, key):
+      super(StrategyDict, self).__delattr__(key)
 
   __delattr__ = __delitem__
 

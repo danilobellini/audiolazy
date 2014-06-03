@@ -441,3 +441,23 @@ class TestStrategyDict(object):
     assert "prod" in vars(sd)
     assert sd.prod(-1, 2, 3) == -6
     assert sd["prod"](5, 4) == 20
+
+  def test_strategy_keep_name(self):
+    sd = StrategyDict("sd")
+    func = lambda a, b: a + b
+    assert func.__name__ == "<lambda>"
+    sd.strategy("add", keep_name=True)(func)
+    assert func.__name__ == "<lambda>"
+    sd.strategy("+", keep_name=False)(func)
+    assert func.__name__ == "+"
+    assert list(sd.keys()) == [("add", "+")]
+    sd.strategy("add")(func) # Keeping the name is False by default
+    assert func.__name__ == "add"
+    assert list(sd.keys()) == [("+", "add")] # Insertion order
+
+  def test_strategy_invalid_kwarg(self):
+    sd = StrategyDict("sd")
+    with pytest.raises(TypeError) as exc:
+      sd.strategy("add", weird=True)(lambda x: x)
+    words = ["unknown", "weird"]
+    assert all(w in str(exc.value).lower() for w in words)

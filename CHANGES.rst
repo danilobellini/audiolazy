@@ -92,9 +92,12 @@ AudioLazy changes history
   - Strategy name autocomplete works on IPython since StrategyDict now
     changes its instance dictionary (e.g. ``vars(window)``) instead of
     depending on the ``__getattr__`` method
+  - ``StrategyDict.strategy`` method now allows the strategy function name to
+    be kept by using the new ``keep_name`` keyword-only argument. With that
+    it's now possible to use built-in functions as well as other immutable
+    callables as strategies
   - MultiKeyDict methods ``key2keys`` and ``value2keys`` to help getting the
     tuple of all keys that points to the same value
-
 
 + lazy_filters:
 
