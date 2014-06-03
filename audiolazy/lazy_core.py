@@ -376,12 +376,12 @@ class MultiKeyDict(dict):
     if value in self._inv_dict:
       key = self._inv_dict[value] + key
 
-    # Remove duplicated keys
+    # Remove duplicated keys (last insertion has priority)
     key_list = []
-    for k in key:
+    for k in reversed(key):
       if k not in key_list:
         key_list.append(k)
-    key = tuple(key_list)
+    key = tuple(reversed(key_list))
 
     # Remove the overwritten data
     for k in key:

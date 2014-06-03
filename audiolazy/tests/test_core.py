@@ -254,6 +254,20 @@ class TestMultiKeyDict(object):
     with pytest.raises(KeyError):
       md.key2keys(2)
 
+  def test_insertion_order(self):
+    md = MultiKeyDict()
+    md[1] = 19
+    md[2] = 19
+    assert list(md.keys()) == [(1, 2)]
+    md[1] = 19 # Re-assign the one
+    assert list(md.keys()) == [(2, 1)] # Keeps insertion order
+    md[3] = 19 # New key
+    assert list(md.keys()) == [(2, 1, 3)]
+    del md[1]
+    assert list(md.keys()) == [(2, 3)]
+    md[1] = 19 # Now one is a new key
+    assert list(md.keys()) == [(2, 3, 1)]
+
 
 class TestStrategyDict(object):
 
