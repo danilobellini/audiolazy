@@ -432,13 +432,22 @@ class StrategyDict(MultiKeyDict):
   and multiple implementation algorithms / models.
 
   Each strategy might have multiple names. The names can be any hashable.
-  The "strategy" method creates a decorator for the given strategy names.
-  Default is the first strategy you insert, but can be changed afterwards.
-  The default strategy is the attribute StrategyDict.default, and might be
-  anything outside the dictionary (i.e., it won't be changed if you remove
-  the strategy).
+  The "strategy" method creates a decorator for the given strategy names, see
+  its docstrings for more details on this.
 
-  It iterates through the values (i.e., for each strategy, not its name).
+  The default strategy is the attribute StrategyDict.default, and might be
+  anything from outside the dictionary values. The default strategy is the
+  first strategy you insert, unless the instance attribute already exists.
+
+  The instances iterates through its values (i.e., for each strategy, not its
+  names). You can type something like this to find all StrategyDict instances
+  from the package::
+
+  .. code-block:: python
+
+    import audiolazy
+    sorted(k for k, v in vars(audiolazy).items()
+             if isinstance(v, audiolazy.StrategyDict))
 
   Examples
   --------
@@ -465,21 +474,11 @@ class StrategyDict(MultiKeyDict):
   StrategyDict, and then instantiates it before returning the requested
   instance. This singleton subclassing is needed for docstring
   personalization.
-
-  Warning
-  -------
-  Every strategy you insert have as a side-effect a change into its module
-  ``__test__`` dictionary, to allow the doctests finder locate your
-  strategies. Make sure your strategy ``__module__`` attribute is always
-  right. Set it to ``None`` (or anything that evaluates to ``False``) if
-  you don't want this behaviour.
-
   """
   def __new__(self, name="strategy_dict_unnamed_instance"):
     """
     Creates a new StrategyDict class and returns an instance of it.
     The new class is needed to ensure it'll have a personalized docstring.
-
     """
     class StrategyDictInstance(StrategyDict):
 
@@ -525,14 +524,8 @@ class StrategyDict(MultiKeyDict):
 
         doc.append("\nNote"
                    "\n----\n"
-                   "StrategyDict instances like this one have lazy\n"
-                   "self-generated docstrings. If you change something in\n"
-                   "the dict, the next docstrings will follow the change.\n"
-                   "Calling this instance directly will have the same\n"
-                   "effect as calling the default strategy.\n"
-                   "You can see the full strategies docstrings for more\n"
-                   "details, as well as the StrategyDict class\n"
-                   "documentation.\n"
+                   "This docstring is self-generated, see the StrategyDict\n"
+                   "class and the strategies docs for more details.\n"
                   )
         return "".join(doc)
 
@@ -541,6 +534,80 @@ class StrategyDict(MultiKeyDict):
   default = lambda *args, **kwargs: NotImplemented
 
   def strategy(self, *names, **kwargs):
+    """
+    StrategyDict wrapping method for adding a new strategy.
+
+    Parameters
+    ----------
+    *names :
+      Positional arguments with all names (strings) that could be used to
+      call the strategy to be added, to be used both as key items and as
+      attribute names.
+    keep_name :
+      Boolean keyword-only parameter for choosing whether the ``__name__``
+      attribute of the decorated/wrapped function should be changed or kept.
+      Defaults to False (i.e., changes the name by default).
+
+    Returns
+    -------
+    A decorator/wrapper function to be used once on the new strategy to be
+    added.
+
+    Example
+    -------
+    Let's create a StrategyDict that knows its name:
+
+    >>> txt_proc = StrategyDict("txt_proc")
+
+    Add a first strategy ``swapcase``, using this method as a decorator
+    factory:
+
+    >>> @txt_proc.strategy("swapcase")
+    ... def txt_proc(txt):
+    ...   return txt.swapcase()
+
+    Let's do it again, but wrapping the strategy functions inline. First two
+    strategies have multiple names, the last keeps the function name, which
+    would otherwise be replaced by the first given name:
+
+    >>> txt_proc.strategy("lower", "low")(lambda txt: txt.lower())
+    {(...): <function ... at 0x...>, (...): <function ... at 0x...>}
+    >>> txt_proc.strategy("upper", "up")(lambda txt: txt.upper())
+    {...}
+    >>> txt_proc.strategy("keep", keep_name=True)(lambda txt: txt)
+    {...}
+
+    We can now iterate through the strategies to call them or see their
+    function names
+
+    >>> sorted(st("Just a Test") for st in txt_proc)
+    ['JUST A TEST', 'Just a Test', 'jUST A tEST', 'just a test']
+    >>> sorted(st.__name__ for st in txt_proc) # Just the first name
+    ['<lambda>', 'lower', 'swapcase', 'upper']
+
+    Calling a single strategy:
+
+    >>> txt_proc.low("TeStInG")
+    'testing'
+    >>> txt_proc["upper"]("TeStInG")
+    'TESTING'
+    >>> txt_proc("TeStInG") # Default is the first: swapcase
+    'tEsTiNg'
+    >>> txt_proc.default("TeStInG")
+    'tEsTiNg'
+    >>> txt_proc.default = txt_proc.up # Manually changing the default
+    >>> txt_proc("TeStInG")
+    'TESTING'
+
+    Hint
+    ----
+    Default strategy is the one stored as the ``default`` attribute, you can
+    change or remove it at any time. When removing all keys that are assigned
+    to the default strategy, the default attribute will be removed from the
+    StrategyDict instance as well. The first strategy added afterwards is the
+    one that will become the new default, unless the attribute is created or
+    changed manually.
+    """
     def decorator(func):
       if not kwargs.pop("keep_name", False):
         func.__name__ = str(names[0])
