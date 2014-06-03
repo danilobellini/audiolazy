@@ -350,6 +350,9 @@ class MultiKeyDict(dict):
   1
   >>> sorted(list(mkd.keys())[0]) # Sorts the only key tuple
   [-7, 1]
+  >>> del mkd[-7]
+  >>> len(mkd) # Again, that's the amount of values, not of keys!
+  1
 
   """
   def __init__(self, *args, **kwargs):
@@ -410,6 +413,17 @@ class MultiKeyDict(dict):
 
   def __iter__(self):
     return iter(self._inv_dict)
+
+  def key2keys(self, key):
+    """ Tuple with every key that points to the same value. """
+    return self._keys_dict[key]
+
+  def value2keys(self, value):
+    """
+    Tuple with every key that points to the given value.
+    Result might be empty.
+    """
+    return self._inv_dict.get(value, tuple())
 
 
 class StrategyDict(MultiKeyDict):

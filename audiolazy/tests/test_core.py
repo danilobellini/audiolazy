@@ -28,7 +28,8 @@ import operator
 from functools import reduce
 
 # Audiolazy internal imports
-from ..lazy_core import OpMethod, AbstractOperatorOverloaderMeta, StrategyDict
+from ..lazy_core import (OpMethod, AbstractOperatorOverloaderMeta,
+                         MultiKeyDict, StrategyDict)
 from ..lazy_compat import meta
 
 
@@ -219,6 +220,39 @@ class TestAbstractOperatorOverloaderMeta(object):
         msg = "Class 'DummyClass' has no builder/template for operator method"
         assert str(excep).startswith(msg)
         raise
+
+
+class TestMultiKeyDict(object):
+
+  def test_key2keys_value2keys(self):
+    md = MultiKeyDict()
+    md[1] = 7
+    md[2] = 7
+    md[3] = -4
+    md[4] = -4
+    md[-4] = 1
+    assert md.key2keys(1) == md.key2keys(2) == (1, 2) == md.value2keys(7)
+    assert md.key2keys(3) == md.key2keys(4) == (3, 4) == md.value2keys(-4)
+    assert md.key2keys(-4) == (-4,) == md.value2keys(1)
+    assert len(md) == 3
+
+    del md[2]
+    assert md.key2keys(1) == (1,) == md.value2keys(7)
+    assert md.key2keys(3) == md.key2keys(4) == (3, 4) == md.value2keys(-4)
+    assert md.key2keys(-4) == (-4,) == md.value2keys(1)
+    assert len(md) == 3
+    with pytest.raises(KeyError):
+      md.key2keys(2)
+
+    del md[1]
+    assert md.value2keys(7) == tuple()
+    assert md.key2keys(3) == md.key2keys(4) == (3, 4) == md.value2keys(-4)
+    assert md.key2keys(-4) == (-4,) == md.value2keys(1)
+    assert len(md) == 2
+    with pytest.raises(KeyError):
+      md.key2keys(1)
+    with pytest.raises(KeyError):
+      md.key2keys(2)
 
 
 class TestStrategyDict(object):
