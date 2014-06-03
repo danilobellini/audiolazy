@@ -457,7 +457,12 @@ class TestStrategyDict(object):
 
   def test_strategy_invalid_kwarg(self):
     sd = StrategyDict("sd")
+    identity = lambda x: x
     with pytest.raises(TypeError) as exc:
-      sd.strategy("add", weird=True)(lambda x: x)
+      sd.strategy("add", weird=True)(identity)
     words = ["unknown", "weird"]
     assert all(w in str(exc.value).lower() for w in words)
+    assert len(sd) == 0 # Don't add the strategy
+    assert identity.__name__ == "<lambda>" # Name is kept
+    assert "default" not in vars(sd)
+    assert sd("anything") == NotImplemented

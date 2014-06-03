@@ -609,12 +609,13 @@ class StrategyDict(MultiKeyDict):
     changed manually.
     """
     def decorator(func):
-      if not kwargs.pop("keep_name", False):
-        func.__name__ = str(names[0])
-      self[names] = func
+      keep_name = kwargs.pop("keep_name", False)
       if kwargs:
         key = next(iter(kwargs))
         raise TypeError("Unknown keyword argument '{}'".format(key))
+      if not keep_name:
+        func.__name__ = str(names[0])
+      self[names] = func
       return self
     return decorator
 
