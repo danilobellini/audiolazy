@@ -355,7 +355,8 @@ class TestStrategyDict(object):
     assert list(sd.keys()) == []
     assert list(iter(sd)) == []
 
-  def test_delitem(self):
+  @p("is_delitem", [True, False])
+  def test_delitem_delattr(self, is_delitem):
     sd = StrategyDict()
     sd.strategy("sum")(lambda *args: reduce(operator.add, args))
     sd.strategy("prod")(lambda *args: reduce(operator.mul, args))
@@ -374,7 +375,10 @@ class TestStrategyDict(object):
     assert "prod" in vars(sd)
 
     # Not anymore!
-    del sd["sum"]
+    if is_delitem:
+      del sd["sum"]
+    else:
+      del sd.sum
     assert "sum" not in dir(sd)
     assert "sum" not in vars(sd)
     with pytest.raises(AttributeError):
