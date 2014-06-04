@@ -41,6 +41,8 @@ AudioLazy changes history
   - Renewed setup.py in both its internals (e.g. using AST instead of
     string manipulation to avoid importing the package before installation)
     and its interface (e.g. the ``test`` command now calls ``tox``)
+  - New ``conftest.py`` for testing doctests from strategies inside
+    StrategyDict instances without the need of a ``__test__`` in the module
 
 + lazy_analysis:
 

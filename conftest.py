@@ -20,24 +20,6 @@
 AudioLazy testing configuration module for py.test
 """
 
-def add_dunder_test_with_strategies(module):
-  """
-  Monkeypatches a ``__test__`` dictionary on the module with all strategies
-  from StrategyDict instances, if any, verifying only the attributes whose
-  names were declared on the module ``__all__`` list.
-  """
-  from audiolazy import StrategyDict
-  docs = {}
-  for name, attr in vars(module).items():
-    if isinstance(attr, StrategyDict):
-      for st in attr: # Each strategy can have a doctest
-        if (st.__module__ == module.__name__ and # Avoid getting stuff from
-            st.__doc__ and                       # other modules or repeated
-            st.__doc__ is not type(st).__doc__):
-          docs[".".join([name, st.__name__])] = st
-  if docs:
-    setattr(module, "__test__", docs)
-
 def pytest_configure(config):
   """
   Called by py.test, this function is needed to ensure that doctests from
@@ -46,12 +28,26 @@ def pytest_configure(config):
   """
   # Any import done by this function won't count for coverage afterwards, so
   # AudioLazy can't be imported here! Solution is monkeypatching the doctest
-  # finding mechanism:
+  # finding mechanism to import AudioLazy just there
   import doctest, types, functools
   old_find = doctest.DocTestFinder.find
+
   @functools.wraps(old_find)
-  def find(self, obj, *args, **kwargs):
-    if isinstance(obj, types.ModuleType):
-      add_dunder_test_with_strategies(obj)
-    return old_find(self, obj, *args, **kwargs)
+  def find(self, obj, name=None, module=None, **kwargs):
+    tests = old_find(self, obj, name=name, module=module, **kwargs)
+    if not isinstance(obj, types.ModuleType):
+      return tests
+
+    # Adds the doctests from strategies inside StrategyDict instances
+    from audiolazy import StrategyDict
+    module_name = obj.__name__
+    for name, attr in vars(obj).items(): # We know it's a module
+      if isinstance(attr, StrategyDict):
+        for st in attr: # Each strategy can have a doctest
+          if st.__module__ == module_name: # Avoid stuff from otherwhere
+            sname = ".".join([module_name, name, st.__name__])
+            tests.extend(old_find(self, st, name=sname, module=obj, **kwargs))
+    tests.sort()
+    return tests
+
   doctest.DocTestFinder.find = find
