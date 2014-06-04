@@ -620,8 +620,14 @@ class StrategyDict(MultiKeyDict):
     return decorator
 
   def __setitem__(self, key, value):
-    super(StrategyDict, self).__setitem__(key, value)
-    for k in key if isinstance(key, tuple) else (key,):
+    keys = key if isinstance(key, tuple) else (key,)
+    for k in keys:
+      try:
+        del self[k] # Also remove self.default if it loses all keys
+      except KeyError:
+        pass # Not found!
+    super(StrategyDict, self).__setitem__(keys, value)
+    for k in keys:
       setattr(self, k, value)
     if "default" not in vars(self):
       self.default = value

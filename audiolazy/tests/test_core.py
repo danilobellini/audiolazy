@@ -595,3 +595,59 @@ class TestStrategyDict(object):
     assert len(sdict) == 2
     assert sdict(2, 3) == 8 == sdict.default(2, 3)
     assert sdict.pow(5, 2) == 25 == sdict["pow"](5, 2)
+
+  @p("use_setitem", [True, False])
+  def test_reusing_strategy_name(self, use_setitem):
+    sdict = StrategyDict("sdict")
+    m1 = lambda el: el - 1
+    p1 = lambda el: el + 1
+    if use_setitem:
+      sdict["minus_one", "m1"] = m1
+      sdict["plus_one", "p1"] = p1
+    else:
+      sdict.strategy("minus_one", "m1")(m1)
+      sdict.strategy("plus_one", "p1")(p1)
+
+    assert len(sdict) == 2
+    assert set(sdict.keys()) == {("minus_one", "m1"), ("plus_one", "p1")}
+    names = {"minus_one", "m1", "plus_one", "p1"}
+    assert all(name in dir(sdict) for name in names)
+    assert all(name in vars(sdict) for name in names)
+    assert "default" in vars(sdict)
+    assert sdict.default == m1
+
+    assert sdict.m1(2) == 1 == sdict["p1"](0)
+    assert sdict.p1(2) == 3 == sdict["m1"](4)
+    assert sdict(7) == 6 == sdict.default(7)
+
+    if use_setitem:
+      sdict["m1"] = p1
+    else:
+      sdict.strategy("m1")(p1)
+
+    assert len(sdict) == 2
+    assert set(sdict.keys()) == {("minus_one",), ("plus_one", "p1", "m1")}
+    assert all(name in dir(sdict) for name in names)
+    assert all(name in vars(sdict) for name in names)
+    assert "default" in vars(sdict)
+    assert sdict.default == m1
+
+    assert sdict.m1(2) == 3 == sdict["m1"](2) == sdict["plus_one"](2)
+    assert sdict.p1(2) == 3 == sdict["p1"](2) == sdict["minus_one"](4)
+    assert sdict(5) == 4 == sdict.default(5) # -1
+
+    if use_setitem:
+      sdict["minus_one"] = p1
+    else:
+      sdict.strategy("minus_one")(p1)
+
+    assert len(sdict) == 1
+    assert list(sdict.keys()) == [("plus_one", "p1", "m1", "minus_one")]
+    assert all(name in dir(sdict) for name in names)
+    assert all(name in vars(sdict) for name in names)
+    assert "default" in vars(sdict) # But it was replaced
+    assert sdict.default == p1
+
+    assert sdict.minus_one(2) == 3 == sdict["m1"](2) == sdict["plus_one"](2)
+    assert sdict.plus_one(2) == 3 == sdict["p1"](2) == sdict["minus_one"](2)
+    assert sdict(7) == 8 == sdict.default(7) # +1 !!!
