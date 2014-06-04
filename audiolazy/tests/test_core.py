@@ -410,10 +410,12 @@ class TestStrategyDict(object):
     sd.strategy("prod")(lambda *args: reduce(operator.mul, args))
 
     # They work...
-    assert sd.sum(7, 2, 3) == 12
+    assert sd.sum(7, 2, 3) == 12 == sd(7, 2, 3) == sd.default(7, 2, 3)
     assert sd.prod(7, 2, 3) == 42
-    assert sd["sum"](2, 3) == 5
+    assert sd["sum"](2, 3) == 5 == sd(2, 3) == sd.default(2, 3)
     assert sd["prod"](2, 3) == 6
+    with pytest.raises(KeyError): # Default isn't an item
+      sd["default"](5, 4)
 
     # Their names are there
     assert set(sd.keys()) == {("sum",), ("prod",)}
@@ -421,6 +423,8 @@ class TestStrategyDict(object):
     assert "prod" in dir(sd)
     assert "sum" in vars(sd)
     assert "prod" in vars(sd)
+    assert "default" in dir(sd)
+    assert "default" in vars(sd)
 
     # Not anymore!
     if is_delitem:
@@ -429,10 +433,14 @@ class TestStrategyDict(object):
       del sd.sum
     assert "sum" not in dir(sd)
     assert "sum" not in vars(sd)
+    assert "default" in dir(sd)
+    assert "default" not in vars(sd)
     with pytest.raises(AttributeError):
       sd.sum(-1, 2, 3)
     with pytest.raises(KeyError):
       sd["sum"](5, 4)
+    with pytest.raises(KeyError): # About this one, nothing changed
+      sd["default"](5, 4)
 
     # But prod is still there
     assert list(sd.keys()) == [("prod",)]
@@ -441,6 +449,9 @@ class TestStrategyDict(object):
     assert "prod" in vars(sd)
     assert sd.prod(-1, 2, 3) == -6
     assert sd["prod"](5, 4) == 20
+
+    # And now there's no default strategy
+    assert sd(3, 2) == NotImplemented == sd.default(3, 2)
 
   def test_strategy_keep_name(self):
     sd = StrategyDict("sd")
@@ -519,3 +530,42 @@ class TestStrategyDict(object):
     assert not hasattr(sd, "another")
     with pytest.raises(AttributeError):
       del sd.another
+
+  def test_replacing_default(self):
+    sd = StrategyDict("sd")
+    sd.strategy("add", "+", keep_name=True)(operator.add)
+    sd.strategy("sub", "-", keep_name=True)(operator.sub)
+
+    assert sd(2, 4) == 6
+    sd.default = sd.sub
+    assert sd(2, 4) == -2
+    del sd.sub
+    assert sd(3, 4) == -1
+    del sd["-"]
+    assert sd(7, -3) == NotImplemented
+
+    sd.default = lambda *args: None
+    sd.strategy("pow", keep_name=True)(operator.pow)
+    assert sd(2, 3) is None
+    del sd.default
+    assert sd(2, 3) == NotImplemented
+    del sd.pow
+
+    sd.strategy("mul", keep_name=True)(operator.mul)
+    assert sd(7, -3) == -21
+
+    sd.default = lambda *args, **kwargs: 42
+    assert sd(7, -3) == 42
+
+    del sd.mul
+    assert len(sd) == 1 # Only the add strategy is kept (with 2 keys)
+    assert sd(1) == 42
+
+    del sd.add
+    del sd["+"]
+    assert len(sd) == 0
+    assert sd(3, 2, 1) == 42 # Now default strategy isn't an item
+
+    sd.strategy("blah")(sd.default) # Weird way to delete the default
+    del sd.blah
+    assert sd("hua hua hua") == NotImplemented

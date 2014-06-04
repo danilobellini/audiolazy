@@ -627,10 +627,13 @@ class StrategyDict(MultiKeyDict):
       setattr(self, k, value)
 
   def __delitem__(self, key):
-    value = self[key]
+    keys = self.key2keys(key)
+    value = self[keys]
     super(StrategyDict, self).__delitem__(key)
     if hasattr(self, key) and getattr(self, key) == value:
       super(StrategyDict, self).__delattr__(key)
+    if len(keys) == 1 and value is self.default:
+      super(StrategyDict, self).__delattr__("default")
 
   def __delattr__(self, attr):
     try:
