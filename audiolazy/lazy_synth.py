@@ -169,7 +169,7 @@ def line(dur, begin=0., end=1., finish=False):
   With ``finish = True``, it works just like NumPy ``np.linspace``, besides
   argument order and lazyness:
 
-  >>> import numpy as np
+  >>> import numpy as np # This test needs Numpy
   >>> np.linspace(.2, .7, 6)
   array([ 0.2,  0.3,  0.4,  0.5,  0.6,  0.7])
   >>> line(6, .1, .7, finish=True)

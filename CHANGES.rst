@@ -43,6 +43,7 @@ AudioLazy changes history
     and its interface (e.g. the ``test`` command now calls ``tox``)
   - New ``conftest.py`` for testing doctests from strategies inside
     StrategyDict instances without the need of a ``__test__`` in the module
+    and for skipping doctests known to need Numpy when it's not available
 
 + lazy_analysis:
 

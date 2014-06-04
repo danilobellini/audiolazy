@@ -51,3 +51,23 @@ def pytest_configure(config):
     return tests
 
   doctest.DocTestFinder.find = find
+
+
+try:
+  import numpy
+except ImportError:
+  from _pytest.doctest import DoctestItem
+  import pytest, re
+
+  nn_regex = re.compile(".*#[^#]*\s*needs?\s*numpy\s*$", re.IGNORECASE)
+
+  def pytest_runtest_setup(item):
+    """
+    Skip doctests that need Numpy, if it's not found. A doctest that needs
+    numpy should include a doctest example that ends with a comment with
+    the words "Need Numpy" (or "Needs Numpy"), no matter the case nor the
+    amount of whitespaces.
+    """
+    if isinstance(item, DoctestItem) and \
+       any(nn_regex.match(ex.source) for ex in item.dtest.examples):
+      pytest.skip("Module numpy not found")
