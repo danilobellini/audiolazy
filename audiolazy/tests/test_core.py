@@ -466,3 +466,56 @@ class TestStrategyDict(object):
     assert identity.__name__ == "<lambda>" # Name is kept
     assert "default" not in vars(sd)
     assert sd("anything") == NotImplemented
+
+  def test_strategy_attribute_replaced(self):
+    sd = StrategyDict("sd")
+    sd.strategy("add", "+", keep_name=True)(operator.add)
+    sd.strategy("mul", "*", keep_name=True)(operator.mul)
+    sd.strategy("sub", "-", keep_name=True)(operator.sub)
+
+    # Replaces the strategy attribute, but keeps the strategy there
+    sd.sub = 14
+    assert set(sd.keys()) == {("add", "+"), ("mul", "*"), ("sub", "-",)}
+    assert sd["sub"](5, 4) == 1
+    assert sd.sub == 14
+
+    # Removes the strategy with replaced attribute, keeping the attribute
+    del sd["sub"] # Removes the strategy
+    assert sd.sub == 14 # Still there
+    assert set(sd.keys()) == {("add", "+"), ("mul", "*"), ("-",)}
+
+    # Removes the replaced attribute, keeping the strategy
+    sd.add = None
+    assert sd.add is None
+    assert sd["add"](3, 7) == 10
+    del sd.add # Removes the attribute
+    assert sd.add(4, 7) == 11 == sd["add"](4, 7)
+    assert set(sd.keys()) == {("add", "+"), ("mul", "*"), ("-",)}
+
+    # Removes the strategy whose attribute had been replaced
+    del sd.add # Removes the strategy
+    assert set(sd.keys()) == {("+",), ("mul", "*"), ("-",)}
+    with pytest.raises(KeyError):
+      sd["add"](5, 4)
+    with pytest.raises(AttributeError):
+      sd.add(5, 4)
+
+  def test_non_strategy_delattr(self):
+    sd = StrategyDict("sd")
+    sd.strategy("add", "+", keep_name=True)(operator.add)
+
+    sd.another = 15
+    assert sd.another == 15
+    assert list(sd.keys()) == [("add", "+")]
+    with pytest.raises(KeyError):
+      del sd["another"]
+
+    sd.another = lambda x: x # Replaces it
+    assert sd.another([2, 3, 7]) == [2, 3, 7]
+    with pytest.raises(KeyError):
+      del sd["another"]
+
+    del sd.another
+    assert not hasattr(sd, "another")
+    with pytest.raises(AttributeError):
+      del sd.another

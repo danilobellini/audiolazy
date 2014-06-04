@@ -627,11 +627,19 @@ class StrategyDict(MultiKeyDict):
       setattr(self, k, value)
 
   def __delitem__(self, key):
+    value = self[key]
     super(StrategyDict, self).__delitem__(key)
-    if hasattr(self, key):
+    if hasattr(self, key) and getattr(self, key) == value:
       super(StrategyDict, self).__delattr__(key)
 
-  __delattr__ = __delitem__
+  def __delattr__(self, attr):
+    try:
+      if self[attr] == getattr(self, attr): # Have both
+        del self[attr] # Removes both
+      else: # Have both but they're different
+        setattr(self, attr, self[attr]) # Put the attribute back
+    except KeyError: # Del a non-strategy attribute
+      super(StrategyDict, self).__delattr__(attr)
 
   def __call__(self, *args, **kwargs):
     return self.default(*args, **kwargs)
