@@ -386,7 +386,7 @@ class MultiKeyDict(dict):
     # Remove the overwritten data
     for k in key:
       if k in self._keys_dict:
-        del self[k]
+        MultiKeyDict.__delitem__(self, k)
 
     # Do the assignment
     for k in key:
@@ -620,11 +620,11 @@ class StrategyDict(MultiKeyDict):
     return decorator
 
   def __setitem__(self, key, value):
-    if "default" not in vars(self):
-      self.default = value
     super(StrategyDict, self).__setitem__(key, value)
     for k in key if isinstance(key, tuple) else (key,):
       setattr(self, k, value)
+    if "default" not in vars(self):
+      self.default = value
 
   def __delitem__(self, key):
     keys = self.key2keys(key)
@@ -632,7 +632,7 @@ class StrategyDict(MultiKeyDict):
     super(StrategyDict, self).__delitem__(key)
     if hasattr(self, key) and getattr(self, key) == value:
       super(StrategyDict, self).__delattr__(key)
-    if len(keys) == 1 and value is self.default:
+    if len(keys) == 1 and value == self.default:
       super(StrategyDict, self).__delattr__("default")
 
   def __delattr__(self, attr):

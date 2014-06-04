@@ -93,11 +93,18 @@ AudioLazy changes history
     changes its instance dictionary (e.g. ``vars(window)``) instead of
     depending on the ``__getattr__`` method
   - ``StrategyDict.strategy`` method now allows the strategy function name to
-    be kept by using the new ``keep_name`` keyword-only argument. With that
-    it's now possible to use built-in functions as well as other immutable
-    callables as strategies
-  - MultiKeyDict methods ``key2keys`` and ``value2keys`` to help getting the
-    tuple of all keys that points to the same value
+    be kept by using the new ``keep_name`` keyword-only argument. It might be
+    helpful for adding built-in functions as well as other immutable
+    callables as multi-name strategies with the same behavior as the item
+    assignment for adding a strategy
+  - The default strategy in a StrategyDict instance is now removed when all
+    its keys/names are removed. The new default is the next added strategy
+  - Strategies can be removed both by their item name and their attribute,
+    and removing an attribute that isn't an strategy recovers the strategy
+    attribute if its name belongs to a strategy
+  - MultiKeyDict methods ``key2keys`` and ``value2keys`` to help getting a
+    tuple with all keys that points to the same value, ordered by the
+    insertion order
 
 + lazy_filters:
 

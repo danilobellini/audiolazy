@@ -569,3 +569,29 @@ class TestStrategyDict(object):
     sd.strategy("blah")(sd.default) # Weird way to delete the default
     del sd.blah
     assert sd("hua hua hua") == NotImplemented
+
+  def test_add_strategy_with_setitem(self):
+    sdict = StrategyDict("sdict")
+    sdict["add"] = operator.add
+    sdict["mul"] = operator.mul
+    sdict["+"] = operator.add
+
+    assert len(sdict) == 2
+    assert set(sdict.keys()) == {("add", "+"), ("mul",)}
+    assert all(name in dir(sdict) for name in {"add", "+", "mul"})
+    assert all(name in vars(sdict) for name in {"add", "+", "mul"})
+
+    assert sdict.add(2, 3) == 5 == sdict["add"](2, 3)
+    assert sdict.mul(2, 3) == 6 == sdict["mul"](2, 3)
+    assert sdict(7, 8) == 15 == sdict.default(7, 8)
+
+    del sdict["+"]
+    assert len(sdict) == 2
+    del sdict.add
+    assert len(sdict) == 1
+    assert sdict(7, 8) == NotImplemented == sdict.default(7, 8)
+
+    sdict["pow"] = operator.pow
+    assert len(sdict) == 2
+    assert sdict(2, 3) == 8 == sdict.default(2, 3)
+    assert sdict.pow(5, 2) == 25 == sdict["pow"](5, 2)
