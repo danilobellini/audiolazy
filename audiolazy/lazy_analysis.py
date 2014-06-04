@@ -758,6 +758,8 @@ def stft(func=None, **kwparams):
   * Called without the ``func`` parameter for a partial evalution style
     changing the defaults.
 
+  See the examples below for more information about these use cases.
+
   Parameters
   ----------
   func :
@@ -810,6 +812,64 @@ def stft(func=None, **kwparams):
   replaced by the signal input (if func was given). The parameters used when
   building the function should be seen as defaults that can be changed when
   calling the resulting function with the respective keyword arguments.
+
+  Examples
+  --------
+  Let's process something:
+
+  >>> my_signal = Stream(.1, .3, -.1, -.3, .5, .4, .3)
+
+  Wrapping directly the processor function:
+
+  >>> processor_w = stft(abs, size=64)
+  >>> sig = my_signal.copy() # Any iterable
+  >>> processor_w(sig)
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> peek200_w = _.peek(200) # Needs Numpy
+  >>> type(peek200_w[0]).__name__ # Result is a signal (numpy.float64 data)
+  'float64'
+
+  Keyword parameters in a partial evaluation style (can be reassigned):
+
+  >>> stft64 = stft(size=64) # Same to ``stft`` but with other defaults
+  >>> processor_p = stft64(abs)
+  >>> sig = my_signal.copy() # Any iterable
+  >>> processor_p(sig)
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> _.peek(200) == peek200_w # This should do the same thing
+  True
+
+  As a decorator, this time with other windowing configuration:
+
+  >>> stft64hann = stft64(wnd=window.hann, ola_wnd=window.hann)
+  >>> @stft64hann # stft(...) can also be used as an anonymous decorator
+  ... def processor_d(blk):
+  ...   return abs(blk)
+  >>> processor_d(sig) # This leads to a different result
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> _.peek(200) == peek200_w
+  False
+
+  You can also use other iterables as input, and keep the parameters to be
+  passed afterwards, as well as change transform calculation:
+
+  >>> stft_no_zero_phase = stft(before=None, after=None)
+  >>> stft_no_wnd = stft_no_zero_phase(ola=overlap_add.list, ola_wnd=None,
+  ...                                  ola_normalize=False)
+  >>> on_blocks = stft_no_wnd(transform=None, inverse_transform=None)
+  >>> processor_a = on_blocks(reversed, hop=4) # Reverse
+  >>> processor_a([1, 2, 3, 4, 5], size=4, hop=2)
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> list(_) # From blocks [1, 2, 3, 4] and [3, 4, 5, 0.0]
+  [4.0, 3.0, 2.0, 6, 4, 3]
+  >>> processor_a([1, 2, 3, 4, 5], size=4) # Default hop instead
+  <audiolazy.lazy_stream.Stream object at 0x...>
+  >>> list(_) # No overlap, blocks [1, 2, 3, 4] and [5, 0.0, 0.0, 0.0]
+  [4, 3, 2, 1, 0.0, 0.0, 0.0, 5]
+  >>> processor_a([1, 2, 3, 4, 5]) # Size was never given
+  Traceback (most recent call last):
+      ...
+  TypeError: Missing 'size' argument
 
   Note
   ----
