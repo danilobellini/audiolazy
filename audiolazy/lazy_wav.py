@@ -54,6 +54,7 @@ class WavStream(Stream):
   unpackers = {
     8 : lambda v: ord(v) / 128 - 1, # The only unsigned
     16: (lambda h: lambda v: h(v)[0] / 2 ** 15)(Struct("<h").unpack),
+    32: (lambda i: lambda v: i(v)[0] / 2 ** 31)(Struct("<i").unpack),
   }
   if PYTHON2:
     unpackers[24] = lambda v: (lambda k: k if k < 1 else k - 2)(

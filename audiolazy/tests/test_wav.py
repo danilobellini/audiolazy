@@ -67,6 +67,7 @@ class TestWavStream(object):
     (8, 44100, 1),
     (16, 3000, 3),
     (24, 8000, 2),
+    (32, 12, 8),
   ])
   def test_load_file_empty(self, bits, rate, channels):
     file_data = wave_data(b"", channels=channels, bits=bits, rate=rate)
@@ -96,6 +97,14 @@ class TestWavStream(object):
      "rate": 12345,
      "data": b"\x63\x91\x36\x40\x10\xb0\xfa\xc6\xd0\x80\x78\xaf\x19\x82\xce",
      "expected": [0x369163, -0x4fefc0, -0x2f3906, -0x508780, -0x317de7],
+    },
+    {"bits": 32,
+     "multiplier": 2147483648.,
+     "rate": 87654,
+     "data": b"\x1f\x85\x6b\x3e\x7b\x14\xae\xbe\x89\xd2\xde\x3a"
+             b"\x6c\x09\x79\xba\x9a\x6d\x41\x19",
+     "expected": [0x3e6b851f, -0x4151eb85, 0x3aded289,
+                  -0x4586f694, 0x19416d9a],
     },
   ]
   params_table = (lambda schema_params, params:
