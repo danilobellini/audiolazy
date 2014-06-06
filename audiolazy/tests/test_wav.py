@@ -23,6 +23,7 @@ Testing module for the lazy_wav module
 import pytest
 p = pytest.mark.parametrize
 
+from tempfile import NamedTemporaryFile
 from struct import Struct
 import io
 
@@ -112,7 +113,8 @@ class TestWavStream(object):
                  )(schema_params, params)
 
   @p(schema_params, params_table)
-  def test_load_file_1channel(self, bits, multiplier, rate, data, expected):
+  def test_load_file_1channel_bytesio(self, bits, multiplier, rate, data,
+                                            expected):
     file_data = wave_data(data, bits=bits, rate=rate)
     wav_stream = WavStream(io.BytesIO(file_data))
     assert isinstance(wav_stream, Stream)
@@ -122,3 +124,33 @@ class TestWavStream(object):
     assert all(abs(wav_stream.copy()) <= 1)
     result = list(wav_stream * multiplier)
     assert almost_eq(result, expected)
+
+  @p(schema_params, params_table)
+  def test_load_file_1channel_temp_file_object(self, bits, multiplier, rate,
+                                                     data, expected):
+    file_data = wave_data(data, bits=bits, rate=rate)
+    with NamedTemporaryFile(mode="rb+") as f:
+      f.write(file_data)
+      f.seek(0)
+      wav_stream = WavStream(f)
+      assert isinstance(wav_stream, Stream)
+      assert wav_stream.bits == bits
+      assert wav_stream.channels == 1
+      assert wav_stream.rate == rate
+      result = list(wav_stream * multiplier)
+      assert almost_eq(result, expected)
+
+  @p(schema_params, params_table)
+  def test_load_file_1channel_temp_file_by_name(self, bits, multiplier, rate,
+                                                      data, expected):
+    file_data = wave_data(data, bits=bits, rate=rate)
+    with NamedTemporaryFile(mode="rb+") as f:
+      f.write(file_data)
+      f.flush()
+      wav_stream = WavStream(f.name)
+      assert isinstance(wav_stream, Stream)
+      assert wav_stream.bits == bits
+      assert wav_stream.channels == 1
+      assert wav_stream.rate == rate
+      result = list(wav_stream * multiplier)
+      assert almost_eq(result, expected)
