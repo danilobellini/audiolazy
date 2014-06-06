@@ -27,6 +27,7 @@ import wave
 
 # Audiolazy internal imports
 from .lazy_stream import Stream
+from .lazy_compat import PYTHON2
 
 __all__ = ["WavStream"]
 
@@ -50,23 +51,27 @@ class WavStream(Stream):
     with AudioIO(True) as player:
       player.play(song)
   """
+  unpackers = {
+    8 : lambda v: ord(v) / 128 - 1, # The only unsigned
+    16: (lambda h: lambda v: h(v)[0] / 2 ** 15)(Struct("<h").unpack),
+    32: (lambda f: lambda v: f(v)[0])(Struct("<f").unpack), # Already float
+  }
+  if PYTHON2:
+    unpackers[24] = lambda v: (lambda k: k if k < 1 else k - 2)(
+                       sum(ord(vi) << i * 8
+                           for i, vi in enumerate(v)) / 2 ** 23
+                    )
+  else: # Bytes items are already int on Python 3
+    unpackers[24] = lambda v: (lambda k: k if k < 1 else k - 2)(
+                       sum(vi << i * 8 for i, vi in enumerate(v)) / 2 ** 23
+                    )
 
-  def __init__(self, fname):
-    """ Loads a Wave audio file given its name. """
-    self._file = wave.open(fname, "rb")
+  def __init__(self, wave_file):
+    """ Loads a Wave audio file given its name or a file-behaved object. """
+    self._file = wave.open(wave_file, "rb")
     self.rate = self._file.getframerate()
     self.channels = self._file.getnchannels()
     self.bits = 8 * self._file.getsampwidth()
-
-    unpackers = {
-      8 : lambda v: ord(v) / 128 - 1, # The only unsigned
-      16: lambda v: Struct("<h").unpack(v)[0] / 2 ** 15,
-      24: lambda v: (lambda k: k if k < 1 else k - 2)(
-                         sum(ord(vi) << i * 8
-                             for i, vi in enumerate(v)) / 2 ** 23
-                       ),
-      32: lambda v: Struct("<f").unpack(v)[0], # The only already float
-    }
 
     def data_generator(unpacker):
       """ Internal wave data generator, given a single sample unpacker """
@@ -80,4 +85,4 @@ class WavStream(Stream):
       finally:
         w.close()
 
-    super(WavStream, self).__init__(data_generator(unpackers[self.bits]))
+    super(WavStream, self).__init__(data_generator(self.unpackers[self.bits]))
