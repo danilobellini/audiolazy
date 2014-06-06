@@ -29,7 +29,7 @@ import io
 
 # Audiolazy internal imports
 from ..lazy_wav import WavStream
-from ..lazy_stream import Stream
+from ..lazy_stream import Stream, thub
 from ..lazy_misc import almost_eq, DEFAULT_SAMPLE_RATE
 
 
@@ -79,28 +79,24 @@ class TestWavStream(object):
     assert wav_stream.rate == rate
     assert list(wav_stream) == []
 
-  schema_params = ("bits", "multiplier", "rate", "data", "expected")
+  schema_params = ("bits", "rate", "data", "expected")
   params = [
     {"bits": 8,
-     "multiplier": 128.,
      "rate": 8000,
      "data": b"\x08\x7f\x18\xfa\xea\xce\x00",
      "expected": [-120, -1, -104, 122, 106, 78, -128],
     },
     {"bits": 16,
-     "multiplier": 32768.,
      "rate": 48000,
      "data": b"\x08\x91\xf3\x18\xfa\x82\xe4\x2a\xce\x00",
      "expected": [-0x6ef8, 0x18f3, -0x7d06, 0x2ae4, 0xce],
     },
     {"bits": 24,
-     "multiplier": 8388608.,
      "rate": 12345,
      "data": b"\x63\x91\x36\x40\x10\xb0\xfa\xc6\xd0\x80\x78\xaf\x19\x82\xce",
      "expected": [0x369163, -0x4fefc0, -0x2f3906, -0x508780, -0x317de7],
     },
     {"bits": 32,
-     "multiplier": 2147483648.,
      "rate": 87654,
      "data": b"\x1f\x85\x6b\x3e\x7b\x14\xae\xbe\x89\xd2\xde\x3a"
              b"\x6c\x09\x79\xba\x9a\x6d\x41\x19",
@@ -113,44 +109,54 @@ class TestWavStream(object):
                  )(schema_params, params)
 
   @p(schema_params, params_table)
-  def test_load_file_1channel_bytesio(self, bits, multiplier, rate, data,
-                                            expected):
+  @p("keep_int", [True, False, None])
+  @p("save_as", ["bytes_io", "temp_file_obj", "temp_file_name"])
+  def test_load_file_1channel(self, bits, rate, data, expected,
+                                    keep_int, save_as):
     file_data = wave_data(data, bits=bits, rate=rate)
-    wav_stream = WavStream(io.BytesIO(file_data))
-    assert isinstance(wav_stream, Stream)
-    assert wav_stream.bits == bits
-    assert wav_stream.channels == 1
-    assert wav_stream.rate == rate
-    assert all(abs(wav_stream.copy()) <= 1)
-    result = list(wav_stream * multiplier)
-    assert almost_eq(result, expected)
+    kwargs = {} if keep_int is None else dict(keep_int=keep_int)
 
-  @p(schema_params, params_table)
-  def test_load_file_1channel_temp_file_object(self, bits, multiplier, rate,
-                                                     data, expected):
-    file_data = wave_data(data, bits=bits, rate=rate)
-    with NamedTemporaryFile(mode="rb+") as f:
-      f.write(file_data)
-      f.seek(0)
-      wav_stream = WavStream(f)
+    def apply_test(*args, **kws):
+      wav_stream = WavStream(*args, **kws)
       assert isinstance(wav_stream, Stream)
       assert wav_stream.bits == bits
       assert wav_stream.channels == 1
       assert wav_stream.rate == rate
-      result = list(wav_stream * multiplier)
+      multiplier = 1 << (wav_stream.bits - 1)
+
+      if keep_int:
+        dtype = int # Never long
+        if bits == 8:
+          min_value = 0
+          max_value = 255
+          result = list(wav_stream.copy() - 128)
+        else:
+          min_value = -multiplier - 1
+          max_value = multiplier
+          result = list(wav_stream.copy())
+      else:
+        dtype = float
+        min_value = -1
+        max_value = 1 - 1 / multiplier
+        result = list(wav_stream.copy() * multiplier)
+
+      ws = thub(wav_stream, 3)
+      assert all(isinstance(el, dtype) for el in ws)
+      assert all(ws >= min_value)
+      assert all(ws <= max_value)
       assert almost_eq(result, expected)
 
-  @p(schema_params, params_table)
-  def test_load_file_1channel_temp_file_by_name(self, bits, multiplier, rate,
-                                                      data, expected):
-    file_data = wave_data(data, bits=bits, rate=rate)
-    with NamedTemporaryFile(mode="rb+") as f:
-      f.write(file_data)
-      f.flush()
-      wav_stream = WavStream(f.name)
-      assert isinstance(wav_stream, Stream)
-      assert wav_stream.bits == bits
-      assert wav_stream.channels == 1
-      assert wav_stream.rate == rate
-      result = list(wav_stream * multiplier)
-      assert almost_eq(result, expected)
+    if save_as == "bytes_io":
+      apply_test(io.BytesIO(file_data), **kwargs)
+    else:
+      with NamedTemporaryFile(mode="rb+") as f:
+        f.write(file_data)
+        if save_as == "temp_file_obj":
+          f.seek(0)
+          wave_file = f
+        elif save_as == "temp_file_name":
+          f.flush()
+          wave_file = f.name
+        else:
+          pytest.fail("Invalid test")
+        apply_test(wave_file, **kwargs)

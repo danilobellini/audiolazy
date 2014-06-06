@@ -27,7 +27,6 @@ import wave
 
 # Audiolazy internal imports
 from .lazy_stream import Stream
-from .lazy_compat import PYTHON2
 
 __all__ = ["WavStream"]
 
@@ -51,38 +50,60 @@ class WavStream(Stream):
     with AudioIO(True) as player:
       player.play(song)
   """
-  unpackers = {
-    8 : lambda v: ord(v) / 128 - 1, # The only unsigned
-    16: (lambda h: lambda v: h(v)[0] / 2 ** 15)(Struct("<h").unpack),
-    32: (lambda i: lambda v: i(v)[0] / 2 ** 31)(Struct("<i").unpack),
+  _unpackers = {
+    8 : ord, # The only unsigned
+    16: (lambda a: lambda v: a(v)[0])(Struct("<h").unpack),
+    24: (lambda a: lambda v: a(b"\x00" + v)[0] >> 8)(Struct("<i").unpack),
+    32: (lambda a: lambda v: a(v)[0])(Struct("<i").unpack),
   }
-  if PYTHON2:
-    unpackers[24] = lambda v: (lambda k: k if k < 1 else k - 2)(
-                       sum(ord(vi) << i * 8
-                           for i, vi in enumerate(v)) / 2 ** 23
-                    )
-  else: # Bytes items are already int on Python 3
-    unpackers[24] = lambda v: (lambda k: k if k < 1 else k - 2)(
-                       sum(vi << i * 8 for i, vi in enumerate(v)) / 2 ** 23
-                    )
 
-  def __init__(self, wave_file):
-    """ Loads a Wave audio file given its name or a file-behaved object. """
+  def __init__(self, wave_file, keep_int=False):
+    """
+    Loads a Wave audio file.
+
+    Parameters
+    ----------
+    wave_file :
+      Wave file name or a already open wave file as a file-behaved object.
+    keep_int :
+      This flag allows keeping the data on the original range and datatype,
+      keeping each sample an int, as stored. False by default, meaning that
+      the resulting range is already scaled (but not normalized) to fit
+      [-1,1). When True, data scales from ``- (2 ** (bits - 1))`` to
+      ``2 ** (bits - 1) - 1`` (signed int), except for 8 bits, where it
+      scales from ``0`` to ``255`` (unsigned).
+    """
     self._file = wave.open(wave_file, "rb")
     self.rate = self._file.getframerate()
     self.channels = self._file.getnchannels()
     self.bits = 8 * self._file.getsampwidth()
 
-    def data_generator(unpacker):
+    def data_generator():
       """ Internal wave data generator, given a single sample unpacker """
       w = self._file
+      unpacker = WavStream._unpackers[self.bits]
       try:
-        while True:
-          el = w.readframes(1)
-          if not el:
-            break
-          yield unpacker(el)
+        if keep_int:
+
+          while True:
+            el = w.readframes(1)
+            if not el:
+              break
+            yield unpacker(el)
+
+        else: # Output data should be in [-1;1) range
+
+          d = 1 << (self.bits - 1) # Divide by this number to normalize
+          if self.bits == 8: # Unpacker for 8 bits still gives unsigned data
+            unpacker = lambda v: ord(v) - 128
+
+          while True:
+            el = w.readframes(1)
+            if not el:
+              break
+            yield unpacker(el) / d
+
       finally:
         w.close()
 
-    super(WavStream, self).__init__(data_generator(self.unpackers[self.bits]))
+    super(WavStream, self).__init__(data_generator())

@@ -125,6 +125,9 @@ AudioLazy changes history
 + lazy_wav (*new!*):
 
   - ``WaveStream`` class for opening Wave files. Can load 24-bit audio files!
+    Tested with 8 bits files (unsigned int) and 16/24/32 bits (signed int)
+    files, both casting the data to a float in [-1;1) interval (default) and
+    keeping the original data as it is (with ``keep_int=True``)
 
 + multiple modules:
 
