@@ -122,6 +122,10 @@ AudioLazy changes history
   - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to
     be passed directly to PyAudio
 
++ lazy_wav (*new!*):
+
+  - ``WaveStream`` class for opening Wave files. Can load 24-bit audio files!
+
 + multiple modules:
 
   - (*lazy_math and lazy_stream*) Renamed the elementwised ``abs`` to
