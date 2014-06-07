@@ -36,33 +36,61 @@ from ..lazy_misc import almost_eq, DEFAULT_SAMPLE_RATE
 uint16pack = Struct("<H").pack
 uint32pack = Struct("<I").pack
 
-def riff_chunk(chunk_id, *contents):
-  """ Build a bytestring object with the RIFF chunk contents """
+def riff_chunk(chunk_id, *contents, **kwargs):
+  """ Build a bytestring object with the RIFF chunk contents. """
   assert len(chunk_id) == 4
+  align = kwargs.pop("align", False)
+  assert not kwargs # No other keyword argument available
   joined_contents = b"".join(contents)
   content_size = len(joined_contents)
   parts = [chunk_id, uint32pack(content_size), joined_contents]
-  if content_size & 1: # Tricky! RIFF is word-aligned
+  if align and content_size & 1: # Tricky! RIFF is word-aligned
     return b"".join(parts + [b"\x00"])
   else:
     return b"".join(parts)
 
 def wave_data(data, bits=16, channels=1, rate=DEFAULT_SAMPLE_RATE):
+  """ Build a bytestring object with the full wave contents in data. """
   bytes_per_sample = (bits + 7) // 8
   block_align = bytes_per_sample * channels
   fmt_chunk = riff_chunk(b"fmt ",
-    uint16pack(1), # Compression code (PCM/uncompressed)
+    uint16pack(1), # Wave format code (PCM/uncompressed)
     uint16pack(channels), # Number of channels (mono)
     uint32pack(rate), # Sample rate
     uint32pack(rate * block_align), # Average bytes per second
     uint16pack(block_align), # Block align
     uint16pack(bits), # Bits per sample
   )
-  data_chunk = riff_chunk(b"data", data)
+  data_chunk = riff_chunk(b"data", data, align=False) # To keep main RIFF size
   return riff_chunk(b"RIFF", b"WAVE", fmt_chunk, data_chunk)
 
 
+@p("save_as", ["bytes_io", "temp_file_obj", "temp_file_name"])
 class TestWavStream(object):
+
+  @pytest.yield_fixture
+  def wave_file(self, save_as):
+    """
+    Fixture that calls the wave_data function with the same inputs, but
+    returns a file name or a file-like object to be used by the WavStream
+    constructor/initializer.
+    """
+    if save_as == "bytes_io":
+      yield lambda *args, **kwargs: io.BytesIO(wave_data(*args, **kwargs))
+    else:
+      with NamedTemporaryFile(mode="rb+") as f:
+
+        def fixture_func(*args, **kwargs):
+          f.write(wave_data(*args, **kwargs))
+          if save_as == "temp_file_obj":
+            f.seek(0) # File cursor is at EOF but should be at the beginning
+            return f
+          elif save_as == "temp_file_name":
+            f.flush() # Ensure file is saved on disk
+            return f.name
+          pytest.fail("Invalid test")
+
+        yield fixture_func
 
   @p(("bits", "rate", "channels"), [
     (8, 44100, 1),
@@ -70,9 +98,9 @@ class TestWavStream(object):
     (24, 8000, 2),
     (32, 12, 8),
   ])
-  def test_load_file_empty(self, bits, rate, channels):
-    file_data = wave_data(b"", channels=channels, bits=bits, rate=rate)
-    wav_stream = WavStream(io.BytesIO(file_data))
+  def test_load_file_empty(self, bits, rate, channels, wave_file):
+    file_data = wave_file(b"", channels=channels, bits=bits, rate=rate)
+    wav_stream = WavStream(file_data)
     assert isinstance(wav_stream, Stream)
     assert wav_stream.bits == bits
     assert wav_stream.channels == channels
@@ -110,53 +138,36 @@ class TestWavStream(object):
 
   @p(schema_params, params_table)
   @p("keep_int", [True, False, None])
-  @p("save_as", ["bytes_io", "temp_file_obj", "temp_file_name"])
   def test_load_file_1channel(self, bits, rate, data, expected,
-                                    keep_int, save_as):
-    file_data = wave_data(data, bits=bits, rate=rate)
+                                    keep_int, wave_file):
+    file_data = wave_file(data, bits=bits, rate=rate)
     kwargs = {} if keep_int is None else dict(keep_int=keep_int)
+    wav_stream = WavStream(file_data, **kwargs)
 
-    def apply_test(*args, **kws):
-      wav_stream = WavStream(*args, **kws)
-      assert isinstance(wav_stream, Stream)
-      assert wav_stream.bits == bits
-      assert wav_stream.channels == 1
-      assert wav_stream.rate == rate
-      multiplier = 1 << (wav_stream.bits - 1)
+    assert isinstance(wav_stream, Stream)
+    assert wav_stream.bits == bits
+    assert wav_stream.channels == 1
+    assert wav_stream.rate == rate
+    multiplier = 1 << (wav_stream.bits-1) # Scale factor result was divided by
 
-      if keep_int:
-        dtype = int # Never long
-        if bits == 8:
-          min_value = 0
-          max_value = 255
-          result = list(wav_stream.copy() - 128)
-        else:
-          min_value = -multiplier - 1
-          max_value = multiplier
-          result = list(wav_stream.copy())
+    if keep_int:
+      dtype = int # Never long
+      if bits == 8: # The only unsigned
+        min_value = 0
+        max_value = 255
+        result = list(wav_stream.copy() - 128)
       else:
-        dtype = float
-        min_value = -1
-        max_value = 1 - 1 / multiplier
-        result = list(wav_stream.copy() * multiplier)
+        min_value = -multiplier - 1
+        max_value = multiplier
+        result = list(wav_stream.copy())
+    else: # Data should be float numbers in the [-1;1) interval
+      dtype = float
+      min_value = -1
+      max_value = 1 - 1 / multiplier
+      result = list(wav_stream.copy() * multiplier)
 
-      ws = thub(wav_stream, 3)
-      assert all(isinstance(el, dtype) for el in ws)
-      assert all(ws >= min_value)
-      assert all(ws <= max_value)
-      assert almost_eq(result, expected)
-
-    if save_as == "bytes_io":
-      apply_test(io.BytesIO(file_data), **kwargs)
-    else:
-      with NamedTemporaryFile(mode="rb+") as f:
-        f.write(file_data)
-        if save_as == "temp_file_obj":
-          f.seek(0)
-          wave_file = f
-        elif save_as == "temp_file_name":
-          f.flush()
-          wave_file = f.name
-        else:
-          pytest.fail("Invalid test")
-        apply_test(wave_file, **kwargs)
+    ws = thub(wav_stream, 3)
+    assert all(isinstance(el, dtype) for el in ws)
+    assert all(ws >= min_value)
+    assert all(ws <= max_value)
+    assert almost_eq(result, expected)
