@@ -800,9 +800,10 @@ def stft(func=None, **kwparams):
     Overlap-add strategy. Uses the ``overlap_add`` default strategy when
     not given. The strategy should allow at least size and hop keyword
     arguments, besides a first positional argument with the iterable with
-    blocks.
+    blocks. If ``None``, the result from using the STFT processor will be
+    the ``Stream`` of blocks that would be the overlap-add input.
   ola_* :
-    Extra keyword parameters for the overlap-add strategy. The extra
+    Extra keyword parameters for the overlap-add strategy, if any. The extra
     ``ola_`` prefix is removed when calling it. See the overlap-add strategy
     docs for more information about the valid parameters.
 
@@ -871,6 +872,25 @@ def stft(func=None, **kwparams):
       ...
   TypeError: Missing 'size' argument
 
+  For analysis only, one can set ``ola=None``:
+
+  >>> from numpy.fft import ifftshift # [1, 2, 3, 4, 5] -> [3, 4, 5, 1, 2]
+  >>> analyzer = stft(ifftshift, ola=None, size=8, hop=2)
+  >>> sig = Stream(1, 0, -1, 0) # A pi/2 rad/sample cosine signal
+  >>> result = analyzer(sig)
+  >>> result
+  <audiolazy.lazy_stream.Stream object at 0x...>
+
+  Let's see the result contents. That processing "rotates" the frequencies,
+  converting the original ``[0, 0, 4, 0, 0]`` real FFT block to a
+  ``[4, 0, 0, 0, 0]`` block, which means the block cosine was moved to
+  a DC-only signal keeping original energy/integral:
+
+  >>> result.take()
+  array([ 0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5])
+  >>> result.take() # From [0, 0, -4, 0, 0] to [-4, 0, 0, 0, 0]
+  array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5])
+
   Note
   ----
   Parameters should be passed as keyword arguments. The only exception
@@ -880,7 +900,6 @@ def stft(func=None, **kwparams):
 
   Hint
   ----
-
   1. When using Numpy FFT, one can keep data in place and return the
      changed input block to save time;
   2. Actually, there's nothing in this function that imposes FFT or Numpy
@@ -921,7 +940,11 @@ def stft(func=None, **kwparams):
 
     for k, v in kws.items():
       if k.startswith("ola_"):
-        ola_params[k[len("ola_"):]] = v
+        if ola is not None:
+          ola_params[k[len("ola_"):]] = v
+        else:
+          raise TypeError("Extra '{}' argument with no overlap-add "
+                          "strategy".format(k))
       else:
         raise TypeError("Unknown '{}' extra argument".format(k))
 
@@ -965,7 +988,10 @@ def stft(func=None, **kwparams):
           blk_with_wnd[:] = xmap(mul, blk, wnd)
           yield process(blk_with_wnd)
 
-    return ola(blk_gen(**blk_params), **ola_params)
+    if ola is None:
+      return blk_gen(**blk_params)
+    else:
+      return ola(blk_gen(**blk_params), **ola_params)
 
   return wrapper
 
