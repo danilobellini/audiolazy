@@ -24,11 +24,14 @@ import pytest
 p = pytest.mark.parametrize
 
 import itertools as it
+import cmath
 
 # Audiolazy internal imports
 from ..lazy_misc import rint, elementwise, freq2lag, lag2freq, almost_eq
 from ..lazy_compat import INT_TYPES, orange, xrange
-
+from ..lazy_math import pi
+from ..lazy_stream import Stream
+from ..lazy_synth import line
 
 class TestRInt(object):
   table = [
@@ -102,3 +105,63 @@ class TestConverters(object):
       assert almost_eq(lag2freq(-k), -v)
       assert almost_eq(freq2lag(-v), -k)
       assert almost_eq(lag2freq(-v), -k)
+
+
+@p("aeq", almost_eq)
+class TestAlmostEq(object):
+
+  def test_single_values(self, aeq):
+    assert aeq(pi, pi)
+    assert aeq(0, 0)
+    assert aeq(0, 0.)
+    assert aeq(0., 0.)
+    assert aeq(18.7, 18.7)
+    assert aeq(15, 15)
+    assert not aeq(15.0001, 15)
+    assert not aeq(1e-3, 1e-7)
+    assert not aeq(99999, 99999.03)
+    assert not aeq(.99999, .9999903)
+    assert aeq(.99999, .9999901)
+
+  def test_complex_values(self, aeq):
+    assert not aeq(2j, 2)
+    assert not aeq(2j + 1, 2 + 1j)
+    assert not aeq(3 + 4j, 5)
+    assert not aeq(3 + 4j, 3 + 4.0001j)
+    assert not aeq(3 + 4j, 2.99999 + 4j)
+    assert aeq(3 + 4j, 1j + 3 * (1 + 1j))
+    assert aeq(2j + 1, 2j + 1 + 1e-9 - 3e-8j)
+    for a, b in line(28, 0, 2j * pi, finish=True).blocks(size=2, hop=1):
+      assert not aeq(a, b)
+      assert aeq(a, a * cmath.exp(2e-9j * pi))
+      assert aeq(b, b * cmath.exp(-3e-9j * pi))
+
+  def test_iterable_items(self, aeq):
+    items = [1, 3, 2e-4, .5, .1, pi, 0, 0, 0., 12]
+    assert aeq(items, Stream(items))
+    assert aeq((d for d in sorted(items)), sorted(items))
+    items_changed = items[:]
+    items_changed[2] = 3j
+    assert not aeq(items_changed, Stream(items))
+    assert aeq([i * (1 + 2e-9) for i in items], Stream(items))
+
+  def test_empty_iterables_and_nested_ones(self, aeq):
+    assert aeq([], tuple())
+    assert aeq(set(), tuple())
+    assert aeq([], Stream([]))
+    assert aeq(([], []), [[], []])
+    assert not aeq(([], [], []), [[], []])
+    assert not aeq([[]], [])
+    assert aeq(([], [], []), [[], []], pad=[])
+    assert not aeq([], tuple(), ignore_type=False)
+    assert not aeq(set(), tuple(), ignore_type=False)
+    assert not aeq([], Stream([]), ignore_type=False)
+    assert not aeq(([], []), [[], []], ignore_type=False)
+
+  def test_nested_iterables(self, aeq):
+    k = 1 + 1e-8
+    items_list = [1, [3 + 1e-7, [2e-4 - 9e-14, .5]], [.1, pi * k], 0, [12]]
+    items_tuple = [1 - 7e-8, (3, (2e-4, .5)), (.1, pi / k), 0., (12,)]
+    assert almost_eq(items_list, items_tuple)
+    items_list[-1][-1] = 11.9999
+    assert not almost_eq(items_list, items_tuple)
