@@ -789,13 +789,15 @@ def stft(func=None, **kwparams):
     window should be applied (same behavior of a rectangular window).
   before :
     Function to be applied just before taking the transform, after the
-    windowing. Defaults to the ``numpy.fft.fftshift``. Together with
-    the ``after`` default, this results in zero-phased transforms.
+    windowing. Defaults to the ``numpy.fft.ifftshift``, which, together with
+    the ``after`` default, puts the time reference at the ``size // 2``
+    index of the block, centralizing it for the FFT (e.g. blocks
+    ``[0, 1, 0]`` and ``[0, 0, 1, 0]`` would have zero phase).
   after :
     Function to be applied just after the inverse transform, before calling
     the overlap-add (as well as before its windowing, if any). Defaults to
-    the ``numpy.fft.fftshift``. Together with the ``before`` default, this
-    results in zero-phased transforms.
+    the ``numpy.fft.fftshift`` function, which undo the changes done by the
+    default ``before`` pre-processing for block phase alignment.
   ola :
     Overlap-add strategy. Uses the ``overlap_add`` default strategy when
     not given. The strategy should allow at least size and hop keyword
@@ -954,7 +956,7 @@ def stft(func=None, **kwparams):
       if inverse_transform is NotSpecified:
         from numpy.fft import irfft as inverse_transform
       if before is NotSpecified:
-        from numpy.fft import fftshift as before
+        from numpy.fft import ifftshift as before
       if after is NotSpecified:
         from numpy.fft import fftshift as after
 

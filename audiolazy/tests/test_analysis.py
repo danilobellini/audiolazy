@@ -29,14 +29,14 @@ from functools import reduce
 
 # Audiolazy internal imports
 from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
-                             unwrap, amdf, overlap_add)
+                             unwrap, amdf, overlap_add, stft)
 from ..lazy_stream import Stream, thub
-from ..lazy_misc import almost_eq
+from ..lazy_misc import almost_eq, rint
 from ..lazy_compat import xrange, orange, xzip, xmap
 from ..lazy_synth import line, white_noise, ones, sinusoid, zeros
-from ..lazy_math import ceil, inf, pi
+from ..lazy_math import ceil, inf, pi, cexp
 from ..lazy_core import OpMethod
-from ..lazy_itertools import chain
+from ..lazy_itertools import chain, repeat
 
 class TestWindow(object):
 
@@ -406,3 +406,36 @@ class TestOverlapAdd(object):
     result_wnd = oadd(self.list_data, wnd=wnd)
     assert concat(self.list_data) == list(result_no_wnd)
     assert concat(wdata) == list(result_wnd)
+
+
+class TestSTFT(object):
+
+  @p("strategy", [stft.real, stft.complex, stft.complex_real])
+  @p("size", [256, 17])
+  @p("hop_percent", [1, .5, .23])
+  @p("zero_phase", [True, False])
+  def test_do_nothing(self, strategy, size, hop_percent, zero_phase):
+    data = white_noise()
+    hop = rint(size * hop_percent)
+    identity = lambda blk: blk
+    st = strategy if zero_phase else strategy(before=None, after=None)
+    func = st(identity, size=size, hop=hop, ola_wnd=None)
+    env = overlap_add(repeat([1.] * size), hop=hop, wnd=None)
+    assert almost_eq(data.peek(5000), (func(data) / env).take(5000))
+
+  @p("strategy", [stft.real, stft.complex, stft.complex_real])
+  @p("size", [128, 53])
+  @p("hop_percent", [1, .5, .31])
+  def test_zero_phase(self, strategy, size, hop_percent):
+    data = thub(white_noise(), 2)
+    hop = rint(size * hop_percent)
+    identity = lambda blk: blk
+    analyzer = strategy(identity, size=size, hop=hop, ola=None,
+                        inverse_transform=None, after=None)
+    blocks_zero_phase = analyzer(data).take(50)
+    blocks = analyzer(data, before=None).take(50)
+    assert len(blocks) == len(blocks_zero_phase) == 50
+    blk_len = size // 2 + 1 if strategy is stft.real else size
+    change = cexp(line(size, 0, 2j * pi * (size // 2))).take(blk_len)
+    for blk, blk_zp in xzip(blocks, blocks_zero_phase):
+      assert almost_eq(blk * change, blk_zp)
