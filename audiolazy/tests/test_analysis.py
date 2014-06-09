@@ -26,6 +26,8 @@ import pytest
 p = pytest.mark.parametrize
 
 from functools import reduce
+from itertools import compress
+import operator
 
 # Audiolazy internal imports
 from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
@@ -36,7 +38,7 @@ from ..lazy_compat import xrange, orange, xzip, xmap
 from ..lazy_synth import line, white_noise, ones, sinusoid, zeros
 from ..lazy_math import ceil, inf, pi, cexp
 from ..lazy_core import OpMethod
-from ..lazy_itertools import chain, repeat
+from ..lazy_itertools import chain, repeat, count
 
 class TestWindow(object):
 
@@ -408,6 +410,10 @@ class TestOverlapAdd(object):
     assert concat(wdata) == list(result_wnd)
 
 
+class KeepDefault:
+  """ Possible parameter (the class itself) for parametrized tests """
+
+
 class TestSTFT(object):
 
   @p("strategy", [stft.real, stft.complex, stft.complex_real])
@@ -439,3 +445,71 @@ class TestSTFT(object):
     change = cexp(line(size, 0, 2j * pi * (size // 2))).take(blk_len)
     for blk, blk_zp in xzip(blocks, blocks_zero_phase):
       assert almost_eq(blk * change, blk_zp)
+
+  integer_wnd = lambda size: [int(500 * el) for el in window.hamming(size)]
+
+  @p("use_before", [True, False])
+  @p("use_trans", [True, False])
+  @p("use_itrans", [True, False])
+  @p("use_after", [True, False])
+  @p("wnd", [integer_wnd, None, KeepDefault])
+  def test_calling_order_and_data_process_no_ola(self, use_before, use_trans,
+                                                 use_itrans, use_after, wnd):
+    """
+    Tests whether the stft operation sequence is called in this order:
+
+      "blockenize" -> "windowing" -> before -> transform -> func ...
+                                        ... -> inverse_transform -> after
+
+    and if the data flows from a step to the next one, including the cases
+    where some parts of this process is [explicitly] missing. Also, the
+    result from after in this process should be the stft output, as
+    overlap-add is [explicitly] deactivated. This test doesn't need Numpy.
+    """
+    size = 15 + 2 * sum([use_before, use_trans, use_itrans, use_after])
+    hop = 13 # Arbitrary size and hop
+
+    def appender_factory(name):
+      """ Appender Factory, needed to create a closure for a single name """
+      def appender(*args):
+        """
+        Appends the name to "name_order" and the output data to "data_order".
+        This output data is found by an elementwise multiplication of the 1st
+        input by 1, 2, 4, 8 or 16 (respective to the last 5 operations in the
+        stft sequence).
+        """
+        assert len(args) == (2 if "trans" in name else 1)
+        name_order.append(name)
+        m = (1 << names.index(name))
+        new_data = [el * m for el in args[0]]
+        data_order.append(new_data)
+        return new_data
+      return appender
+
+    selector = [use_before, use_trans, True, use_itrans, use_after]
+    names = ["before", "transform", "func", "inverse_transform", "after"]
+    expected_names = [name for sel, name in xzip(selector, names) if sel]
+    expected_multipliers = list(compress(1 << count(), selector)) # 1 2 4 8 16
+
+    kwargs = {name: appender_factory(name) if sel else None
+              for sel, name in xzip(selector, names)}
+    processor = stft(**kwargs)
+
+    sig = thub(white_noise(low=-1e3, high=1e3).map(int), 2)
+    if wnd is KeepDefault:
+      blocks_output = processor(sig, size=size, hop=hop, ola=None)
+    else:
+      blocks_output = processor(sig, size=size, hop=hop, ola=None, wnd=wnd)
+
+    for sig_blk in sig.blocks(size=size, hop=hop).limit(5):
+      if wnd in [KeepDefault, None]:
+        data_order = [sig_blk]
+      else:
+        data_order = [list(xmap(operator.mul, sig_blk, wnd(size)))]
+      name_order = []
+      result = blocks_output.take() # This changes data and order
+      assert name_order == expected_names
+      assert data_order[-1] == result
+      pairs = Stream(data_order).blocks(size=2, hop=1)
+      for (a, b), m in xzip(pairs, expected_multipliers):
+        assert [el * m for el in a] == b
