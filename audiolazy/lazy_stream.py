@@ -23,7 +23,7 @@ Stream class definition module
 import itertools as it
 from collections import Iterable, deque
 from functools import wraps
-from warnings import warn
+import warnings
 from math import isinf
 
 # Audiolazy internal imports
@@ -488,8 +488,9 @@ class StreamTeeHub(Stream):
 
   def __del__(self):
     if self._iters:
-      warn(MemoryLeakWarning("StreamTeeHub requesting {0} more copies than "
-                             "needed".format(len(self._iters))))
+      msg_fmt = "StreamTeeHub requesting {0} more copies than needed"
+      msg = msg_fmt.format(len(self._iters))
+      warnings.warn(MemoryLeakWarning(msg))
       self._iters[:] = [] # Avoid many warnings for many calls to __del__
 
   def take(self, *args, **kwargs):

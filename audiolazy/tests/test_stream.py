@@ -30,7 +30,8 @@ from collections import deque
 # Audiolazy internal imports
 from ..lazy_stream import Stream, thub, MemoryLeakWarning, StreamTeeHub
 from ..lazy_misc import almost_eq
-from ..lazy_compat import orange, xrange, xzip, xmap, xfilter, NEXT_NAME
+from ..lazy_compat import (orange, xrange, xzip, xmap, xfilter, NEXT_NAME,
+                           PYTHON2)
 from ..lazy_math import inf, nan, pi
 
 from . import skipper
@@ -412,9 +413,49 @@ class TestEveryMapFilter(object):
 
 class TestThub(object):
 
-  @p("copies", orange(5))
-  @p("used_copies", orange(5))
-  def test_memory_leak_warning(self, copies, used_copies, recwarn):
+  copies_pairs = [ # Pairs (copies, used_copies) that worth testing
+    (0, 1), (1, 0), (1, 1), (1, 2), (2, 0), (2, 1), (2, 2), (2, 3),
+    (3, 0), (3, 1), (3, 2), (3, 3), (3, 4),
+    (4, 0), (4, 1), (4, 2), (4, 3), (4, 4),
+  ]
+
+  @p(("copies", "used_copies"), copies_pairs)
+  def test_memory_leak_warning_mock(self, copies, used_copies, monkeypatch):
+    # Mock to bypass the warnings.filters and the weird "pre-filters"
+    # __warningregistry__ behavior
+    def warn(w):
+      warn.warnings_list.append(w)
+    warn.warnings_list = []
+
+    gc.collect() # Clear warnings that might be pending from other tests
+    monkeypatch.setattr(warnings, "warn", warn)
+
+    def apply_test():
+      types = [int, int, int, float, complex, float, type(thub), type(pytest)]
+      sig = [4, 3, 2, 7e-18, 9j, .2, thub, pytest]
+      data = thub(sig, copies)
+      assert isinstance(data, StreamTeeHub)
+      safe_copies = min(copies, used_copies)
+      assert all(all(types == data.map(type)) for n in xrange(safe_copies))
+      if copies < used_copies:
+        with pytest.raises(IndexError):
+          Stream(data)
+      data.__del__() # Forcefully calls the destructor twice
+      data.__del__()
+
+    apply_test()
+    gc.collect()
+
+    # Expected results
+    if copies > used_copies:
+      w = warn.warnings_list.pop() # The only warning
+      assert isinstance(w, MemoryLeakWarning)
+      parts = ["StreamTeeHub", str(copies - used_copies)]
+      assert all(part in str(w) for part in parts)
+    assert not warn.warnings_list
+
+  @p(("copies", "used_copies"), copies_pairs)
+  def test_memory_leak_warning_recwarn(self, copies, used_copies, recwarn):
     sig = Stream(.5, 8, 7 + 2j)
     data = thub(sig, copies)
     assert isinstance(data, StreamTeeHub)
@@ -428,12 +469,14 @@ class TestThub(object):
       gc.collect()
       recwarn.clear()
 
-      # Clear warning registry from other tests (needed on pypy 2.2.1)
-      if any(name.startswith("pypy") for name in dir(sys)): # if pypy...
+      # Clear warning registry from other tests in function globals
+      if PYTHON2:
         del_globals = StreamTeeHub.__del__.im_func.func_globals
-        wr = "__warningregistry__"
-        if wr in del_globals:
-          del_globals[wr].clear()
+      else:
+        del_globals = StreamTeeHub.__del__.__globals__
+      wr = "__warningregistry__"
+      if wr in del_globals:
+        del_globals[wr].clear()
 
       # From now, look for every warning out there
       warnings.resetwarnings()
