@@ -760,28 +760,49 @@ def stft(func=None, **kwparams):
 
   See the examples below for more information about these use cases.
 
+  The resulting function performs a full block-by-block analysis/synthesis
+  phase vocoder keeping this sequence of actions:
+
+  1. Blockenize the signal with the given ``size`` and ``hop``;
+  2. Lazily apply the given ``wnd`` window to each block;
+  3. Perform the 5 actions calling their functions in order:
+
+    a. ``before``: Pre-processing;
+    b. ``transform``: A transform like the FFT;
+    c. ``func``: the positional parameter with the single block processor;
+    d. ``inverse_transform``: inverse FFT;
+    e. ``after``: Post-processing.
+
+  4. Overlap-add with the ``ola`` overlap-add strategy. The given ``ola``
+     would deal with its own window application and normalization.
+
+  Any parameter from steps 3 and 4 can be set to ``None`` to skip it from
+  the full process, without changing the other [sub]steps. The parameters
+  defaults are based on the Numpy FFT subpackage.
+
   Parameters
   ----------
   func :
     The block/grain processor function that receives a transformed block in
     the frequency domain (the ``transform`` output) and should return the
-    processed data (it will be the ``inverse_transform`` input). This
+    processed data (it will be the first ``inverse_transform`` input). This
     parameter shouldn't appear when this function is used as a decorator.
   size :
     Block size for the STFT process, in samples.
   hop :
     Duration in samples between two blocks. Defaults to the ``size`` value.
   padded_size :
-    Second parameter for the transform functions. Defaults to the ``size``
-    value.
+    Second positional parameter for the ``transform`` and
+    ``inverse_transform`` functions. Defaults to the ``size`` value.
   transform :
     Function that receives the windowed block (in time domain) and the
-    ``padded_size`` as two positional inputs and should return the block in
-    frequency domain. Defaults to ``numpy.fft.rfft``.
+    ``padded_size`` as two positional inputs and should return the block (in
+    frequency domain). Defaults to ``numpy.fft.rfft``, which outputs a
+    Numpy 1D array with length equals to ``padded_size // 2 + 1``.
   inverse_transform :
     Function that receives the processed block (in frequency domain) and the
-    ``padded_size`` as two positional inputs and should return the block in
-    time domain. Defaults to ``numpy.fft.irfft``.
+    ``padded_size`` as two positional inputs and should return the block (in
+    time domain). Defaults to ``numpy.fft.irfft``.
   wnd :
     Window function to be called as ``wnd(size)`` or window iterable with
     length equals to ``size``. The windowing/apodization values are used
@@ -792,17 +813,21 @@ def stft(func=None, **kwparams):
     windowing. Defaults to the ``numpy.fft.ifftshift``, which, together with
     the ``after`` default, puts the time reference at the ``size // 2``
     index of the block, centralizing it for the FFT (e.g. blocks
-    ``[0, 1, 0]`` and ``[0, 0, 1, 0]`` would have zero phase).
+    ``[0, 1, 0]`` and ``[0, 0, 1, 0]`` would have zero phase). To disable
+    this realignment, just change both ``before=None`` and ``after=None``
+    keywords.
   after :
     Function to be applied just after the inverse transform, before calling
     the overlap-add (as well as before its windowing, if any). Defaults to
     the ``numpy.fft.fftshift`` function, which undo the changes done by the
-    default ``before`` pre-processing for block phase alignment.
+    default ``before`` pre-processing for block phase alignment. To avoid
+    the default time-domain realignment, set both ``before=None`` and
+    ``after=None`` keywords.
   ola :
     Overlap-add strategy. Uses the ``overlap_add`` default strategy when
     not given. The strategy should allow at least size and hop keyword
-    arguments, besides a first positional argument with the iterable with
-    blocks. If ``None``, the result from using the STFT processor will be
+    arguments, besides a first positional argument for the iterable with
+    blocks. If ``ola=None``, the result from using the STFT processor will be
     the ``Stream`` of blocks that would be the overlap-add input.
   ola_* :
     Extra keyword parameters for the overlap-add strategy, if any. The extra
@@ -907,6 +932,14 @@ def stft(func=None, **kwparams):
   2. Actually, there's nothing in this function that imposes FFT or Numpy
      besides the default values. One can still use this even for other
      transforms that have nothing to do with the Fourier Transform.
+
+  See Also
+  --------
+  overlap_add :
+    Overlap-add algorithm for an iterable (e.g. a Stream instance) of blocks
+    (sequences such as lists or Numpy arrays). It's also a StrategyDict.
+  window :
+    Window/apodization/tapering functions for a given size as a StrategyDict.
   """
   # Using as a decorator or to "replicate" this function with other defaults
   if func is None:
