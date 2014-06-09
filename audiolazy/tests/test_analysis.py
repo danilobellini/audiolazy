@@ -228,7 +228,7 @@ class TestOverlapAdd(object):
   def test_size_1_hop_1_sameness(self, oadd, wnd):
     raw_data = [1., -4., 3., -1., 5., -4., 2., 3.]
     blk_sig = Stream(raw_data).blocks(size=1, hop=1)
-    data = oadd(blk_sig).take(200)
+    data = oadd(blk_sig, wnd=wnd).take(200)
     assert list(data) ==  raw_data
 
   @p("size", [512, 128, 12, 2])
@@ -419,8 +419,8 @@ class TestSTFT(object):
     hop = rint(size * hop_percent)
     identity = lambda blk: blk
     st = strategy if zero_phase else strategy(before=None, after=None)
-    func = st(identity, size=size, hop=hop, ola_wnd=None)
-    env = overlap_add(repeat([1.] * size), hop=hop, wnd=None)
+    func = st(identity, size=size, hop=hop)
+    env = overlap_add(repeat([1.] * size), hop=hop)
     assert almost_eq(data.peek(5000), (func(data) / env).take(5000))
 
   @p("strategy", [stft.real, stft.complex, stft.complex_real])

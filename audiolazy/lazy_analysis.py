@@ -603,8 +603,7 @@ overlap_add = StrategyDict("overlap_add")
 
 @overlap_add.strategy("numpy")
 @tostream
-def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
-                normalize=True):
+def overlap_add(blk_sig, size=None, hop=None, wnd=None, normalize=True):
   """
   Overlap-add algorithm using Numpy arrays.
 
@@ -617,9 +616,9 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
   hop :
     Number of samples for two adjacent blocks (defaults to the size).
   wnd :
-    Windowing function to be applied to each block (defaults to
-    ``window.triangular``), or any iterable with exactly ``size``
-    elements. If ``None``, applies a rectangular window.
+    Windowing function to be applied to each block or any iterable with
+    exactly ``size`` elements. If ``None`` (default), applies a rectangular
+    window.
   normalize :
     Flag whether the window should be normalized so that the process could
     happen in the [-1; 1] range, dividing the window by its hop gain.
@@ -639,6 +638,8 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
     Lazily joins all iterables given as parameters.
   chain.from_iterable :
     Same to ``chain(*data)``, but the ``data`` evaluation is lazy.
+  window :
+    Window/apodization/tapering functions for a given size as a StrategyDict.
 
   Note
   ----
@@ -687,11 +688,10 @@ def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
 
 @overlap_add.strategy("list")
 @tostream
-def overlap_add(blk_sig, size=None, hop=None, wnd=window.triangular,
-                normalize=True):
+def overlap_add(blk_sig, size=None, hop=None, wnd=None, normalize=True):
   """
   Overlap-add algorithm using lists instead of Numpy arrays. The behavior
-  is the same to the ``overlap_add.numpy`` strategy.
+  is the same to the ``overlap_add.numpy`` strategy, besides the data types.
   """
   # Finds the size from data, if needed
   if size is None:

@@ -28,7 +28,7 @@ p = pytest.mark.parametrize
 from numpy.fft import fft, ifft
 
 # Audiolazy internal imports
-from ..lazy_analysis import dft, stft
+from ..lazy_analysis import dft, stft, window
 from ..lazy_math import pi, cexp, phase
 from ..lazy_misc import almost_eq, rint
 from ..lazy_synth import line
@@ -71,22 +71,22 @@ class TestSTFT(object):
     data4003 = ifft([1,  (4+3j)/5, 1,  (4-3j)/5]) # From block [4, 0, 0, 3]
     data0340 = ifft([1, (-4-3j)/5, 1, (-4+3j)/5]) # From block [0, 3, 4, 0]
 
-    result = whitenize(sig, ola_wnd=None)
+    result = whitenize(sig) # No overlap-add window (default behavior)
     assert isinstance(result, Stream)
 
     expected = Stream(*data0340)
     assert almost_eq(result.take(64), expected.take(64))
 
-    # Using the default overlap-add window (triangle)
+    # Using a "triangle" as the overlap-add window
     wnd = [0.5, 1, 1, 0.5] # Normalized triangle
-    new_result = whitenize(sig)
+    new_result = whitenize(sig, ola_wnd=window.triangle)
     assert isinstance(result, Stream)
     new_expected = Stream(*data0340) * Stream(*wnd)
     assert almost_eq(new_result.take(64), new_expected.take(64))
 
     # With real overlap
     wnd_hop2 = [1/3, 2/3, 2/3, 1/3] # Normalized triangle for the new hop
-    overlap_result = whitenize(sig, hop=2)
+    overlap_result = whitenize(sig, hop=2, ola_wnd=window.triangle)
     assert isinstance(result, Stream)
     overlap_expected = Stream(*data0340) * Stream(*wnd_hop2) \
                      + chain([0, 0], Stream(*data4003) * Stream(*wnd_hop2))
