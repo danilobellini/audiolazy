@@ -24,8 +24,7 @@ import pytest
 p = pytest.mark.parametrize
 
 import itertools as it
-import operator
-import warnings
+import operator, warnings, sys, gc
 from collections import deque
 
 # Audiolazy internal imports
@@ -415,24 +414,43 @@ class TestThub(object):
 
   @p("copies", orange(5))
   @p("used_copies", orange(5))
-  def test_stream_tee_hub_memory_leak_warning_and_index_error(self, copies,
-                                                              used_copies):
-    data = Stream(.5, 8, 7 + 2j)
-    data = thub(data, copies)
+  def test_memory_leak_warning(self, copies, used_copies, recwarn):
+    sig = Stream(.5, 8, 7 + 2j)
+    data = thub(sig, copies)
     assert isinstance(data, StreamTeeHub)
     if copies < used_copies:
       with pytest.raises(IndexError):
         [data * n for n in xrange(used_copies)]
     else:
-      [data * n for n in xrange(used_copies)]
+      [data * n for n in xrange(used_copies)] # Use the copies
+
+      # Clear warnings that might be pending from other tests
+      gc.collect()
+      recwarn.clear()
+
+      # Clear warning registry from other tests (needed on pypy 2.2.1)
+      if any(name.startswith("pypy") for name in dir(sys)): # if pypy...
+        del_globals = StreamTeeHub.__del__.im_func.func_globals
+        wr = "__warningregistry__"
+        if wr in del_globals:
+          del_globals[wr].clear()
+
+      # From now, look for every warning out there
+      warnings.resetwarnings()
       warnings.simplefilter("always")
-      with warnings.catch_warnings(record=True) as warnings_list:
-        data.__del__()
+
+      # Forcefully calls the destructor more than once
+      data.__del__()
+      data.__del__()
+      del data
+      gc.collect()
+
+      # Expected results
       if copies != used_copies:
-        w = warnings_list.pop()
+        w = recwarn.pop()
         assert issubclass(w.category, MemoryLeakWarning)
         assert str(copies - used_copies) in str(w.message)
-      assert warnings_list == []
+      assert not recwarn.list
 
   def test_take_peek(self):
     data = Stream(1, 2, 3).limit(50)

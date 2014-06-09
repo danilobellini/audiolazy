@@ -487,9 +487,10 @@ class StreamTeeHub(Stream):
       raise IndexError("StreamTeeHub has no more copies left to use.")
 
   def __del__(self):
-    if self._iters != []:
-      warn("StreamTeeHub requesting {0} more copies than "
-           "needed".format(len(self._iters)), MemoryLeakWarning)
+    if self._iters:
+      warn(MemoryLeakWarning("StreamTeeHub requesting {0} more copies than "
+                             "needed".format(len(self._iters))))
+      self._iters[:] = [] # Avoid many warnings for many calls to __del__
 
   def take(self, *args, **kwargs):
     """
