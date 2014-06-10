@@ -453,8 +453,9 @@ class TestSTFT(object):
   @p("use_itrans", [True, False])
   @p("use_after", [True, False])
   @p("wnd", [integer_wnd, None, KeepDefault])
-  def test_calling_order_and_data_process_no_ola(self, use_before, use_trans,
-                                                 use_itrans, use_after, wnd):
+  @p("use_ola", [True, False])
+  def test_call_order_and_data_process(self, use_before, use_trans, use_ola,
+                                             use_itrans, use_after, wnd):
     """
     Tests whether the stft operation sequence is called in this order:
 
@@ -463,8 +464,8 @@ class TestSTFT(object):
 
     and if the data flows from a step to the next one, including the cases
     where some parts of this process is [explicitly] missing. Also, the
-    result from after in this process should be the stft output, as
-    overlap-add is [explicitly] deactivated. This test doesn't need Numpy.
+    result from after in the above process should be the stft output (if
+    ``ola=None``) or the overlap-add input. This test doesn't need Numpy.
     """
     size = 15 + 2 * sum([use_before, use_trans, use_itrans, use_after])
     hop = 13 # Arbitrary size and hop
@@ -486,6 +487,27 @@ class TestSTFT(object):
         return new_data
       return appender
 
+    def ola(blk_sig, **kwargs):
+      """
+      Fake overlap-add that outputs each input block reversed.
+      """
+      assert kwargs.pop("size") == size
+      assert kwargs.pop("hop") == hop
+      assert kwargs == {}
+
+      def internal_ola():
+        """ Overlap-add process done after the "after" """
+        assert "name_order" in locals()
+        for blk in blk_sig:
+          assert name_order == expected_names
+          yield blk[::-1]
+
+      # This is called only once and before all the above processing
+      assert "name_order" not in locals()
+      assert "called" not in vars(ola)
+      ola.called = True
+      return internal_ola()
+
     selector = [use_before, use_trans, True, use_itrans, use_after]
     names = ["before", "transform", "func", "inverse_transform", "after"]
     expected_names = [name for sel, name in xzip(selector, names) if sel]
@@ -493,13 +515,13 @@ class TestSTFT(object):
 
     kwargs = {name: appender_factory(name) if sel else None
               for sel, name in xzip(selector, names)}
-    processor = stft(**kwargs)
+    processor = stft(ola=ola if use_ola else None, **kwargs)
 
     sig = thub(white_noise(low=-1e3, high=1e3).map(int), 2)
     if wnd is KeepDefault:
-      blocks_output = processor(sig, size=size, hop=hop, ola=None)
+      blocks_output = processor(sig, size=size, hop=hop)
     else:
-      blocks_output = processor(sig, size=size, hop=hop, ola=None, wnd=wnd)
+      blocks_output = processor(sig, size=size, hop=hop, wnd=wnd)
 
     for sig_blk in sig.blocks(size=size, hop=hop).limit(5):
       if wnd in [KeepDefault, None]:
@@ -508,6 +530,8 @@ class TestSTFT(object):
         data_order = [list(xmap(operator.mul, sig_blk, wnd(size)))]
       name_order = []
       result = blocks_output.take() # This changes data and order
+      if use_ola:
+        result = result[::-1] # Undo the fake overlap-add action
       assert name_order == expected_names
       assert data_order[-1] == result
       pairs = Stream(data_order).blocks(size=2, hop=1)
