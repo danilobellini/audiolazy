@@ -28,6 +28,7 @@ p = pytest.mark.parametrize
 import operator
 import types
 from itertools import combinations_with_replacement, combinations
+from functools import reduce
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
@@ -478,6 +479,20 @@ class TestPoly(object):
       poly[3] = 0
     assert poly == x ** 3 + x + 1
     assert poly in my_set
+
+  @p("poly", [x ** 2 - 2 * x + 1, .3 * x ** 7 - 4 * x ** 2 + .1])
+  def test_roots(self, poly):
+    prod = lambda iterable: reduce(operator.mul, iterable, Poly(1))
+    rebuilt_poly = poly[poly.order] * prod(x - r for r in poly.roots)
+    assert almost_eq.diff(poly.values(), rebuilt_poly.values())
+
+  @p("poly", [5 - x ** -2, x + 2 * x ** .3])
+  def test_roots_invalid(self, poly):
+    with pytest.raises(AttributeError):
+      poly.roots
+
+  def test_constants_have_no_roots(self):
+    assert all(Poly(c).roots == [] for c in [2, -3, 4j, .2 + 3.4j])
 
 
 class TestLagrange(object):
