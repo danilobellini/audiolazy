@@ -27,8 +27,9 @@ import itertools as it
 
 # Audiolazy internal imports
 from ..lazy_math import (factorial, dB10, dB20, inf, ln, log, log2, log10,
-                         log1p, pi, e, absolute)
+                         log1p, pi, e, absolute, sign)
 from ..lazy_misc import almost_eq
+from ..lazy_stream import Stream
 
 
 class TestLog(object):
@@ -113,3 +114,29 @@ class TestAbsolute(object):
     assert absolute([5, -12, 14j, -2j, 0]) == [5, 12, 14., 2., 0]
     assert almost_eq(absolute([1.2, -1.57e-3, -(pi ** 2), -2j,  8 - 4j]),
                      [1.2, 1.57e-3, pi ** 2, 2., 4 * 5 ** .5])
+
+
+class TestSign(object):
+
+  def test_ints(self):
+    assert sign(25) == 1
+    assert sign(-2) == -1
+    assert sign(0) == 0
+    assert sign([4, -1, 3, 7, 0, 1, -8]) == [1, -1, 1, 1, 0, 1, -1]
+
+  def test_floats(self):
+    assert sign(.1) == 1
+    assert sign(-.4) == -1
+    assert sign(0.) == 0
+    assert sign(-0.) == 0
+    assert sign([-1., 5.3e-18, 0., 2.3, -1e37, 1.]) == [-1, 1, 0, 1, -1, 1]
+
+  def test_complex_and_mixed(self):
+    with pytest.raises(TypeError):
+      sign(2j)
+    with pytest.raises(TypeError):
+      sign([1, 1 + 1e-25j])
+    data = sign(Stream(3, -1, .3, 0j))
+    assert data.take(3) == [1, -1, 1]
+    with pytest.raises(TypeError):
+      data.peek() # 0j is complex

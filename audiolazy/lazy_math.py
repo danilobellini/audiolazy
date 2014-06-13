@@ -130,4 +130,7 @@ def dB20(data):
 
 @elementwise("x", 0)
 def sign(x):
-  return cmp(x, 0)
+  """
+  Signal of ``x``: 1 if positive, -1 if negative, 0 otherwise.
+  """
+  return +(x > 0) or -(x < 0)
