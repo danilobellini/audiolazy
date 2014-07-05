@@ -23,7 +23,7 @@ Polynomial model and Waring-Lagrange polynomial interpolator
 from __future__ import division
 
 import operator
-from collections import Iterable, deque
+from collections import Iterable, deque, OrderedDict
 from functools import reduce
 import itertools as it
 
@@ -109,22 +109,22 @@ class Poly(meta(metaclass=PolyMeta)):
 
     If data is a dictionary, powers are the keys and the :math:`a_i` factors
     are the values, so negative powers are allowed and you can neglect the
-    zeros in between, i.e., a dict vith terms like ``{power: value}`` can also
+    zeros in between, i.e., a dict with terms like ``{power: value}`` can also
     be used.
 
     """
     self.zero = 0. if zero is None else zero
     if isinstance(data, list):
-      self._data = {power: value for power, value in enumerate(data)}
+      self._data = OrderedDict(enumerate(data))
     elif isinstance(data, dict):
-      self._data = dict(data)
+      self._data = OrderedDict(data)
     elif isinstance(data, Poly):
-      self._data = data._data.copy()
+      self._data = OrderedDict(data._data)
       self.zero = data.zero if zero is None else zero
     elif data is None:
-      self._data = {}
+      self._data = OrderedDict()
     else:
-      self._data = {0: data}
+      self._data = OrderedDict([(0, data)])
 
     # Compact zeros
     for key, value in list(iteritems(self._data)):
@@ -221,18 +221,18 @@ class Poly(meta(metaclass=PolyMeta)):
     when they're Stream instances, allowing maths using a polynomial more
     than once.
     """
-    return Poly({k: v.copy() if isinstance(v, Stream) else v
-                 for k, v in self.terms()},
+    return Poly(OrderedDict((k, v.copy() if isinstance(v, Stream) else v)
+                            for k, v in iteritems(self._data)),
                 zero=self.zero if zero is None else zero)
 
   def diff(self, n=1):
     """
     Differentiate (n-th derivative, where the default n is 1).
     """
-    return Poly(reduce(lambda d, order: # Derivative order can be ignored
-                         {k - 1: k * v for k, v in iteritems(d) if k != 0},
-                       xrange(n), self._data),
-                zero=self.zero)
+    d = self._data
+    for unused in xrange(n):
+      d = OrderedDict((k - 1, k * v) for k, v in iteritems(d) if k != 0)
+    return Poly(d, zero=self.zero)
 
   def integrate(self):
     """
@@ -240,7 +240,8 @@ class Poly(meta(metaclass=PolyMeta)):
     """
     if -1 in self._data:
       raise ValueError("Unable to integrate term that powers to -1")
-    return Poly({k + 1: v / (k + 1) for k, v in self.terms()},
+    return Poly(OrderedDict((k + 1, v / (k + 1))
+                            for k, v in iteritems(self._data)),
                 zero=self.zero)
 
   def __call__(self, value):
@@ -283,8 +284,8 @@ class Poly(meta(metaclass=PolyMeta)):
       other = Poly(other) # The "other" is probably a number
     intersect = [(key, self._data[key] + other._data[key])
                  for key in set(self._data).intersection(other._data)]
-    return Poly(dict(it.chain(iteritems(self._data),
-                              iteritems(other._data), intersect)),
+    return Poly(OrderedDict(it.chain(iteritems(self._data),
+                                     iteritems(other._data), intersect)),
                 zero=self.zero)
 
   def __sub__(self, other):
@@ -296,7 +297,7 @@ class Poly(meta(metaclass=PolyMeta)):
   def __mul__(self, other):
     if not isinstance(other, Poly):
       other = Poly(other) # The "other" is probably a number
-    new_data = {}
+    new_data = OrderedDict()
     thubbed_self = [(k, thub(v, len(other._data)))
                     for k, v in iteritems(self._data)]
     thubbed_other = [(k, thub(v, len(self._data)))
@@ -350,8 +351,9 @@ class Poly(meta(metaclass=PolyMeta)):
     if len(self._data) == 0:
       return Poly(zero=self.zero)
     if len(self._data) == 1:
-      return Poly({k * other: 1 if v == 1 else v ** other # To avoid casting
-                   for k, v in iteritems(self._data)},
+      return Poly(OrderedDict((k * other,
+                               1 if v == 1 else v ** other) # Avoid casting
+                              for k, v in iteritems(self._data)),
                   zero=self.zero)
     return reduce(operator.mul, [self.copy()] * (other - 1) + [self])
 
@@ -359,15 +361,15 @@ class Poly(meta(metaclass=PolyMeta)):
     if isinstance(other, Poly):
       if len(other) == 1:
         delta, value = next(iteritems(other._data))
-        return Poly({(k - delta): operator.truediv(v, value)
-                     for k, v in iteritems(self._data)},
+        return Poly(OrderedDict(((k - delta), operator.truediv(v, value))
+                                for k, v in iteritems(self._data)),
                     zero=self.zero)
       elif len(other) == 0:
         raise ZeroDivisionError("Dividing Poly instance by zero")
       raise NotImplementedError("Can't divide general Poly instances")
     other = thub(other, len(self))
-    return Poly({k: operator.truediv(v, other)
-                 for k, v in iteritems(self._data)},
+    return Poly(OrderedDict((k, operator.truediv(v, other))
+                            for k, v in iteritems(self._data)),
                 zero=self.zero)
 
   # ---------------------
@@ -398,6 +400,8 @@ class Poly(meta(metaclass=PolyMeta)):
 
 
 x = Poly({1: 1})
+
+
 lagrange = StrategyDict("lagrange")
 
 

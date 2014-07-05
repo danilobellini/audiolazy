@@ -25,18 +25,18 @@ from __future__ import division
 import pytest
 p = pytest.mark.parametrize
 
-import operator
-import types
+import operator, types, random
 from itertools import combinations_with_replacement, combinations
 from functools import reduce
+from collections import OrderedDict
 
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
 from ..lazy_misc import almost_eq, blocks
-from ..lazy_compat import orange, xrange
+from ..lazy_compat import orange, xrange, iteritems
 from ..lazy_math import inf
 from ..lazy_filters import z
-from ..lazy_itertools import count
+from ..lazy_itertools import count, izip
 from ..lazy_core import OpMethod
 from ..lazy_stream import Stream
 
@@ -45,7 +45,7 @@ operator.div = getattr(operator, "div", skipper("There's no operator.div"))
 
 
 class TestPoly(object):
-  example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(-5, 3, -1)]
+  example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(2, -6, -1)]
 
   instances = [
     Poly([1.7, 2, 3.3]),
@@ -92,8 +92,8 @@ class TestPoly(object):
     data = {8: 5, 7: -1, 6: 80, 9: 0}
     polynomial = Poly(dict(data))
     assert len(polynomial) == 3
-
     assert list(polynomial.values()) == [0] * 6 + [80, -1, 5]
+
   @p("data", example_data)
   def test_output_dict(self, data):
     assert dict(Poly(data).terms()) == {k: v for k, v in enumerate(data)
@@ -493,6 +493,122 @@ class TestPoly(object):
 
   def test_constants_have_no_roots(self):
     assert all(Poly(c).roots == [] for c in [2, -3, 4j, .2 + 3.4j])
+
+  @p("list_data", [[1, 2, 3], [-7, 0, 3, 0, 5], orange(-5, 3)])
+  def test_list_constructor_internal_data_order(self, list_data):
+    random.shuffle(list_data)
+    poly = Poly(list_data)
+    dict_data = ((idx, el) for idx, el in enumerate(list_data) if el)
+    izl = izip.longest
+    for (idx, el), (power, coeff) in izl(dict_data, iteritems(poly._data)):
+      assert idx == power
+      assert el == coeff
+
+  @p("dict_data", [
+    [(3, 4), (7, 3), (5, 2.5)],
+    [(4, 3), (19, .2), (-4, 1e-18), (7, .25)],
+    [(3, 2j), (3j, 4), (.5, 0.23)],
+  ])
+  def test_dict_constructor_internal_data_order(self, dict_data):
+    random.shuffle(dict_data)
+    poly = Poly(OrderedDict(dict_data))
+    izl = izip.longest
+    for (idx, el), (power, coeff) in izl(dict_data, iteritems(poly._data)):
+      assert idx == power
+      assert el == coeff
+
+  @p("poly", instances + polynomials)
+  def test_copy_keep_internal_data_order(self, poly):
+    poly_copy = poly.copy()
+    assert hash(poly) == hash(poly_copy)
+    izl = izip.longest
+    for a, b in izl(iteritems(poly._data), iteritems(poly_copy._data)):
+      assert a == b
+
+  def test_diff_keep_internal_data_order(self):
+    data = [3, 2, 5, -1, 8, 0, 4]
+    diff1 = [2, 10, -3, 32, 0, 24]
+    diff2 = [10, -6, 96, 0, 120]
+
+    order = orange(len(data))
+    random.shuffle(order)
+
+    dict_data = OrderedDict((k, data[k]) for k in order)
+    dict_diff1 = OrderedDict((k - 1, diff1[k - 1]) for k in order if k >= 1)
+    dict_diff2 = OrderedDict((k - 2, diff2[k - 2]) for k in order if k >= 2)
+
+    poly = Poly(dict_data)
+    pdiff1 = poly.diff()
+    pdiff2 = poly.diff(2)
+
+    izl = izip.longest
+    expected1 = Poly(dict_diff1)
+    for a, b in izl(iteritems(pdiff1._data), iteritems(expected1._data)):
+      assert a == b
+    expected2 = Poly(dict_diff2)
+    for a, b in izl(iteritems(pdiff2._data), iteritems(expected2._data)):
+      assert a == b
+
+  def test_integrate_keep_internal_data_order(self):
+    data = [18, 2, 12, 0, 60, -54]
+    integ = [18, 1, 4, 0, 12, -9]
+
+    order = orange(len(data))
+    random.shuffle(order)
+
+    dict_data = OrderedDict((k, data[k]) for k in order)
+    dict_integ = OrderedDict((k + 1, integ[k]) for k in order)
+
+    pinteg = Poly(dict_data).integrate()
+    expected = Poly(dict_integ)
+    assert almost_eq(iteritems(pinteg._data), iteritems(expected._data))
+
+  def test_add_sub_keep_internal_data_order(self):
+    poly1 = Poly(OrderedDict([(1, 4), (3, 8)]))
+    poly2 = Poly(OrderedDict([(2, 5), (1, -2)]))
+    poly_add = poly1 + poly2
+    poly_sub = poly1 - poly2
+    expected_add = Poly(OrderedDict([(1, 2), (3, 8), (2, 5)]))
+    expected_sub = Poly(OrderedDict([(1, 6), (3, 8), (2, -5)]))
+
+    izl = izip.longest
+    for a, b in izl(iteritems(poly_add._data), iteritems(expected_add._data)):
+      assert a == b
+    for a, b in izl(iteritems(poly_sub._data), iteritems(expected_sub._data)):
+      assert a == b
+
+  def test_add_mul_pow_keep_internal_data_order(self):
+    poly1 = x ** 2 + 6 * x + 9
+    poly2 = x * (x + 6) + 9 # Horner scheme
+    poly3 = (x + 3) ** 2
+
+    revp1 = 9 + 6 * x + x ** 2
+    revp2 = 9 + (6 + x) * x
+    revp3 = (3 + x) ** 2
+
+    izl = izip.longest
+    for a, b, c, d in izl(iteritems(poly1._data), iteritems(poly2._data),
+                          iteritems(poly3._data), [(2, 1), (1, 6), (0, 9)]):
+      assert a == b == c == d
+    for a, b, c, d in izl(iteritems(revp1._data), iteritems(revp2._data),
+                          iteritems(revp3._data), [(0, 9), (1, 6), (2, 1)]):
+      assert a == b == c == d
+
+  @p("div", [operator.div, operator.truediv])
+  def test_div_keep_internal_data_order(self, div):
+    data = [18, 2, 12, 0, 60, -54]
+    denominator = 12.5
+    divided = [el / denominator for el in data]
+
+    order = orange(len(data))
+    random.shuffle(order)
+
+    dict_data = OrderedDict((k, data[k]) for k in order)
+    dict_div = OrderedDict((k, divided[k]) for k in order)
+
+    pdiv = Poly(dict_data) / denominator
+    expected = Poly(dict_div)
+    assert almost_eq(iteritems(pdiv._data), iteritems(expected._data))
 
 
 class TestLagrange(object):

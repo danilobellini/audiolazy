@@ -126,6 +126,10 @@ AudioLazy changes history
 
   - Signal function ``sign`` now works on Python 3
 
++ lazy_poly:
+
+  - Poly instances are now based on OrderedDict (stores the order internally)
+
 + lazy_wav (*new!*):
 
   - ``WaveStream`` class for opening Wave files. Can load 24-bit audio files!
