@@ -128,7 +128,10 @@ AudioLazy changes history
 
 + lazy_poly:
 
-  - Poly instances are now based on OrderedDict (stores the order internally)
+  - Poly instances are now based on OrderedDict (stores the creation order
+    internally) and Poly.terms now support both a ``sort`` and a ``reverse``
+    keyword arguments to choose the yielding order (sorted by powers, keep
+    creation order or reverse any of these)
   - Immutable Poly behavior is now based on a cached frozenset (doesn't depend
     on the terms order) and includes Poly.zero as a read-only property (after
     the hash is required)

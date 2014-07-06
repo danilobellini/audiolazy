@@ -54,7 +54,7 @@ class TestPoly(object):
     Poly({-1.1: 1, 1.1: .5}),
   ]
 
-  polynomials = [
+  polynomials = [ # Simple polynomials, always from higher to lower powers
     12 * x ** 2 + .5 * x + 18,
     .45 * x ** 17 + 2 * x ** 5 - x + 8,
     8 * x ** 5 + .2 * x ** 3 + .1 * x ** 2,
@@ -466,7 +466,7 @@ class TestPoly(object):
     assert poly == 5 * x ** 3 + x + 2 + x ** .2
     var_coeff = Stream(1, 2, 3)
     poly[0] = var_coeff
-    term_iter = poly.terms()
+    term_iter = poly.terms(sort=True)
     power, item = next(term_iter)
     assert item is var_coeff
     assert power == 0
@@ -512,11 +512,11 @@ class TestPoly(object):
     assert all(Poly(c).roots == [] for c in [2, -3, 4j, .2 + 3.4j])
 
   @p("list_data", [[1, 2, 3], [-7, 0, 3, 0, 5], orange(-5, 3)])
-  def test_list_constructor_internal_data_order(self, list_data):
+  def test_list_constructor_unsorted_terms_order(self, list_data):
     random.shuffle(list_data)
     poly = Poly(list_data)
     dict_data = ((idx, el) for idx, el in enumerate(list_data) if el)
-    for (idx, el), (power, coeff) in xzl(dict_data, iteritems(poly._data)):
+    for (idx, el), (power, coeff) in xzl(dict_data, poly.terms(sort=False)):
       assert idx == power
       assert el == coeff
 
@@ -525,21 +525,21 @@ class TestPoly(object):
     [(4, 3), (19, .2), (-4, 1e-18), (7, .25)],
     [(3, 2j), (3j, 4), (.5, 0.23)],
   ])
-  def test_dict_constructor_internal_data_order(self, dict_data):
+  def test_dict_constructor_unsorted_terms_order(self, dict_data):
     random.shuffle(dict_data)
     poly = Poly(OrderedDict(dict_data))
-    for (idx, el), (power, coeff) in xzl(dict_data, iteritems(poly._data)):
+    for (idx, el), (power, coeff) in xzl(dict_data, poly.terms(sort=False)):
       assert idx == power
       assert el == coeff
 
   @p("poly", instances + polynomials)
-  def test_copy_keep_internal_data_order(self, poly):
+  def test_copy_keep_unsorted_terms_order(self, poly):
     poly_copy = poly.copy()
     assert hash(poly) == hash(poly_copy)
-    for a, b in xzl(iteritems(poly._data), iteritems(poly_copy._data)):
+    for a, b in xzl(poly.terms(sort=False), poly_copy.terms(sort=False)):
       assert a == b
 
-  def test_diff_keep_internal_data_order(self):
+  def test_diff_keep_unsorted_terms_order(self):
     data = [3, 2, 5, -1, 8, 0, 4]
     diff1 = [2, 10, -3, 32, 0, 24]
     diff2 = [10, -6, 96, 0, 120]
@@ -556,14 +556,14 @@ class TestPoly(object):
     pdiff2 = poly.diff(2)
 
     expected1 = Poly(dict_diff1)
-    for a, b in xzl(iteritems(pdiff1._data), iteritems(expected1._data)):
+    for a, b in xzl(pdiff1.terms(sort=False), expected1.terms(sort=False)):
       assert a == b
 
     expected2 = Poly(dict_diff2)
-    for a, b in xzl(iteritems(pdiff2._data), iteritems(expected2._data)):
+    for a, b in xzl(pdiff2.terms(sort=False), expected2.terms(sort=False)):
       assert a == b
 
-  def test_integrate_keep_internal_data_order(self):
+  def test_integrate_keep_unsorted_terms_order(self):
     data = [18, 2, 12, 0, 60, -54]
     integ = [18, 1, 4, 0, 12, -9]
 
@@ -575,22 +575,22 @@ class TestPoly(object):
 
     pinteg = Poly(dict_data).integrate()
     expected = Poly(dict_integ)
-    assert almost_eq(iteritems(pinteg._data), iteritems(expected._data))
+    assert almost_eq(pinteg.terms(sort=False), expected.terms(sort=False))
 
-  def test_add_sub_keep_internal_data_order(self):
+  def test_add_sub_keep_unsorted_terms_order(self):
     poly1 = Poly(OrderedDict([(1, 4), (3, 8)]))
     poly2 = Poly(OrderedDict([(2, 5), (1, -2)]))
-    poly_add = poly1 + poly2
-    poly_sub = poly1 - poly2
+    padd = poly1 + poly2
+    psub = poly1 - poly2
     expected_add = Poly(OrderedDict([(1, 2), (3, 8), (2, 5)]))
     expected_sub = Poly(OrderedDict([(1, 6), (3, 8), (2, -5)]))
 
-    for a, b in xzl(iteritems(poly_add._data), iteritems(expected_add._data)):
+    for a, b in xzl(padd.terms(sort=False), expected_add.terms(sort=False)):
       assert a == b
-    for a, b in xzl(iteritems(poly_sub._data), iteritems(expected_sub._data)):
+    for a, b in xzl(psub.terms(sort=False), expected_sub.terms(sort=False)):
       assert a == b
 
-  def test_add_mul_pow_keep_internal_data_order(self):
+  def test_add_mul_pow_keep_unsorted_terms_order(self):
     poly1 = x ** 2 + 6 * x + 9
     poly2 = x * (x + 6) + 9 # Horner scheme
     poly3 = (x + 3) ** 2
@@ -599,15 +599,15 @@ class TestPoly(object):
     revp2 = 9 + (6 + x) * x
     revp3 = (3 + x) ** 2
 
-    for a, b, c, d in xzl(iteritems(poly1._data), iteritems(poly2._data),
-                          iteritems(poly3._data), [(2, 1), (1, 6), (0, 9)]):
+    for a, b, c, d in xzl(poly1.terms(sort=False), poly2.terms(sort=False),
+                          poly3.terms(sort=False), [(2, 1), (1, 6), (0, 9)]):
       assert a == b == c == d
-    for a, b, c, d in xzl(iteritems(revp1._data), iteritems(revp2._data),
-                          iteritems(revp3._data), [(0, 9), (1, 6), (2, 1)]):
+    for a, b, c, d in xzl(revp1.terms(sort=False), revp2.terms(sort=False),
+                          revp3.terms(sort=False), [(0, 9), (1, 6), (2, 1)]):
       assert a == b == c == d
 
   @p("div", [operator.div, operator.truediv])
-  def test_div_keep_internal_data_order(self, div):
+  def test_div_keep_unsorted_terms_order(self, div):
     data = [18, 2, 12, 0, 60, -54]
     denominator = 12.5
     divided = [el / denominator for el in data]
@@ -620,10 +620,10 @@ class TestPoly(object):
 
     pdiv = Poly(dict_data) / denominator
     expected = Poly(dict_div)
-    assert almost_eq(iteritems(pdiv._data), iteritems(expected._data))
+    assert almost_eq(pdiv.terms(sort=False), expected.terms(sort=False))
 
   @p("op", OpMethod.get("1", without="~"))
-  def test_unary_operators_keep_internal_data_order(self, op):
+  def test_unary_operators_keep_unsorted_terms_order(self, op):
     data = thub(white_noise(low=-20, high=20), 2)
     powers = thub(white_noise(low=-20, high=20).limit(20), 2)
 
@@ -632,7 +632,57 @@ class TestPoly(object):
 
     poly = op.func(Poly(dict_data))
     expected = Poly(dict_op)
-    assert almost_eq(iteritems(poly._data), iteritems(expected._data))
+    assert almost_eq(poly.terms(sort=False), expected.terms(sort=False))
+
+  @p("poly", [poly for poly in polynomials if len(poly) >= 2])
+  def test_terms_sort_simple_polynomials(self, poly):
+    values = [(idx, v) for idx, v in enumerate(poly.values()) if v != 0]
+    terms_auto = list(poly.terms())
+    terms_sorted = list(poly.terms(sort=True))
+    terms_not_sorted = list(poly.terms(sort=False))
+
+    assert terms_not_sorted != terms_sorted
+    assert terms_auto == values == terms_sorted == terms_not_sorted[::-1]
+
+  def test_terms_sort_reverse_laurent_polynomials(self):
+    data = white_noise(low=-1000, high=500)
+    powers = white_noise(low=-230, high=20).map(int).limit(50)
+    dict_original = OrderedDict(xzip(powers, data))
+    poly = Poly(dict_original)
+
+    terms_auto = list(poly.terms())
+    terms_sorted = list(poly.terms(sort=True))
+    terms_not_sorted = list(poly.terms(sort=False))
+    terms_auto_rev = list(poly.terms(reverse=True))
+    terms_sorted_rev = list(poly.terms(sort=True, reverse=True))
+    terms_not_sorted_rev = list(poly.terms(sort=False, reverse=True))
+
+    assert terms_not_sorted != terms_sorted
+    assert (terms_auto == # Default is sorted
+            terms_sorted == terms_auto_rev[::-1] == terms_sorted_rev[::-1])
+    assert terms_not_sorted == terms_not_sorted_rev[::-1]
+    assert terms_sorted == sorted(terms_not_sorted)
+    assert terms_not_sorted == list(iteritems(dict_original))
+
+  def test_terms_sort_reverse_float_powers(self):
+    data = white_noise(low=-10, high=30)
+    powers = white_noise(low=-30, high=40).limit(40)
+    dict_original = OrderedDict(xzip(powers, data))
+    poly = Poly(dict_original)
+
+    terms_auto = list(poly.terms())
+    terms_sorted = list(poly.terms(sort=True))
+    terms_not_sorted = list(poly.terms(sort=False))
+    terms_auto_rev = list(poly.terms(reverse=True))
+    terms_sorted_rev = list(poly.terms(sort=True, reverse=True))
+    terms_not_sorted_rev = list(poly.terms(sort=False, reverse=True))
+
+    assert terms_not_sorted != terms_sorted
+    assert (terms_auto == terms_not_sorted == # Default is not sorted
+            terms_auto_rev[::-1] == terms_not_sorted_rev[::-1])
+    assert terms_sorted == terms_sorted_rev[::-1]
+    assert terms_sorted == sorted(terms_not_sorted)
+    assert terms_not_sorted == list(iteritems(dict_original))
 
 
 class TestLagrange(object):

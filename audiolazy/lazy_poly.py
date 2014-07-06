@@ -164,13 +164,35 @@ class Poly(meta(metaclass=PolyMeta)):
       for key in xrange(self.order + 1):
         yield self[key]
 
-  def terms(self):
+  def terms(self, sort="auto", reverse=False):
     """
     Pairs (2-tuple) generator where each tuple has a (power, value) term,
-    sorted by power. Useful for casting as dict.
+    perhaps sorted by power. Useful for casting as dict.
+
+    Parameters
+    ----------
+    sort :
+      A boolean value or ``"auto"`` (default) which chooses whether the terms
+      should be sorted. The ``"auto"`` value means ``True`` for Laurent
+      polynomials (i.e., integer powers), ``False`` otherwise. If sorting is
+      disabled, this method will yield the terms in the creation order.
+    reverse :
+      Boolean to chooses whether the [sorted or creation] order should be
+      reversed when yielding the pairs. If False (default), yields in
+      ascending or creation order (not counting possible updates in the
+      coefficients).
     """
-    for key in sorted(self._data):
-      yield key, self._data[key]
+    if sort == "auto":
+      sort = self.is_laurent()
+
+    if sort:
+      keys = sorted(self._data, reverse=reverse)
+    elif reverse:
+      keys = reversed(list(self._data))
+    else:
+      keys = self._data
+
+    return ((k, self._data[k]) for k in keys)
 
   def __len__(self):
     """
@@ -327,24 +349,22 @@ class Poly(meta(metaclass=PolyMeta)):
   # ----------
   def __eq__(self, other):
     if not isinstance(other, Poly):
-      other = Poly(other, zero=self.zero) # The "other" is probably a number
-
-    def sorted_flattenizer(instance):
-      return reduce(operator.concat, instance.terms(), tuple())
+      other = Poly(other, zero=self.zero) # To compare only Poly instances
 
     def is_pair_equal(a, b):
       if isinstance(a, Stream) or isinstance(b, Stream):
         return a is b
       return a == b
 
-    for pair in xzip_longest(sorted_flattenizer(self),
-                             sorted_flattenizer(other)):
-      if not is_pair_equal(*pair):
-        return False
-    return is_pair_equal(self.zero, other.zero)
+    def dicts_equal(a, b):
+      return len(a) == len(b) and \
+             all(k in b and is_pair_equal(v, b[k]) for k, v in iteritems(a))
+
+    return is_pair_equal(self._zero, other._zero) and \
+           dicts_equal(self._data, other._data)
 
   def __ne__(self, other):
-    return not(self == other)
+    return not (self == other)
 
   # -----------------------------------------
   # Operators (mainly) for non-Poly instances
