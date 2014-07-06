@@ -31,8 +31,7 @@ import itertools as it
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
 from .lazy_text import multiplication_formatter, pair_strings_sum_formatter
 from .lazy_misc import rint
-from .lazy_compat import (meta, iteritems, xrange, xzip, INT_TYPES,
-                          xzip_longest)
+from .lazy_compat import meta, iteritems, xrange, xzip, INT_TYPES
 from .lazy_stream import Stream, tostream, thub
 
 __all__ = ["PolyMeta", "Poly", "x", "lagrange", "resample"]
@@ -131,14 +130,12 @@ class Poly(meta(metaclass=PolyMeta)):
 
     # Compact zeros
     for key, value in list(iteritems(self._data)):
-      if isinstance(key, float):
-        if key.is_integer():
-          del self._data[key]
-          key = rint(key)
-          self._data[key] = value
-      if not isinstance(value, Stream):
-        if value == 0:
-          del self._data[key]
+      if isinstance(key, float) and key.is_integer():
+        del self._data[key]
+        key = rint(key)
+        self._data[key] = value
+      if (not isinstance(value, Stream)) and value == self.zero:
+        del self._data[key]
 
   @property
   def zero(self):
@@ -353,10 +350,18 @@ class Poly(meta(metaclass=PolyMeta)):
     else:
       return self.zero
 
-  def __setitem__(self, power, item):
+  def __setitem__(self, power, coeff):
     if getattr(self, "_hash", False):
       raise TypeError("Used this Poly instance as a hashable before")
-    self._data[power] = item
+
+    if isinstance(power, float) and power.is_integer():
+      power = rint(power)
+
+    if isinstance(coeff, Stream) or coeff != self.zero:
+      self._data[power] = coeff
+    elif power in self._data:
+      del self._data[power]
+
 
   # ---------------------
   # Elementwise operators

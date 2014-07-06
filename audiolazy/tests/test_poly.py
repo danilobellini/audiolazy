@@ -196,6 +196,15 @@ class TestPoly(object):
     new_poly = Poly(list(poly.values()), zero=zero)
     order = max(new_poly.terms())[0]
     assert new_poly.order == order == poly.order
+
+    if zero != poly.zero:
+      assert len(new_poly) == order + 1
+      for power, coeff in enumerate(poly.values()):
+        if coeff is poly.zero:
+          assert new_poly[power] == coeff
+          new_poly[power] = zero # Should be the same to "del new_poly[power]"
+
+    assert len(new_poly) == len(poly)
     values = list(new_poly.values())
     for key, value in poly.terms():
       assert values[key] == value
@@ -236,12 +245,12 @@ class TestPoly(object):
     poly = Poly(input_data)
     assert poly(5) == poly(0) == poly(-3) == poly(.2) == poly(None) == 0
     for zero in self.to_zero_inputs:
-      poly = Poly(input_data, zero=zero)
-      assert poly(5) is zero
-      assert poly(0) is zero
-      assert poly(-3) is zero
-      assert poly(.2) is zero
-      assert poly(None) is zero
+      polyz = Poly(poly, zero=zero)
+      assert polyz(5) is zero
+      assert polyz(0) is zero
+      assert polyz(-3) is zero
+      assert polyz(.2) is zero
+      assert polyz(None) is zero
 
   def test_not_equal(self):
     for a, b in combinations(self.polynomials, 2):
@@ -702,6 +711,14 @@ class TestPoly(object):
     assert poly(0, horner=True) == 1 # For zero the scheme isn't evaluated
     with pytest.raises(ValueError):
       poly(1, horner=True) # Here it need to be evaluated
+
+  def test_set_to_zero_with_setitem_and_internal_data(self):
+    poly = x ** 2 - 1
+    poly[3.] = 0 # Using __setitem__
+    poly[-1] = 8.
+    assert len(poly) == 3
+    poly._data[.18] = 0 # Without using __setitem__
+    assert len(poly) == 4 # Due to an undesired extra [hacked] zero
 
 
 class TestLagrange(object):
