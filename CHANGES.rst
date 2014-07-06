@@ -128,6 +128,7 @@ AudioLazy changes history
 
 + lazy_poly:
 
+  - Complex numbers and Sympy symbols can now be used as Poly powers
   - Poly instances are now based on OrderedDict (stores the creation order
     internally) and Poly.terms now support both a ``sort`` and a ``reverse``
     keyword arguments to choose the yielding order (sorted by powers, keep

@@ -25,7 +25,7 @@ from __future__ import division
 import pytest
 p = pytest.mark.parametrize
 
-import operator, types, random
+import operator, types, random, math
 from itertools import combinations_with_replacement, combinations
 from functools import reduce
 from collections import OrderedDict
@@ -34,7 +34,7 @@ from collections import OrderedDict
 from ..lazy_poly import Poly, lagrange, resample, x
 from ..lazy_misc import almost_eq, blocks
 from ..lazy_compat import orange, xrange, iteritems, xzip, xzip_longest as xzl
-from ..lazy_math import inf
+from ..lazy_math import inf, e, pi
 from ..lazy_filters import z
 from ..lazy_itertools import count
 from ..lazy_core import OpMethod
@@ -686,6 +686,22 @@ class TestPoly(object):
     assert terms_sorted == terms_sorted_rev[::-1]
     assert terms_sorted == sorted(terms_not_sorted)
     assert terms_not_sorted == list(iteritems(dict_original))
+
+  def test_complex_power(self):
+    poly = x ** 2j + 2 * x + 1
+    assert set(poly.terms()) == {(0, 1), (1, 2), (2j, 1)}
+    assert poly(0) == 1
+    assert poly(1) == 4
+    k = e ** pi
+    assert almost_eq.diff(poly(k), 2 * (1 + k))
+    ln4 = math.log(4)
+    assert almost_eq.diff(poly(2), math.cos(ln4) + 5 + math.sin(ln4) * 1j)
+
+  def test_call_horner_on_complex_invalid(self):
+    poly = x ** 2j + 2 * x + 1
+    assert poly(0, horner=True) == 1 # For zero the scheme isn't evaluated
+    with pytest.raises(ValueError):
+      poly(1, horner=True) # Here it need to be evaluated
 
 
 class TestLagrange(object):
