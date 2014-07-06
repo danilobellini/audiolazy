@@ -471,14 +471,30 @@ class TestPoly(object):
     assert power == 0
     assert Poly(dict(term_iter)) == 5 * x ** 3 + x + x ** .2
 
-  def test_hash(self):
+  def test_hash_makes_poly_immutable(self):
     poly = x + 1
     poly[3] = 1
+    poly.zero = 0
     my_set = {poly, 27, x}
     with pytest.raises(TypeError):
       poly[3] = 0
+    with pytest.raises(TypeError):
+      poly.zero = 0.
     assert poly == x ** 3 + x + 1
     assert poly in my_set
+
+  def test_hash_equalness_on_different_sorting(self):
+    assert hash(x + 1) == hash(1 + x)
+    assert hash(x ** 2 + x + 1) == hash(1 + (1 + x) * x)
+    assert hash(x + x ** .34 + 1) == hash((1 - x + x ** .34) + 2 * x)
+    assert hash(x ** (2j + 1) + x ** 3) == hash(x ** 3 + x ** (2j + 1))
+
+  @p("poly", polynomials + [5 - x ** -2, x + 2 * x ** .3, x ** 4.3j + x - 1])
+  def test_hash_non_equal_for_different_zeros(self, poly):
+    class Zero(): pass
+    poly_other_zero = Poly(poly, zero=Zero)
+    assert hash(poly) == hash(x + poly - x)
+    assert hash(poly) != hash(poly_other_zero)
 
   @p("poly", [x ** 2 - 2 * x + 1, .3 * x ** 7 - 4 * x ** 2 + .1])
   def test_roots(self, poly):

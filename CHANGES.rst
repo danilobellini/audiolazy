@@ -129,6 +129,9 @@ AudioLazy changes history
 + lazy_poly:
 
   - Poly instances are now based on OrderedDict (stores the order internally)
+  - Immutable Poly behavior is now based on a cached frozenset (doesn't depend
+    on the terms order) and includes Poly.zero as a read-only property (after
+    the hash is required)
 
 + lazy_wav (*new!*):
 

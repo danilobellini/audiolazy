@@ -73,7 +73,7 @@ class Poly(meta(metaclass=PolyMeta)):
 
   Usually the instances of this class should be seen as immutable (this is
   a hashable instance), although there's no enforcement for that (and item
-  set is allowed).
+  set is allowed) until the hash is required.
 
   You can use the ``x`` object and operators to create your own instances.
 
@@ -113,14 +113,14 @@ class Poly(meta(metaclass=PolyMeta)):
     be used.
 
     """
-    self.zero = 0. if zero is None else zero
+    self._zero = 0. if zero is None else zero
     if isinstance(data, list):
       self._data = OrderedDict(enumerate(data))
     elif isinstance(data, dict):
       self._data = OrderedDict(data)
     elif isinstance(data, Poly):
       self._data = OrderedDict(data._data)
-      self.zero = data.zero if zero is None else zero
+      self._zero = data._zero if zero is None else zero
     elif data is None:
       self._data = OrderedDict()
     else:
@@ -137,9 +137,20 @@ class Poly(meta(metaclass=PolyMeta)):
         if value == 0:
           del self._data[key]
 
+  @property
+  def zero(self):
+    return self._zero
+
+  @zero.setter
+  def zero(self, value):
+    if hasattr(self, "_hash"):
+      raise TypeError("Used this Poly instance as a hashable before")
+    self._zero = value
+
   def __hash__(self):
-    self._hashed = True
-    return hash(tuple(self.terms()))
+    if not hasattr(self, "_hash"): # Should make this instance immutable
+      self._hash = hash((frozenset(iteritems(self._data)), self.zero))
+    return self._hash
 
   def values(self):
     """
@@ -272,7 +283,7 @@ class Poly(meta(metaclass=PolyMeta)):
       return self.zero
 
   def __setitem__(self, power, item):
-    if getattr(self, "_hashed", False):
+    if getattr(self, "_hash", False):
       raise TypeError("Used this Poly instance as a hashable before")
     self._data[power] = item
 
