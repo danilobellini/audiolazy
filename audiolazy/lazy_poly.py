@@ -65,12 +65,14 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
 
 class Poly(meta(metaclass=PolyMeta)):
   """
-  Model for a polynomial, Laurent polynomial or a sum of powers.
+  Model for a polynomial, a Laurent polynomial or a sum of arbitrary powers.
 
-  That's not a dict and not a list but behaves like something in between.
-  The "values" method allows casting to list with list(Poly.values())
-  The "terms" method allows casting to dict with dict(Poly.terms()), and give
-  the terms sorted by their power value if used in a loop instead of casting.
+  The "values" method allows casting simple polynomials to a list with
+  ``list(Poly.values())`` where the index values are the powers.
+  The "terms" method allows casting any sum of powers to dict with
+  ``dict(Poly.terms())`` where the keys are the powers and the values are the
+  coefficients, and this method can also give the terms sorted by their power
+  value if needed. Both methods return a generator.
 
   Usually the instances of this class should be seen as immutable (this is
   a hashable instance), although there's no enforcement for that (and item
@@ -278,26 +280,72 @@ class Poly(meta(metaclass=PolyMeta)):
                             for k, v in iteritems(self._data)),
                 zero=self.zero)
 
-  def __call__(self, value):
+  def __call__(self, value, horner="auto"):
     """
-    Apply value to the Poly, where value can be other Poly.
-    When value is a number, a Horner-like scheme is done.
+    Apply the given value to the Poly.
+
+    Parameters
+    ----------
+    value :
+      The value to be applied. This can possibly be another Poly, or perhaps
+      a Stream instance.
+    horner :
+      A value in [True, False, "auto"] which chooses whether a Horner-like
+      scheme should be used for the evaluation. Defaults to ``"auto"``,
+      which means the scheme is done only for simple polynomials. This scheme
+      can be forced on Laurent polynomials and any other sum of powers that
+      have sortable powers. This input is neglect when ``value`` is a Poly
+      instance.
+
+    Note
+    ----
+    For a polynomial with all values, the Horner scheme is done like expected,
+    e.g. replacing ``x ** 2 + 2 * x + 1`` by ``x * (x + 2) + 1`` in the
+    evaluation. However, for zeroed coeffs, it will merge steps, using
+    powers instead of several multiplications, e.g. ``x ** 7 + x ** 6 + 4``
+    would evaluate as ``x ** 6 * (x + 1) + 4``, taking the ``x ** 6`` instead
+    of multiplying ``(x + 1)`` by ``x`` six times (i.e., the evaluation order
+    is changed). This allows a faster approach for sparse polynomials and
+    extends the scheme for any sum of powers with sortable powers.
     """
+    # Polynomial value ("x" variable replacement)
     if isinstance(value, Poly):
       return Poly(sum(coeff * value ** power
                       for power, coeff in iteritems(self._data)),
                   self.zero)
+
+    # Empty polynomial
     if not self._data:
       return self.zero
+
+    # Evaluation for "x = 0"
     if not isinstance(value, Stream):
       if value == 0:
         return self[0]
 
+    # Some initialization for the general process
     value = thub(value, len(self))
-    return reduce(
-      lambda old, new: (new[0], new[1] + old[1] * value ** (old[0] - new[0])),
-      sorted(iteritems(self._data), reverse=True) + [(0, 0)]
-    )[1]
+    if horner == "auto":
+      horner = self.is_polynomial()
+
+    # Horner scheme
+    if horner:
+      try:
+        pairs = self.terms(sort=True, reverse=True)
+      except TypeError: # No ordering relation defined
+        raise ValueError("Can't apply Horner-like scheme")
+
+      def horner_step(old, new):
+        opower, oresult = old
+        npower, ncoeff = new
+        scale = value if opower == npower + 1 else value ** (opower - npower)
+        return npower, ncoeff + oresult * scale
+
+      last_power, result = reduce(horner_step, pairs)
+      return result * value ** last_power
+
+    # General case (Laurent, float/complex powers, weird things, etc.)
+    return sum(coeff * value ** power for power, coeff in self.terms())
 
   def __getitem__(self, item):
     if item in self._data:

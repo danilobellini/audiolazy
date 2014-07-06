@@ -135,6 +135,10 @@ AudioLazy changes history
   - Immutable Poly behavior is now based on a cached frozenset (doesn't depend
     on the terms order) and includes Poly.zero as a read-only property (after
     the hash is required)
+  - The Horner-like polynomial evaluation scheme (which needs sorting) is now
+    enabled/disabled via a keyword argument. By default, it's enabled just for
+    simple polynomials, but optional when powers are sortable (e.g. in a
+    Laurent polynomial)
 
 + lazy_wav (*new!*):
 

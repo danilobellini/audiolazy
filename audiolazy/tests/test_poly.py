@@ -391,13 +391,14 @@ class TestPoly(object):
     assert all(expected.limit(50) == result.limit(50))
 
   @p("zero", to_zero_inputs)
-  def test_stream_coeffs_mul_copy_with_zero(self, zero):
+  @p("horner", [True, False])
+  def test_stream_coeffs_mul_copy_with_zero(self, zero, horner):
     poly = x ** 2 * Stream(3, 2, 1) + 2 * count() + x ** -3
     new_poly = poly.copy(zero=zero)
     new_poly *= poly + 1
     assert isinstance(new_poly, Poly)
     assert new_poly.zero is zero
-    result = new_poly(count(18) ** .5)
+    result = new_poly(count(18) ** .5, horner=horner)
     assert isinstance(result, Stream)
     expected = (count(18) * Stream(3, 2, 1)
                 + 2 * count() + count(18) ** -1.5
@@ -433,12 +434,13 @@ class TestPoly(object):
       assert isinstance(poly[0], int)
 
   @p("zero", to_zero_inputs)
-  def test_pow_with_stream_coeff(self, zero):
+  @p("horner", [True, False])
+  def test_pow_with_stream_coeff(self, zero, horner):
     poly = Poly(x ** -2 * Stream(1, 0) + 2, zero=zero)
     new_poly = poly ** 2
     assert isinstance(new_poly, Poly)
     assert new_poly.zero is zero
-    result = new_poly(count(1))
+    result = new_poly(count(1), horner=horner)
     assert isinstance(result, Stream)
     expected = (count(1) ** -4 * Stream(1, 0)
                 + 4 * count(1) ** -2 * Stream(1, 0)
@@ -447,12 +449,13 @@ class TestPoly(object):
     assert almost_eq(expected.limit(50), result.limit(50))
 
   @p("zero", to_zero_inputs)
-  def test_truediv_by_stream(self, zero):
+  @p("horner", [True, False])
+  def test_truediv_by_stream(self, zero, horner):
     poly = Poly(x ** .5 * Stream(.2, .4) + 7, zero=zero)
     new_poly = poly / count(2, 4)
     assert isinstance(new_poly, Poly)
     assert new_poly.zero is zero
-    result = new_poly(Stream(17, .2, .1, 0, .2, .5, 99))
+    result = new_poly(Stream(17, .2, .1, 0, .2, .5, 99), horner=horner)
     assert isinstance(result, Stream)
     expected = (Stream(17, .2, .1, 0, .2, .5, 99) ** .5 * Stream(.2, .4) + 7
                ) / count(2, 4)
