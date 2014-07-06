@@ -33,12 +33,13 @@ from collections import OrderedDict
 # Audiolazy internal imports
 from ..lazy_poly import Poly, lagrange, resample, x
 from ..lazy_misc import almost_eq, blocks
-from ..lazy_compat import orange, xrange, iteritems
+from ..lazy_compat import orange, xrange, iteritems, xzip, xzip_longest as xzl
 from ..lazy_math import inf
 from ..lazy_filters import z
-from ..lazy_itertools import count, izip
+from ..lazy_itertools import count
 from ..lazy_core import OpMethod
-from ..lazy_stream import Stream
+from ..lazy_stream import Stream, thub
+from ..lazy_synth import white_noise
 
 from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
@@ -515,8 +516,7 @@ class TestPoly(object):
     random.shuffle(list_data)
     poly = Poly(list_data)
     dict_data = ((idx, el) for idx, el in enumerate(list_data) if el)
-    izl = izip.longest
-    for (idx, el), (power, coeff) in izl(dict_data, iteritems(poly._data)):
+    for (idx, el), (power, coeff) in xzl(dict_data, iteritems(poly._data)):
       assert idx == power
       assert el == coeff
 
@@ -528,8 +528,7 @@ class TestPoly(object):
   def test_dict_constructor_internal_data_order(self, dict_data):
     random.shuffle(dict_data)
     poly = Poly(OrderedDict(dict_data))
-    izl = izip.longest
-    for (idx, el), (power, coeff) in izl(dict_data, iteritems(poly._data)):
+    for (idx, el), (power, coeff) in xzl(dict_data, iteritems(poly._data)):
       assert idx == power
       assert el == coeff
 
@@ -537,8 +536,7 @@ class TestPoly(object):
   def test_copy_keep_internal_data_order(self, poly):
     poly_copy = poly.copy()
     assert hash(poly) == hash(poly_copy)
-    izl = izip.longest
-    for a, b in izl(iteritems(poly._data), iteritems(poly_copy._data)):
+    for a, b in xzl(iteritems(poly._data), iteritems(poly_copy._data)):
       assert a == b
 
   def test_diff_keep_internal_data_order(self):
@@ -557,12 +555,12 @@ class TestPoly(object):
     pdiff1 = poly.diff()
     pdiff2 = poly.diff(2)
 
-    izl = izip.longest
     expected1 = Poly(dict_diff1)
-    for a, b in izl(iteritems(pdiff1._data), iteritems(expected1._data)):
+    for a, b in xzl(iteritems(pdiff1._data), iteritems(expected1._data)):
       assert a == b
+
     expected2 = Poly(dict_diff2)
-    for a, b in izl(iteritems(pdiff2._data), iteritems(expected2._data)):
+    for a, b in xzl(iteritems(pdiff2._data), iteritems(expected2._data)):
       assert a == b
 
   def test_integrate_keep_internal_data_order(self):
@@ -587,10 +585,9 @@ class TestPoly(object):
     expected_add = Poly(OrderedDict([(1, 2), (3, 8), (2, 5)]))
     expected_sub = Poly(OrderedDict([(1, 6), (3, 8), (2, -5)]))
 
-    izl = izip.longest
-    for a, b in izl(iteritems(poly_add._data), iteritems(expected_add._data)):
+    for a, b in xzl(iteritems(poly_add._data), iteritems(expected_add._data)):
       assert a == b
-    for a, b in izl(iteritems(poly_sub._data), iteritems(expected_sub._data)):
+    for a, b in xzl(iteritems(poly_sub._data), iteritems(expected_sub._data)):
       assert a == b
 
   def test_add_mul_pow_keep_internal_data_order(self):
@@ -602,11 +599,10 @@ class TestPoly(object):
     revp2 = 9 + (6 + x) * x
     revp3 = (3 + x) ** 2
 
-    izl = izip.longest
-    for a, b, c, d in izl(iteritems(poly1._data), iteritems(poly2._data),
+    for a, b, c, d in xzl(iteritems(poly1._data), iteritems(poly2._data),
                           iteritems(poly3._data), [(2, 1), (1, 6), (0, 9)]):
       assert a == b == c == d
-    for a, b, c, d in izl(iteritems(revp1._data), iteritems(revp2._data),
+    for a, b, c, d in xzl(iteritems(revp1._data), iteritems(revp2._data),
                           iteritems(revp3._data), [(0, 9), (1, 6), (2, 1)]):
       assert a == b == c == d
 
@@ -625,6 +621,18 @@ class TestPoly(object):
     pdiv = Poly(dict_data) / denominator
     expected = Poly(dict_div)
     assert almost_eq(iteritems(pdiv._data), iteritems(expected._data))
+
+  @p("op", OpMethod.get("1", without="~"))
+  def test_unary_operators_keep_internal_data_order(self, op):
+    data = thub(white_noise(low=-20, high=20), 2)
+    powers = thub(white_noise(low=-20, high=20).limit(20), 2)
+
+    dict_data = OrderedDict(xzip(powers, data))
+    dict_op = OrderedDict(xzip(powers, op.func(data)))
+
+    poly = op.func(Poly(dict_data))
+    expected = Poly(dict_op)
+    assert almost_eq(iteritems(poly._data), iteritems(expected._data))
 
 
 class TestLagrange(object):

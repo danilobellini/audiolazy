@@ -43,7 +43,7 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   Poly metaclass. This class overloads few operators to the Poly class.
   All binary dunders (non reverse) should be implemented on the Poly class
   """
-  __operators__ = ("+ - " # elementwise
+  __operators__ = ("+ - " # elementwise / unary
                    "* " # cross
                    "pow truediv " # when other is not Poly (no reverse)
                    "eq ne ") # comparison of Poly terms
@@ -57,7 +57,8 @@ class PolyMeta(AbstractOperatorOverloaderMeta):
   def __unary__(cls, op):
     op_func = op.func
     def dunder(self):
-      return cls({k: op_func(v) for k, v in self.terms()},
+      return cls(OrderedDict((k, op_func(v))
+                             for k, v in iteritems(self._data)),
                  zero=self.zero)
     return dunder
 
