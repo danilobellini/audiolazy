@@ -45,6 +45,10 @@ from . import skipper
 operator.div = getattr(operator, "div", skipper("There's no operator.div"))
 
 
+def poly_str_match(poly, string):
+  return string.replace(" ", "") == str(poly).replace(" ", "")
+
+
 class TestPoly(object):
   example_data = [[1, 2, 3], [-7, 0, 3, 0, 5], [1], orange(2, -6, -1)]
 
@@ -712,13 +716,32 @@ class TestPoly(object):
     with pytest.raises(ValueError):
       poly(1, horner=True) # Here it need to be evaluated
 
-  def test_set_to_zero_with_setitem_and_internal_data(self):
+  def test_set_to_and_the_zero_with_setitem_internal_data_and_property(self):
     poly = x ** 2 - 1
     poly[3.] = 0 # Using __setitem__
     poly[-1] = 8.
     assert len(poly) == 3
+    assert poly_str_match(poly, # Laurent polynomial (sorted)
+                          "8 * x^-1 - 1 + x^2")
+
     poly._data[.18] = 0 # Without using __setitem__
     assert len(poly) == 4 # Due to an undesired extra [hacked] zero
+    assert poly_str_match(poly, # Sum of powers w/ a float power (not sorted)
+                          "x^2 - 1 + 8 * x^-1 + 0 * x^0.18")
+
+    assert list(poly.terms()) == [(2, 1), (0, -1), (-1, 8), (.18, 0)]
+    poly.zero = 0 # This should clean that undesired zero
+    assert len(poly) == 3
+    assert list(poly.terms()) == [(-1, 8), (0, -1), (2, 1)] # Laurent (sorted)
+
+  def test_string_representation(self):
+    assert str(x) == "x"
+    assert all(str(Poly(k)) == str(k) for k in [2, -3, 4j, 0])
+    print(2 * x ** 5 + 1.8 * x - 7)
+    assert poly_str_match(2 * x ** 5 + 1.8 * x - 7,
+                          "-7 + 1.8 * x + 2 * x^5") # Polynomial (sorted)
+    assert poly_str_match(8. * x ** -5 + 0 * x - 1. * x ** .2 + x ** .5j,
+                          "8 * x^-5 - x^0.2 + x^0.5j") # Complex power
 
 
 class TestLagrange(object):

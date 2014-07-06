@@ -146,6 +146,9 @@ class Poly(meta(metaclass=PolyMeta)):
     if hasattr(self, "_hash"):
       raise TypeError("Used this Poly instance as a hashable before")
     self._zero = value
+    for power, coeff in list(iteritems(self._data)):
+      if (not isinstance(coeff, Stream)) and coeff == value:
+        del self._data[power]
 
   def __hash__(self):
     if not hasattr(self, "_hash"): # Should make this instance immutable
@@ -465,8 +468,7 @@ class Poly(meta(metaclass=PolyMeta)):
     for power, value in self.terms():
       if isinstance(value, Iterable):
         value = "a{}".format(power).replace(".", "_").replace("-", "m")
-      if value != 0.:
-        term_strings.append(multiplication_formatter(power, value, "x"))
+      term_strings.append(multiplication_formatter(power, value, "x"))
     return "0" if len(term_strings) == 0 else \
            reduce(pair_strings_sum_formatter, term_strings)
 
