@@ -141,6 +141,12 @@ AudioLazy changes history
     simple polynomials, but optional when powers are sortable (e.g. in a
     Laurent polynomial)
 
++ lazy_text:
+
+  - New ``format_docstring`` decorator that use format-style templates to
+    assign docstrings to functions, intended to avoid docstring copies on
+    StrategyDict instances.
+
 + lazy_wav (*new!*):
 
   - ``WaveStream`` class for opening Wave files. Can load 24-bit audio files!

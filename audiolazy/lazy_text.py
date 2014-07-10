@@ -32,7 +32,7 @@ from .lazy_core import StrategyDict
 from .lazy_math import pi
 
 __all__ = ["multiplication_formatter", "pair_strings_sum_formatter",
-           "float_str", "rst_table", "small_doc"]
+           "float_str", "rst_table", "small_doc", "format_docstring"]
 
 
 def multiplication_formatter(power, value, symbol):
@@ -355,3 +355,20 @@ def small_doc(obj, indent="", max_width=80):
 
   # Apply indentation and finishes
   return [indent + el for el in result]
+
+
+def format_docstring(template_, *args, **kwargs):
+  """
+  Parametrized decorator for adding/changing a function docstring.
+
+  Parameters
+  ----------
+  template_ :
+    A format-style template.
+  *args, **kwargs :
+    Positional and keyword arguments passed to the formatter.
+  """
+  def decorator(func):
+    func.__doc__ = template_.format(*args, **kwargs)
+    return func
+  return decorator

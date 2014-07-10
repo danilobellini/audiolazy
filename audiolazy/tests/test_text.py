@@ -20,11 +20,13 @@
 Testing module for the lazy_text module
 """
 
+from __future__ import unicode_literals
+
 import pytest
 p = pytest.mark.parametrize
 
 # Audiolazy internal imports
-from ..lazy_text import rst_table
+from ..lazy_text import rst_table, format_docstring
 
 
 class TestRSTTable(object):
@@ -46,3 +48,41 @@ class TestRSTTable(object):
              "3    mixed 0.5 123123",
              "==== ===== === ======",
            ]
+
+
+class TestFormatDocstring(object):
+
+  def test_template_without_parameters(self):
+    docstring = "This is a docstring"
+    @format_docstring(docstring)
+    def not_so_useful():
+      return
+    assert not_so_useful.__doc__ == docstring
+
+  def test_template_positional_parameter_automatic_counting(self):
+    docstring = "Function {} docstring {}"
+    @format_docstring(docstring, "Unused", "is weird!")
+    def unused_func():
+      return
+    assert unused_func.__doc__ == "Function Unused docstring is weird!"
+
+  def test_template_positional_parameter_numbered(self):
+    docstring = "Let {3}e {1} {0} wi{3} {2}!"
+    @format_docstring(docstring, "be", "force", "us", "th")
+    def another_unused_func():
+      return
+    assert another_unused_func.__doc__ == "Let the force be with us!"
+
+  def test_template_keyword_parameters(self):
+    docstring = "{name} is a function for {explanation}"
+    @format_docstring(docstring, name="Unk", explanation="uncles!")
+    def unused():
+      return
+    assert unused.__doc__ == "Unk is a function for uncles!"
+
+  def test_template_mixed_keywords_and_positional_params(self):
+    docstring = "The {name} has to do with {0} and {1}"
+    @format_docstring(docstring, "Freud", "psychoanalysis", name="ego")
+    def alter():
+      return
+    assert alter.__doc__ == "The ego has to do with Freud and psychoanalysis"
