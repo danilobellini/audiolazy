@@ -129,35 +129,46 @@ def gammatone_erb_constants(n):
 
 
 gammatone = StrategyDict("gammatone")
+gammatone._doc_template = """
+  Gammatone filter based on {model}.
 
-
-@gammatone.strategy("sampled")
-def gammatone(freq, bandwidth, phase=0, eta=4):
-  """
-  Gammatone filter based on a sampled impulse response.
-
-    ``n ** (eta - 1) * exp(-bandwidth * n) * cos(freq * n + phase)``
-
+  Model is described in:
+  {__doc__}
   Parameters
   ----------
   freq :
     Frequency, in rad/sample.
   bandwidth :
-    Frequency range size, in rad/sample. See gammatone_erb_constants for
+    Frequency range size, in rad/sample. See ``gammatone_erb_constants`` for
     more information about how you can find this.
-  phase :
-    Phase, in radians. Defaults to zero (cosine).
-  eta :
-    Gammatone filter order. Defaults to 4.
-
+  {extra_params}
   Returns
   -------
   A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
-  IIR filter model.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude).
+  IIR filter model. Gain is normalized to have peak with 0 dB (1.0 amplitude).
   The total number of poles is twice the value of eta (conjugated pairs), one
   pair for each ZFilter.
+"""
 
+
+@gammatone.strategy("sampled")
+@format_docstring(gammatone._doc_template, model="a sampled impulse response",
+  extra_params="\n  ".join([
+    "phase :", "  Phase, in radians. Defaults to zero (cosine)."
+    "eta :", "  Gammatone filter order. Defaults to 4.", "" # Skip a line
+  ]),
+)
+def gammatone(freq, bandwidth, phase=0, eta=4):
+  """
+    ``Bellini, D. J. S. "AudioLazy: Processamento digital de sinais
+    expressivo e em tempo real", IME-USP, Mastership Thesis, 2013.``
+
+  This implementation have the impulse response (for each sample ``n``,
+  keeping the input parameter names):
+
+  .. math::
+
+    n^{{eta - 1}} e^{{- bandwidth \cdot n}} \cos(freq \cdot n + phase)
   """
   assert eta >= 1
 
@@ -175,31 +186,12 @@ def gammatone(freq, bandwidth, phase=0, eta=4):
 
 
 @gammatone.strategy("slaney")
+@format_docstring(gammatone._doc_template, extra_params="",
+                  model="Malcolm Slaney's IIR cascading filter model")
 def gammatone(freq, bandwidth):
   """
-  Gammatone filter based on Malcolm Slaney's IIR cascading filter model.
-
-  Model is described in:
-
     ``Slaney, M. "An Efficient Implementation of the Patterson-Holdsworth
     Auditory Filter Bank", Apple Computer Technical Report #35, 1993.``
-
-  Parameters
-  ----------
-  freq :
-    Frequency, in rad/sample.
-  bandwidth :
-    Frequency range size, in rad/sample. See gammatone_erb_constants for
-    more information about how you can find this.
-
-  Returns
-  -------
-  A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
-  IIR filter model.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude).
-  The total number of poles is twice the value of eta (conjugated pairs), one
-  pair for each ZFilter.
-
   """
   A = exp(-bandwidth)
   cosw = cos(freq)
@@ -214,32 +206,13 @@ def gammatone(freq, bandwidth):
 
 
 @gammatone.strategy("klapuri")
+@format_docstring(gammatone._doc_template, extra_params="",
+                  model="Anssi Klapuri's IIR cascading filter model")
 def gammatone(freq, bandwidth):
   """
-  Gammatone filter based on Anssi Klapuri's IIR cascading filter model.
-
-  Model is described in:
-
     ``A. Klapuri, "Multipich Analysis of Polyphonic Music and Speech Signals
     Using an Auditory Model". IEEE Transactions on Audio, Speech and Language
     Processing, vol. 16, no. 2, 2008, pp. 255-266.``
-
-  Parameters
-  ----------
-  freq :
-    Frequency, in rad/sample.
-  bandwidth :
-    Frequency range size, in rad/sample. See gammatone_erb_constants for
-    more information about how you can find this.
-
-  Returns
-  -------
-  A CascadeFilter object with ZFilter filters, each of them a pole-conjugated
-  IIR filter model.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude).
-  The total number of poles is twice the value of eta (conjugated pairs), one
-  pair for each ZFilter.
-
   """
   bw = thub(bandwidth, 1)
   bw2 = thub(bw * 2, 4)
