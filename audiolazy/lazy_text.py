@@ -357,9 +357,13 @@ def small_doc(obj, indent="", max_width=80):
   return [indent + el for el in result]
 
 
-def format_docstring(template_, *args, **kwargs):
-  """
+def format_docstring(template_="{__doc__}", *args, **kwargs):
+  r"""
   Parametrized decorator for adding/changing a function docstring.
+
+  For changing a already available docstring in the function, the
+  ``"{__doc__}"`` in the template is replaced by the original function
+  docstring.
 
   Parameters
   ----------
@@ -367,8 +371,50 @@ def format_docstring(template_, *args, **kwargs):
     A format-style template.
   *args, **kwargs :
     Positional and keyword arguments passed to the formatter.
+
+  Examples
+  --------
+  Closure docstring personalization:
+
+  >>> def add(n):
+  ...   @format_docstring(number=n)
+  ...   def func(m):
+  ...     '''Adds {number} to the given value.'''
+  ...     return n + m
+  ...   return func
+  >>> add(3).__doc__
+  'Adds 3 to the given value.'
+  >>> add("__").__doc__
+  'Adds __ to the given value.'
+
+  Same but using a lambda (you can also try with ``**locals()``):
+
+  >>> def add_with_lambda(n):
+  ...   return format_docstring("Adds {0}.", n)(lambda m: n + m)
+  >>> add_with_lambda(15).__doc__
+  'Adds 15.'
+  >>> add_with_lambda("something").__doc__
+  'Adds something.'
+
+  Mixing both template styles with ``{__doc__}``:
+
+  >>> templ = "{0}, {1} is my {name} docstring:{__doc__}->\nEND!"
+  >>> @format_docstring(templ, "zero", "one", "two", name="testing", k=[1, 2])
+  ... def test():
+  ...   '''
+  ...   Not empty!
+  ...   {2} != {k[0]} but {2} == {k[1]}
+  ...   '''
+  >>> print(test.__doc__)
+  zero, one is my testing docstring:
+    Not empty!
+    two != 1 but two == 2
+    ->
+  END!
   """
   def decorator(func):
+    if func.__doc__:
+      kwargs["__doc__"] = func.__doc__.format(*args, **kwargs)
     func.__doc__ = template_.format(*args, **kwargs)
     return func
   return decorator

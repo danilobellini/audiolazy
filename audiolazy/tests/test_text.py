@@ -86,3 +86,24 @@ class TestFormatDocstring(object):
     def alter():
       return
     assert alter.__doc__ == "The ego has to do with Freud and psychoanalysis"
+
+  def test_with_docstring_in_function(self):
+    dok = "This is the {a_name} docstring:{__doc__}with a {0} and a {1}."
+    @format_docstring(dok, "prefix", "suffix", a_name="doc'ed")
+    def dokked():
+      """
+      A docstring
+      with two lines (but this indeed have 4 lines)
+      """
+    assert dokked.__doc__ == "\n".join([
+      "This is the doc'ed docstring:",
+      "      A docstring",
+      "      with two lines (but this indeed have 4 lines)",
+      "      with a prefix and a suffix.",
+    ])
+
+  def test_fill_docstring_in_function(self):
+    @format_docstring(descr="dangerous")
+    def danger():
+      """ A {descr} doc! """
+    assert danger.__doc__ == " A dangerous doc! "
