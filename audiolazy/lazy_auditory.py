@@ -29,23 +29,18 @@ from .lazy_filters import z, CascadeFilter, ZFilter, resonator
 from .lazy_math import pi, exp, cos, sin, sqrt, factorial
 from .lazy_stream import thub
 from .lazy_compat import xzip
+from .lazy_text import format_docstring
 
 __all__ = ["erb", "gammatone", "gammatone_erb_constants", "phon2dB"]
 
 
 erb = StrategyDict("erb")
+erb._doc_template = """
+  Equivalent Rectangular Model (ERB) from {authors} ({year}).
 
-
-@erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
-@elementwise("freq", 0)
-def erb(freq, Hz=None):
-  """
-  ERB model from Glasberg and Moore in 1990.
-
-    ``B. R. Glasberg and B. C. J. Moore, "Derivation of auditory filter
-    shapes from notched-noise data". Hearing Research, vol. 47, 1990, pp.
-    103-108.``
-
+  This is a model for a single filter bandwidth for auditory filter modeling,
+  taken from:
+  {__doc__}
   Parameters
   ----------
   freq :
@@ -58,7 +53,16 @@ def erb(freq, Hz=None):
   -------
   Frequency range size, in rad/sample if second parameter is given, in Hz
   otherwise.
+"""
 
+@erb.strategy("gm90", "glasberg_moore_90", "glasberg_moore")
+@elementwise("freq", 0)
+@format_docstring(erb._doc_template, authors="Glasberg and Moore", year=1990)
+def erb(freq, Hz=None):
+  """
+    ``B. R. Glasberg and B. C. J. Moore, "Derivation of auditory filter
+    shapes from notched-noise data". Hearing Research, vol. 47, 1990, pp.
+    103-108.``
   """
   if Hz is None:
     if freq < 7: # Perhaps user tried something up to 2 * pi
@@ -71,27 +75,12 @@ def erb(freq, Hz=None):
 
 @erb.strategy("mg83", "moore_glasberg_83")
 @elementwise("freq", 0)
+@format_docstring(erb._doc_template, authors="Moore and Glasberg", year=1983)
 def erb(freq, Hz=None):
   """
-  ERB model from Moore and Glasberg in 1983.
-
     ``B. C. J. Moore and B. R. Glasberg, "Suggested formulae for calculating
     auditory filter bandwidths and excitation patterns". J. Acoust. Soc.
     Am., 74, 1983, pp. 750-753.``
-
-  Parameters
-  ----------
-  freq :
-    Frequency, in rad/sample if second parameter is given, in Hz otherwise.
-  Hz :
-    Frequency conversion "Hz" from sHz function, i.e., ``sHz(rate)[1]``.
-    If this value is not given, both input and output will be in Hz.
-
-  Returns
-  -------
-  Frequency range size, in rad/sample if second parameter is given, in Hz
-  otherwise.
-
   """
   if Hz is None:
     if freq < 7: # Perhaps user tried something up to 2 * pi
