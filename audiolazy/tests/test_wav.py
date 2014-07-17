@@ -137,16 +137,16 @@ class TestWavStream(object):
                  )(schema_params, params)
 
   @p(schema_params, params_table)
-  @p("keep_int", [True, False, None])
+  @p("keep", [True, False, None])
   @p("channels", [1, 2])
-  def test_load_file(self, bits, rate, data, expected, keep_int, wave_file,
+  def test_load_file(self, bits, rate, data, expected, keep, wave_file,
                      channels):
     if channels == 2:
       data *= 2 # Just to ensure the number of samples is even ...
       expected *= 2
       rate //= 3 # ... and for fun! =)
     file_data = wave_file(data, bits=bits, rate=rate, channels=channels)
-    kwargs = {} if keep_int is None else dict(keep_int=keep_int)
+    kwargs = {} if keep is None else dict(keep=keep)
     wav_stream = WavStream(file_data, **kwargs)
 
     assert isinstance(wav_stream, Stream)
@@ -155,7 +155,7 @@ class TestWavStream(object):
     assert wav_stream.rate == rate
     multiplier = 1 << (wav_stream.bits-1) # Scale factor result was divided by
 
-    if keep_int:
+    if keep:
       dtype = int # Never long
       if bits == 8: # The only unsigned
         min_value = 0

@@ -120,7 +120,8 @@ AudioLazy changes history
   - New ``api`` keyword argument for AudioIO, allowing e.g. integration with
     JACK (for now this needs ``chunks.size = 1``)
   - ``AudioIO.open`` and ``AudioIO.record`` now allows keyword arguments, to
-    be passed directly to PyAudio
+    be passed directly to PyAudio, including the now default "channels"
+    keyword (old "nchannels" keyword still works, for backward compatibility)
 
 + lazy_math:
 
@@ -152,7 +153,7 @@ AudioLazy changes history
   - ``WavStream`` class for opening Wave files. Can load 24-bit audio files!
     Tested with 8 bits files (unsigned int) and 16/24/32 bits (signed int)
     mono and stereo files, both casting the data to a float in [-1;1) interval
-    (default) and keeping the original data as it is (with ``keep_int=True``)
+    (default) and keeping the original integer data as it is
 
 + multiple modules:
 

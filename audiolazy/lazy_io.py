@@ -25,6 +25,7 @@ import struct
 import array
 
 # Audiolazy internal imports
+from ._internals import deprecate
 from .lazy_stream import Stream
 from .lazy_misc import DEFAULT_SAMPLE_RATE, blocks
 from .lazy_compat import xrange, xmap
@@ -291,7 +292,7 @@ class AudioIO(object):
 
   def record(self, chunk_size = None,
                    dfmt = "f",
-                   nchannels = 1,
+                   channels = 1,
                    rate = DEFAULT_SAMPLE_RATE,
                    **kwargs
             ):
@@ -304,7 +305,7 @@ class AudioIO(object):
       Number of samples per chunk (block sent to device).
     dfmt :
       Format, as in chunks(). Default is "f" (Float32).
-    num_channels :
+    channels :
       Channels in audio stream (serialized).
     rate :
       Sample rate (same input used in sHz).
@@ -312,7 +313,6 @@ class AudioIO(object):
     Returns
     -------
     Endless Stream instance that gather data from the audio input device.
-
     """
     if chunk_size is None:
       chunk_size = chunks.size
@@ -320,9 +320,11 @@ class AudioIO(object):
     if hasattr(self, "api"):
       kwargs.setdefault("input_device_index", self.api["defaultInputDevice"])
 
+    channels = kwargs.pop("nchannels", channels) # Backwards compatibility
+
     input_stream = RecStream(self,
                              self._pa.open(format=_STRUCT2PYAUDIO[dfmt],
-                                           channels=nchannels,
+                                           channels=channels,
                                            rate=rate,
                                            frames_per_buffer=chunk_size,
                                            input=True,
@@ -346,7 +348,7 @@ class AudioThread(threading.Thread):
   def __init__(self, device_manager, audio,
                      chunk_size = None,
                      dfmt = "f",
-                     nchannels = 1,
+                     channels = 1,
                      rate = DEFAULT_SAMPLE_RATE,
                      daemon = True, # This shouldn't survive after crashes
                      **kwargs
@@ -360,7 +362,7 @@ class AudioThread(threading.Thread):
       Number of samples per chunk (block sent to device).
     dfmt :
       Format, as in chunks(). Default is "f" (Float32).
-    num_channels :
+    channels :
       Channels in audio stream (serialized).
     rate :
       Sample rate (same input used in sHz).
@@ -376,7 +378,7 @@ class AudioThread(threading.Thread):
     self.audio = audio
     self.device_manager = device_manager
     self.dfmt = dfmt
-    self.nchannels = nchannels
+    self.channels = kwargs.pop("nchannels", channels)
     self.chunk_size = chunks.size if chunk_size is None else chunk_size
 
     # Lockers
@@ -395,11 +397,14 @@ class AudioThread(threading.Thread):
 
     # Open a new audio output stream
     self.stream = device_manager._pa.open(format=_STRUCT2PYAUDIO[dfmt],
-                                          channels=nchannels,
+                                          channels=channels,
                                           rate=rate,
                                           frames_per_buffer=self.chunk_size,
                                           output=True,
                                           **kwargs)
+
+  # Backwards compatibility
+  nchannels = property(deprecate(lambda self: self.channels))
 
   def run(self):
     """

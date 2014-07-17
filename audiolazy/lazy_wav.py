@@ -48,7 +48,7 @@ class WavStream(Stream):
 
     song = WavStream("my_song.wav")
     with AudioIO(True) as player:
-      player.play(song)
+      player.play(song, rate=song.rate, channels=song.channels)
 
   Note
   ----
@@ -64,7 +64,7 @@ class WavStream(Stream):
     32: (lambda a: lambda v: a(v)[0])(Struct("<i").unpack),
   }
 
-  def __init__(self, wave_file, keep_int=False):
+  def __init__(self, wave_file, keep=False):
     """
     Loads a Wave audio file.
 
@@ -72,7 +72,7 @@ class WavStream(Stream):
     ----------
     wave_file :
       Wave file name or a already open wave file as a file-behaved object.
-    keep_int :
+    keep :
       This flag allows keeping the data on the original range and datatype,
       keeping each sample an int, as stored. False by default, meaning that
       the resulting range is already scaled (but not normalized) to fit
@@ -116,7 +116,7 @@ class WavStream(Stream):
       """ Wave data generator with data already converted to float or int """
       unpacker = WavStream._unpackers[self.bits]
 
-      if keep_int:
+      if keep:
 
         for el in sample_reader():
           yield unpacker(el)

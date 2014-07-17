@@ -37,7 +37,7 @@ def deprecate(func):
   def wrapper(*args, **kwargs):
     warn("Deprecated, this will be removed in the future", DeprecationWarning)
     return func(*args, **kwargs)
-  wrapper.__doc__ = "Deprecated.\n" + wrapper.__doc__
+  wrapper.__doc__ = "Deprecated.\n" + (wrapper.__doc__ or "")
   return wrapper
 
 
