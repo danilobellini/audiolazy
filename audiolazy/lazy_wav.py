@@ -38,7 +38,7 @@ class WavStream(Stream):
   A WavStream instance is a Stream with extra attributes:
 
   * ``rate``: sample rate in samples per second;
-  * ``channels``: number of channels (1 for mono, 2 for stereo, etc.);
+  * ``channels``: number of channels (1 for mono, 2 for stereo);
   * ``bits``: bits per sample, a value in ``[8, 16, 24, 32]``.
 
   Example
@@ -49,6 +49,13 @@ class WavStream(Stream):
     song = WavStream("my_song.wav")
     with AudioIO(True) as player:
       player.play(song)
+
+  Note
+  ----
+  Stereo data is kept serialized/flat, so the resulting Stream yields first a
+  sample from one channel, then the sample from the other channel for that
+  same time instant. Use ``Stream.blocks(2)`` to get a Stream with the stereo
+  blocks.
   """
   _unpackers = {
     8 : ord, # The only unsigned
@@ -78,32 +85,49 @@ class WavStream(Stream):
     self.channels = self._file.getnchannels()
     self.bits = 8 * self._file.getsampwidth()
 
-    def data_generator():
-      """ Internal wave data generator, given a single sample unpacker """
+    def block_reader():
+      """ Raw wave data block generator (following block align) """
       w = self._file
-      unpacker = WavStream._unpackers[self.bits]
       try:
-        if keep_int:
-
-          while True:
-            el = w.readframes(1)
-            if not el:
-              break
-            yield unpacker(el)
-
-        else: # Output data should be in [-1;1) range
-
-          d = 1 << (self.bits - 1) # Divide by this number to normalize
-          if self.bits == 8: # Unpacker for 8 bits still gives unsigned data
-            unpacker = lambda v: ord(v) - 128
-
-          while True:
-            el = w.readframes(1)
-            if not el:
-              break
-            yield unpacker(el) / d
-
+        while True:
+          el = w.readframes(1)
+          if not el:
+            break
+          yield el
       finally:
         w.close()
+
+    def sample_reader():
+      """ Raw wave data single sample generator (1 or 2 per block) """
+      # Mono
+      if self.channels == 1:
+        return block_reader()
+
+      # Stereo
+      sample_width = self.bits // 8
+      def stereo_sample_reader():
+        for el in block_reader():
+          yield el[:sample_width]
+          yield el[sample_width:]
+
+      return stereo_sample_reader()
+
+    def data_generator():
+      """ Wave data generator with data already converted to float or int """
+      unpacker = WavStream._unpackers[self.bits]
+
+      if keep_int:
+
+        for el in sample_reader():
+          yield unpacker(el)
+
+      else: # Output data should be in [-1;1) range
+
+        d = 1 << (self.bits - 1) # Divide by this number to normalize
+        if self.bits == 8: # Unpacker for 8 bits still gives unsigned data
+          unpacker = lambda v: ord(v) - 128
+
+        for el in sample_reader():
+          yield unpacker(el) / d
 
     super(WavStream, self).__init__(data_generator())

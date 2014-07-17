@@ -112,24 +112,24 @@ class TestWavStream(object):
     {"bits": 8,
      "rate": 8000,
      "data": b"\x08\x7f\x18\xfa\xea\xce\x00",
-     "expected": [-120, -1, -104, 122, 106, 78, -128],
+     "expected": (-120, -1, -104, 122, 106, 78, -128),
     },
     {"bits": 16,
      "rate": 48000,
      "data": b"\x08\x91\xf3\x18\xfa\x82\xe4\x2a\xce\x00",
-     "expected": [-0x6ef8, 0x18f3, -0x7d06, 0x2ae4, 0xce],
+     "expected": (-0x6ef8, 0x18f3, -0x7d06, 0x2ae4, 0xce),
     },
     {"bits": 24,
      "rate": 12345,
      "data": b"\x63\x91\x36\x40\x10\xb0\xfa\xc6\xd0\x80\x78\xaf\x19\x82\xce",
-     "expected": [0x369163, -0x4fefc0, -0x2f3906, -0x508780, -0x317de7],
+     "expected": (0x369163, -0x4fefc0, -0x2f3906, -0x508780, -0x317de7),
     },
     {"bits": 32,
      "rate": 87654,
      "data": b"\x1f\x85\x6b\x3e\x7b\x14\xae\xbe\x89\xd2\xde\x3a"
              b"\x6c\x09\x79\xba\x9a\x6d\x41\x19",
-     "expected": [0x3e6b851f, -0x4151eb85, 0x3aded289,
-                  -0x4586f694, 0x19416d9a],
+     "expected": (0x3e6b851f, -0x4151eb85, 0x3aded289,
+                  -0x4586f694, 0x19416d9a),
     },
   ]
   params_table = (lambda schema_params, params:
@@ -138,15 +138,20 @@ class TestWavStream(object):
 
   @p(schema_params, params_table)
   @p("keep_int", [True, False, None])
-  def test_load_file_1channel(self, bits, rate, data, expected,
-                                    keep_int, wave_file):
-    file_data = wave_file(data, bits=bits, rate=rate)
+  @p("channels", [1, 2])
+  def test_load_file(self, bits, rate, data, expected, keep_int, wave_file,
+                     channels):
+    if channels == 2:
+      data *= 2 # Just to ensure the number of samples is even ...
+      expected *= 2
+      rate //= 3 # ... and for fun! =)
+    file_data = wave_file(data, bits=bits, rate=rate, channels=channels)
     kwargs = {} if keep_int is None else dict(keep_int=keep_int)
     wav_stream = WavStream(file_data, **kwargs)
 
     assert isinstance(wav_stream, Stream)
     assert wav_stream.bits == bits
-    assert wav_stream.channels == 1
+    assert wav_stream.channels == channels
     assert wav_stream.rate == rate
     multiplier = 1 << (wav_stream.bits-1) # Scale factor result was divided by
 
