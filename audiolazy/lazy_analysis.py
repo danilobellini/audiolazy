@@ -35,6 +35,8 @@ from .lazy_math import cexp, ceil
 from .lazy_filters import lowpass, z
 from .lazy_compat import xrange, xmap, xzip, iteritems
 from .lazy_text import format_docstring
+from .lazy_synth import sinusoid
+
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
            "maverage", "clip", "unwrap", "amdf", "overlap_add", "stft"]
@@ -156,6 +158,17 @@ def window(size, alpha=.16):
   return [alpha / 2 * cos(4 * pi * n / size)
           -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
           for n in xrange(size)]
+
+
+@window.strategy("cos")
+@format_docstring(window._doc_template,
+  expl=window._doc_expl_harris,
+  end=window._doc_end_periodic,
+  params="alpha :\n    Power each sample. Defaults to 1.\n",
+  name="Cosine to the power of alpha",
+  seealso="")
+def window(size, alpha=1):
+  return (sinusoid(pi / size) ** alpha).take(size) if size else []
 
 
 def acorr(blk, max_lag=None):

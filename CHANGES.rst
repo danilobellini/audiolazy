@@ -82,6 +82,7 @@ AudioLazy changes history
   - The ``window`` StrategyDict now returns the "periodic" window data
     instead of the "symmetric" window to fit with the STFT.
   - Default ``window`` strategy is the Hann window.
+  - New ``window.cos`` strategy implementing cosine to the power of alpha.
 
 + lazy_auditory:
 
