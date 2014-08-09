@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # This file is part of AudioLazy, the signal processing Python package.
-# Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
+# Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
 #
 # AudioLazy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ Butterworth filter from SciPy as a ZFilter instance, with plots
 One resonator (first order filter) is used for comparison with the
 butterworth from the example (third order filter). Both has zeros at
 1 (DC level) and -1 (Nyquist).
-
 """
 
 from __future__ import print_function

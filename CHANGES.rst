@@ -1,6 +1,6 @@
 ..
   This file is part of AudioLazy, the signal processing Python package.
-  Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
+  Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
 
   AudioLazy is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -77,12 +77,12 @@ AudioLazy changes history
     Parameters allows changing the default zero-phase behavior (``before``
     and ``after`` functions), the transform and inverse transform functions,
     the overlap-add strategy (as well as its parameters), and obviously the
-    block size and hop.
+    block size and hop
 
   - The ``window`` StrategyDict now returns the "periodic" window data
-    instead of the "symmetric" window to fit with the STFT.
-  - Default ``window`` strategy is the Hann window.
-  - New ``window.cos`` strategy implementing cosine to the power of alpha.
+    instead of the "symmetric" window to fit with the STFT
+  - Default ``window`` strategy is the Hann window
+  - New ``window.cos`` strategy implementing cosine to the power of alpha
 
 + lazy_auditory:
 
