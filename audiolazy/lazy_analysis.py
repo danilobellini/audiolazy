@@ -808,17 +808,14 @@ def stft(func=None, **kwparams):
     Block size for the STFT process, in samples.
   hop :
     Duration in samples between two blocks. Defaults to the ``size`` value.
-  padded_size :
-    Second positional parameter for the ``transform`` and
-    ``inverse_transform`` functions. Defaults to the ``size`` value.
   transform :
     Function that receives the windowed block (in time domain) and the
-    ``padded_size`` as two positional inputs and should return the block (in
+    ``size`` as two positional inputs and should return the block (in
     frequency domain). Defaults to ``numpy.fft.rfft``, which outputs a
-    Numpy 1D array with length equals to ``padded_size // 2 + 1``.
+    Numpy 1D array with length equals to ``size // 2 + 1``.
   inverse_transform :
     Function that receives the processed block (in frequency domain) and the
-    ``padded_size`` as two positional inputs and should return the block (in
+    ``size`` as two positional inputs and should return the block (in
     time domain). Defaults to ``numpy.fft.irfft``.
   wnd :
     Window function to be called as ``wnd(size)`` or window iterable with
@@ -982,7 +979,6 @@ def stft(func=None, **kwparams):
     ola_params = blk_params.copy() # Size and hop
 
     blk_params["wnd"] = kws.pop("wnd", None)
-    padded_size = kws.pop("padded_size", blk_params["size"])
     ola = kws.pop("ola", overlap_add)
 
     class NotSpecified(object):
@@ -1021,9 +1017,9 @@ def stft(func=None, **kwparams):
         raise TypeError("Window should be an iterable or a callable")
 
       # Pad size lambdas
-      trans = transform and (lambda blk: transform(blk, padded_size))
+      trans = transform and (lambda blk: transform(blk, size))
       itrans = inverse_transform and (lambda blk:
-                                        inverse_transform(blk, padded_size))
+                                        inverse_transform(blk, size))
 
       # Continuation style calling
       funcs = [f for f in [before, trans, func, itrans, after]

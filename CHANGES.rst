@@ -77,7 +77,7 @@ AudioLazy changes history
     Parameters allows changing the default zero-phase behavior (``before``
     and ``after`` functions), the transform and inverse transform functions,
     the overlap-add strategy (as well as its parameters), and obviously the
-    time block, padding and hop sizes.
+    block size and hop.
 
   - The ``window`` StrategyDict now returns the "periodic" window data
     instead of the "symmetric" window to fit with the STFT.
