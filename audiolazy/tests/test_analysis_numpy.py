@@ -28,7 +28,7 @@ p = pytest.mark.parametrize
 from numpy.fft import fft, ifft
 
 # Audiolazy internal imports
-from ..lazy_analysis import dft, stft, window
+from ..lazy_analysis import dft, stft
 from ..lazy_math import pi, cexp, phase
 from ..lazy_misc import almost_eq, rint
 from ..lazy_synth import line
@@ -79,14 +79,14 @@ class TestSTFT(object):
 
     # Using a "triangle" as the overlap-add window
     wnd = [0.5, 1, 1, 0.5] # Normalized triangle
-    new_result = whitenize(sig, ola_wnd=window.triangle)
+    new_result = whitenize(sig, ola_wnd=[1, 2, 2, 1])
     assert isinstance(result, Stream)
     new_expected = Stream(*data0340) * Stream(*wnd)
     assert almost_eq(new_result.take(64), new_expected.take(64))
 
     # With real overlap
     wnd_hop2 = [1/3, 2/3, 2/3, 1/3] # Normalized triangle for the new hop
-    overlap_result = whitenize(sig, hop=2, ola_wnd=window.triangle)
+    overlap_result = whitenize(sig, hop=2, ola_wnd=[1, 2, 2, 1])
     assert isinstance(result, Stream)
     overlap_expected = Stream(*data0340) * Stream(*wnd_hop2) \
                      + chain([0, 0], Stream(*data4003) * Stream(*wnd_hop2))

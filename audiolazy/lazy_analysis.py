@@ -52,11 +52,7 @@ def window(size):
   List with the desired window samples. Max value is one (1.0).
 
   """
-
-  if size == 1:
-    return [1.0]
-  return [.54 - .46 * cos(2 * pi * n / (size - 1))
-          for n in xrange(size)]
+  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
 
 
 @window.strategy("rectangular", "rect")
@@ -88,10 +84,7 @@ def window(size):
     Triangular with no zero end-point.
 
   """
-  if size == 1:
-    return [1.0]
-  return [1 - 2.0 / (size - 1) * abs(n - (size - 1) / 2.0)
-          for n in xrange(size)]
+  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
 
 
 @window.strategy("triangular", "triangle")
@@ -109,10 +102,7 @@ def window(size):
     Bartlett window, triangular with zero-valued end-points.
 
   """
-  if size == 1:
-    return [1.0]
-  return [1 - 2.0 / (size + 1) * abs(n - (size - 1) / 2.0)
-          for n in xrange(size)]
+  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
 
 
 @window.strategy("hann", "hanning")
@@ -125,9 +115,7 @@ def window(size):
   List with the desired window samples. Max value is one (1.0).
 
   """
-  if size == 1:
-    return [1.0]
-  return [.5 * (1 - cos(2 * pi * n / (size - 1))) for n in xrange(size)]
+  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
 
 
 @window.strategy("blackman")
@@ -147,10 +135,8 @@ def window(size, alpha=.16):
   List with the desired window samples. Max value is one (1.0).
 
   """
-  if size == 1:
-    return [1.0]
-  return [alpha / 2 * cos(4 * pi * n / (size - 1))
-          -.5 * cos(2 * pi * n / (size - 1)) + (1 - alpha) / 2
+  return [alpha / 2 * cos(4 * pi * n / size)
+          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
           for n in xrange(size)]
 
 

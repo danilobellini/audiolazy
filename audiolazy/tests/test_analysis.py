@@ -48,12 +48,12 @@ class TestWindow(object):
 
   @p("wnd", window)
   @p("M", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
-  def test_min_max_len_symmetry(self, wnd, M):
+  def test_min_max_len_symmetry(self, wnd, M): # Although it's "periodic"
     data = wnd(M)
     assert max(data) <= 1.0
     assert min(data) >= 0.0
     assert len(data) == M
-    assert almost_eq(data, data[::-1])
+    assert almost_eq(data[1:], data[:0:-1])
 
 
 class TestZCross(object):
@@ -405,7 +405,7 @@ class TestOverlapAdd(object):
     wnd = window.triangle(len(self.list_data[0]))
     wdata = [[w * r for w, r in xzip(wnd, row)] for row in self.list_data]
     result_no_wnd = oadd(self.list_data, wnd=None)
-    result_wnd = oadd(self.list_data, wnd=wnd)
+    result_wnd = oadd(self.list_data, wnd=wnd, normalize=False)
     assert concat(self.list_data) == list(result_no_wnd)
     assert concat(wdata) == list(result_wnd)
 

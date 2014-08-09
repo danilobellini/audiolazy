@@ -79,6 +79,9 @@ AudioLazy changes history
     the overlap-add strategy (as well as its parameters), and obviously the
     time block, padding and hop sizes.
 
+  - The ``window`` StrategyDict now returns the "periodic" window data
+    instead of the "symmetric" window to fit with the STFT.
+
 + lazy_auditory:
 
   - New ``phon2dB`` StrategyDict instance with the ISO/FDIS 226:2003 model
