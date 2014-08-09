@@ -34,6 +34,7 @@ from .lazy_stream import tostream, thub, Stream
 from .lazy_math import cexp, ceil
 from .lazy_filters import lowpass, z
 from .lazy_compat import xrange, xmap, xzip, iteritems
+from .lazy_text import format_docstring
 
 __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
            "maverage", "clip", "unwrap", "amdf", "overlap_add", "stft"]
@@ -41,100 +42,117 @@ __all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
 
 window = StrategyDict("window")
 
-
-@window.strategy("hamming")
-def window(size):
-  """
-  Hamming window function with the given size.
-
-  Returns
-  -------
-  List with the desired window samples. Max value is one (1.0).
-
-  """
-  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
-
-
-@window.strategy("rectangular", "rect")
-def window(size):
-  """
-  Rectangular window function with the given size.
-
-  Returns
-  -------
-  List with the desired window samples. All values are ones (1.0).
-
-  """
-  return [1.0 for n in xrange(size)]
-
-
-@window.strategy("bartlett")
-def window(size):
-  """
-  Bartlett (triangular with zero-valued endpoints) window function with the
-  given size.
-
-  Returns
-  -------
-  List with the desired window samples. Max value is one (1.0).
-
-  See Also
-  --------
-  window.triangular :
-    Triangular with no zero end-point.
-
-  """
-  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
-
-
-@window.strategy("triangular", "triangle")
-def window(size):
-  """
-  Triangular (with no zero end-point) window function with the given size.
-
-  Returns
-  -------
-  List with the desired window samples. Max value is one (1.0).
-
-  See Also
-  --------
-  window.bartlett :
-    Bartlett window, triangular with zero-valued end-points.
-
-  """
-  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
-
-
-@window.strategy("hann", "hanning")
-def window(size):
-  """
-  Hann window function with the given size.
-
-  Returns
-  -------
-  List with the desired window samples. Max value is one (1.0).
-
-  """
-  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
-
-
-@window.strategy("blackman")
-def window(size, alpha=.16):
-  """
-  Blackman window function with the given size.
-
+window._doc_template = """
+  {name} windowing/apodization function.
+  {expl}
   Parameters
   ----------
   size :
     Window size in samples.
-  alpha :
-    Blackman window alpha value. Defaults to 0.16.
-
+  {params}
   Returns
   -------
-  List with the desired window samples. Max value is one (1.0).
+  List with the window samples.
+  {end}
+  See Also
+  --------
+  stft :
+    Short Time Fourier Transform block processor / phase vocoder wrapper.
+  overlap_add :
+    Overlap-add algorithm for an interables of blocks.
+  {seealso}
+"""
 
-  """
+window._doc_expl_harris = """
+  This "periodic" window model was taken from:
+
+    ``Harris, F. J. "On the Use of Windows for Harmonic Analysis with the
+    Discrete Fourier Transform". Proceedings of the IEEE, vol. 66, no. 1,
+    January 1978.``
+"""
+
+window._doc_end_periodic = """
+  Note
+  ----
+  Be careful as this isn't a "symmetric" window implementation, you should
+  append the first sample at the end to get a ``size + 1`` symmetric
+  window. The "periodic" window implementation returned by this function
+  is designed for using directly with DFT/STFT. See the F. J. Harris paper
+  for more information on these.
+
+  By default, Numpy, Scipy signal subpackage, GNU Octave and MatLab uses the
+  symmetric approach for the window functions, with [1.0] as the result when
+  the size is 1 (which means the window is actually empty). Here the
+  implementation differ expecting that these functions will be mainly used in
+  a DFT/STFT process.
+"""
+
+
+@window.strategy("hann", "hanning")
+@format_docstring(window._doc_template,
+  expl=window._doc_expl_harris,
+  end=window._doc_end_periodic,
+  params="",
+  name="Hann",
+  seealso="")
+def window(size):
+  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
+
+
+@window.strategy("hamming")
+@format_docstring(window._doc_template,
+  expl=window._doc_expl_harris,
+  end=window._doc_end_periodic,
+  params="",
+  name="Hamming",
+  seealso="")
+def window(size):
+  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
+
+
+@window.strategy("rect", "dirichlet", "rectangular")
+@format_docstring(window._doc_template,
+  expl="",
+  end="All values are ones (1.0).\n",
+  params="",
+  name="Dirichlet/rectangular",
+  seealso="")
+def window(size):
+  return [1.0 for n in xrange(size)]
+
+
+@window.strategy("bartlett")
+@format_docstring(window._doc_template,
+  expl="",
+  end=window._doc_end_periodic,
+  params="",
+  name="Bartlett (triangular starting with zero)",
+  seealso="""window.triangular :\n    Triangular with no zero end-point.\n""")
+def window(size):
+  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
+
+
+@window.strategy("triangular", "triangle")
+@format_docstring(window._doc_template,
+  expl="",
+  end=window._doc_end_periodic,
+  params="",
+  name="Triangular (with no zero end-point)",
+  seealso="""window.bartlett :\n    Triangular starting with zero.\n""")
+def window(size):
+  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
+
+
+@window.strategy("blackman")
+@format_docstring(window._doc_template,
+  expl=window._doc_expl_harris,
+  end=window._doc_end_periodic,
+  params="alpha :\n    Blackman window alpha value. Defaults to 0.16.\n"
+                  "    Use alpha=2.0*1430/18608 for the 'exact Blackman'"
+                      "window.\n",
+  name="Blackman",
+  seealso="")
+def window(size, alpha=.16):
   return [alpha / 2 * cos(4 * pi * n / size)
           -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
           for n in xrange(size)]
