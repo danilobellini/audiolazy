@@ -24,8 +24,9 @@ Voiced "ah-eh-ee-oh-oo" based on resonators at formant frequencies
 from __future__ import unicode_literals, print_function
 
 from audiolazy import (sHz, maverage, rint, AudioIO, ControlStream,
-                       CascadeFilter, resonator, saw_table)
+                       CascadeFilter, resonator, saw_table, chunks)
 from time import sleep
+import sys
 
 # Script input, change this with symbols from the table below
 vowels = "aɛiɒu"
@@ -57,7 +58,10 @@ s, Hz = sHz(rate)
 inertia_dur = .5 * s
 inertia_filter = maverage(rint(inertia_dur))
 
-with AudioIO() as player:
+api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+chunks.size = 1 if api == "jack" else 16
+
+with AudioIO(api=api) as player:
   first_coeffs = formants[vowels[0]]
 
   # These are signals to be changed during the synthesis

@@ -102,9 +102,11 @@ def m21_to_stream(score, synth=ks_synth, beat=90, fdur=2., pad_dur=.5,
 
 # Play the song!
 if __name__ == "__main__":
+  api = next(arg for arg in sys.argv[1:] + [None] if arg != "loop")
+  lz.chunks.size = 1 if api == "jack" else 16
   rate = 44100
   while True:
-    with lz.AudioIO(True) as player:
+    with lz.AudioIO(True, api=api) as player:
       player.play(m21_to_stream(get_random_choral(), rate=rate), rate=rate)
     if not "loop" in sys.argv[1:]:
       break

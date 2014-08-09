@@ -24,9 +24,9 @@ Modulo Counter graphics with FM synthesis audio in a wxPython application
 # The GUI in this example is based on the dose TDD semaphore source code
 # https://github.com/danilobellini/dose
 
-import wx
+import wx, sys
 from math import pi
-from audiolazy import (ControlStream, modulo_counter,
+from audiolazy import (ControlStream, modulo_counter, chunks,
                        AudioIO, sHz, sinusoid)
 
 MIN_WIDTH = 15 # pixels
@@ -204,7 +204,9 @@ class McFMApp(wx.App):
 
 
 if __name__ == "__main__":
-  with AudioIO() as player:
+  api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+  chunks.size = 1 if api == "jack" else 16
+  with AudioIO(api=api) as player:
     app = McFMApp(False, player)
     app.wnd.player = player
     app.MainLoop()

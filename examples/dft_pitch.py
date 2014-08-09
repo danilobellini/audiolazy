@@ -24,7 +24,8 @@ Pitch follower via DFT peak with Tkinter GUI
 # ------------------------
 # AudioLazy pitch follower
 # ------------------------
-from audiolazy import (tostream, AudioIO, freq2str, sHz,
+import sys
+from audiolazy import (tostream, AudioIO, freq2str, sHz, chunks,
                        lowpass, envelope, pi, thub, Stream, maverage)
 from numpy.fft import rfft
 
@@ -48,7 +49,10 @@ def pitch_from_mic(upd_time_in_ms):
   rate = 44100
   s, Hz = sHz(rate)
 
-  with AudioIO() as recorder:
+  api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+  chunks.size = 1 if api == "jack" else 16
+
+  with AudioIO(api=api) as recorder:
     snd = recorder.record(rate=rate)
     sndlow = lowpass(400 * Hz)(limiter(snd, cutoff=20 * Hz))
     hop = int(upd_time_in_ms * 1e-3 * s)

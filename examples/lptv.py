@@ -21,8 +21,8 @@
 LPTV (Linear Periodically Time Variant) filter example (a.k.a. PLTV)
 """
 
-from audiolazy import sHz, sinusoid, Stream, AudioIO, z, pi
-import time
+from audiolazy import sHz, sinusoid, Stream, AudioIO, z, pi, chunks
+import time, sys
 
 # Basic initialization
 rate = 44100
@@ -44,7 +44,9 @@ filt /= (1 - a1 * z ** -1 - a2 * z ** -2 - .1 * z ** -3)
 input_data = sinusoid(220 * Hz)
 
 # Let's play it!
-with AudioIO() as player:
+api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+chunks.size = 1 if api == "jack" else 16
+with AudioIO(api=api) as player:
   th = player.play(input_data, rate=rate)
   time.sleep(1) # Wait a sec
   th.stop()

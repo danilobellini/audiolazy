@@ -43,6 +43,7 @@ from audiolazy import (sHz, dB10, ZFilter, pi, ControlStream, white_noise,
 from scipy.signal import butter, buttord
 import numpy as np
 from time import sleep
+import sys
 
 rate = 44100
 s, Hz = sHz(rate)
@@ -81,8 +82,9 @@ high = filt_high(white_noise())
 low /= 2 * max(low.take(2000))
 high /= 2 * max(high.take(2000))
 
-chunks.size = 16
-with AudioIO() as player:
+api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+chunks.size = 1 if api == "jack" else 16
+with AudioIO(api=api) as player:
   player.play(low * gain_low + high * gain_high)
   gain_low.value = 1
   while True:

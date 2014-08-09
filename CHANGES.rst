@@ -33,6 +33,8 @@ AudioLazy changes history
   - ISO/FDIS 226:2003 equal loudness contour curves plotting
   - Partial recreation of the "Windows and Figures of Merit" F. Harris
     comparison table and window plots
+  - All recording/playback examples now prepared for using both the default
+    API and receiving it as an argument like "jack" or "alsa"
 
 + general:
 

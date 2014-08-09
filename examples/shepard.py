@@ -22,7 +22,9 @@ Example based on the Shepard tone
 """
 
 from __future__ import division
-from audiolazy import sHz, Streamix, log2, line, window, sinusoid, AudioIO
+from audiolazy import (sHz, Streamix, log2, line, window, sinusoid, AudioIO,
+                       chunks)
+import sys
 
 # Basic initialization
 rate = 44100
@@ -62,5 +64,7 @@ def partial_cached():
 
 # Play!
 smix.add(0, partial()) # Starts the mixing with the first track/partial
-with AudioIO(True) as player:
+api = sys.argv[1] if sys.argv[1:] else None # Choose API via command-line
+chunks.size = 1 if api == "jack" else 16
+with AudioIO(True, api=api) as player:
   player.play(smix, rate=rate)
