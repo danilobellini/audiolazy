@@ -18,19 +18,19 @@
 # Created on Fri Nov 02 2012
 # danilo [dot] bellini [at] gmail [dot] com
 """
-Window functions plot example
+Window functions (in time) plot example
 """
 
-from matplotlib import pyplot as plt
+import pylab as plt
 from audiolazy import window
 
-M = 256
+size = 256
 
 for func in window:
-  plt.plot(func(M), label=func.__name__)
+  plt.plot(func(size, symm=True), label=func.__name__)
 
 plt.legend(loc="best")
-plt.axis(xmin=-5, xmax=M + 5 - 1, ymin=-.05, ymax=1.05)
-plt.title("AudioLazy windows for size of {M} samples".format(M=M))
+plt.axis(xmin=-5, xmax=size + 5 - 1, ymin=-.05, ymax=1.05)
+plt.title("AudioLazy windows for size of {} samples".format(size))
 plt.tight_layout()
 plt.show()
