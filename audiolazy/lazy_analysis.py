@@ -50,8 +50,11 @@ window._doc_template = """
   Parameters
   ----------
   size :
-    Window size in samples.
-  {params}
+    Window size in samples.{params}
+  symm :
+    Flag to choose whether the window should be "periodic" or "symmetric".
+    Defaults to False.
+
   Returns
   -------
   List with the window samples.
@@ -66,7 +69,7 @@ window._doc_template = """
 """
 
 window._doc_expl_harris = """
-  This "periodic" window model was taken from:
+  This window model was taken from:
 
     ``Harris, F. J. "On the Use of Windows for Harmonic Analysis with the
     Discrete Fourier Transform". Proceedings of the IEEE, vol. 66, no. 1,
@@ -76,8 +79,8 @@ window._doc_expl_harris = """
 window._doc_end_periodic = """
   Note
   ----
-  Be careful as this isn't a "symmetric" window implementation, you should
-  append the first sample at the end to get a ``size + 1`` symmetric
+  Be careful as this isn't a "symmetric" window implementation by default, you
+  should append the first sample at the end to get a ``size + 1`` symmetric
   window. The "periodic" window implementation returned by this function
   is designed for using directly with DFT/STFT. See the F. J. Harris paper
   for more information on these.
@@ -97,8 +100,11 @@ window._doc_end_periodic = """
   params="",
   name="Hann",
   seealso="")
-def window(size):
-  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
+def window(size, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  size, indexes = size - int(symm), xrange(size)
+  return [.5 * (1 - cos(2 * pi * n / size)) for n in indexes]
 
 
 @window.strategy("hamming")
@@ -108,8 +114,11 @@ def window(size):
   params="",
   name="Hamming",
   seealso="")
-def window(size):
-  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
+def window(size, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  size, indexes = size - int(symm), xrange(size)
+  return [.54 - .46 * cos(2 * pi * n / size) for n in indexes]
 
 
 @window.strategy("rect", "dirichlet", "rectangular")
@@ -119,7 +128,7 @@ def window(size):
   params="",
   name="Dirichlet/rectangular",
   seealso="")
-def window(size):
+def window(size, symm=False):
   return [1.0 for n in xrange(size)]
 
 
@@ -130,8 +139,11 @@ def window(size):
   params="",
   name="Bartlett (triangular starting with zero)",
   seealso="""window.triangular :\n    Triangular with no zero end-point.\n""")
-def window(size):
-  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
+def window(size, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  size, indexes = size - int(symm), xrange(size)
+  return [1 - 2.0 / size * abs(n - size / 2.0) for n in indexes]
 
 
 @window.strategy("triangular", "triangle")
@@ -141,34 +153,45 @@ def window(size):
   params="",
   name="Triangular (with no zero end-point)",
   seealso="""window.bartlett :\n    Triangular starting with zero.\n""")
-def window(size):
-  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
+def window(size, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  size, indexes = size - int(symm), xrange(size)
+  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in indexes]
 
 
 @window.strategy("blackman")
 @format_docstring(window._doc_template,
   expl=window._doc_expl_harris,
   end=window._doc_end_periodic,
-  params="alpha :\n    Blackman window alpha value. Defaults to 0.16.\n"
-                  "    Use alpha=2.0*1430/18608 for the 'exact Blackman'"
-                      "window.\n",
+  params="""
+  alpha :
+    Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
+    for the 'exact Blackman' window.""",
   name="Blackman",
   seealso="")
-def window(size, alpha=.16):
+def window(size, alpha=.16, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  size, indexes = size - int(symm), xrange(size)
   return [alpha / 2 * cos(4 * pi * n / size)
-          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
-          for n in xrange(size)]
+          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2 for n in indexes]
 
 
 @window.strategy("cos")
 @format_docstring(window._doc_template,
   expl=window._doc_expl_harris,
   end=window._doc_end_periodic,
-  params="alpha :\n    Power each sample. Defaults to 1.\n",
+  params="""
+  alpha :
+    Power each sample. Defaults to 1.""",
   name="Cosine to the power of alpha",
   seealso="")
-def window(size, alpha=1):
-  return (sinusoid(pi / size) ** alpha).take(size) if size else []
+def window(size, alpha=1, symm=False):
+  if symm and size == 1:
+    return [1.0]
+  period = size - int(symm)
+  return (sinusoid(pi / period) ** alpha).take(size) if period else []
 
 
 def acorr(blk, max_lag=None):

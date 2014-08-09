@@ -80,7 +80,9 @@ AudioLazy changes history
     block size and hop
 
   - The ``window`` StrategyDict now returns the "periodic" window data
-    instead of the "symmetric" window to fit with the STFT
+    instead of the "symmetric" window to be used with the STFT directly
+  - New ``symm`` keyword parameter for all window strategies (defaults to
+    False)
   - Default ``window`` strategy is the Hann window
   - New ``window.cos`` strategy implementing cosine to the power of alpha
 

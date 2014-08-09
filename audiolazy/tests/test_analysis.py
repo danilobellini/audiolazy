@@ -40,20 +40,32 @@ from ..lazy_math import ceil, inf, pi, cexp
 from ..lazy_core import OpMethod
 from ..lazy_itertools import chain, repeat, count
 
-class TestWindow(object):
+@p("wnd", window)
+class TestAllWindows(object):
 
-  @p("wnd", window)
   def test_empty(self, wnd):
     assert wnd(0) == []
+    assert wnd(0, symm=True) == []
 
-  @p("wnd", window)
-  @p("M", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
-  def test_min_max_len_symmetry(self, wnd, M): # Although it's "periodic"
-    data = wnd(M)
+  @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
+  def test_min_max_len_periodic_symmetry(self, wnd, size):
+    data = wnd(size)
     assert max(data) <= 1.0
     assert min(data) >= 0.0
-    assert len(data) == M
+    assert len(data) == size
     assert almost_eq(data[1:], data[:0:-1])
+
+  @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
+  def test_symm_size_at_least_2(self, wnd, size):
+    period = wnd(size) # The default "symm" value is False
+    symm = wnd(size + 1, symm=True)
+    assert len(symm) - 1 == len(period) == size
+    assert symm[:-1] == period
+    assert almost_eq.diff(symm[0], symm[-1])
+    assert almost_eq(symm[1:-1], symm[-2:0:-1])
+
+  def test_symm_size_1(self, wnd):
+    assert wnd(1, symm=True) == [1.0]
 
 
 class TestZCross(object):
