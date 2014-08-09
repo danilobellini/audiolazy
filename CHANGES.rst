@@ -31,6 +31,8 @@ AudioLazy changes history
   - Perceptual experiment with butterworth filters (Scipy) applied to white
     noise (based on the Demonstrations to Auditory Scene Analysis)
   - ISO/FDIS 226:2003 equal loudness contour curves plotting
+  - Partial recreation of the "Windows and Figures of Merit" F. Harris
+    comparison table and window plots
 
 + general:
 
