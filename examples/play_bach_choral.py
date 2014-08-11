@@ -19,6 +19,10 @@
 # danilo [dot] bellini [at] gmail [dot] com
 """
 Random Bach Choral playing example (needs Music21 corpus)
+
+This example uses a personalized synth based on the Karplus-Strong model.
+You can also get the synth models and effects from the ode_to_joy.py example
+and adapt them to get used here.
 """
 
 from __future__ import unicode_literals, print_function
