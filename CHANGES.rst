@@ -125,7 +125,8 @@ AudioLazy changes history
 
   - LinearFilter coefficients can now be a Stream of Numpy matrices, as well
     as Sympy symbols (including symbolic matrices).
-  - New highpass filter strategy ``highpass.pole_exp``
+  - New highpass filter strategies ``highpass.z`` (taken as the new default)
+    and ``highpass.pole_exp``
 
 + lazy_io:
 
