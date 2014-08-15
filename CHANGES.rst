@@ -49,6 +49,10 @@ AudioLazy changes history
   - New ``conftest.py`` for testing doctests from strategies inside
     StrategyDict instances without the need of a ``__test__`` in the module
     and for skipping doctests known to need Numpy when it's not available
+  - New ``math`` directory for adding scripts with symbolic math calculations
+    (with Sympy) done for designing (or as a proof) for parts of the
+    AudioLazy code. The highpass.z strategy already has its code explanation
+    there
 
 + lazy_analysis:
 
