@@ -1,3 +1,2 @@
-include COPYING.txt
-include README.rst
-include CHANGES.rst
+include *.rst *.txt *.ini *.py */*.py */README.rst images/*.png
+include audiolazy/tests/*.py audiolazy/tests/*.json
