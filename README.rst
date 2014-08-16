@@ -353,8 +353,41 @@ See also the docstrings and the "examples" directory at the github repository
 for more help. Also, the huge test suite might help you understanding how the
 package works and how to use it.
 
+Project files
+-------------
+
+There are several files and directories in the AudioLazy repository (as well
+as in the source distribution):
+
+================ =============================================================
+File/Directory   Description
+================ =============================================================
+audiolazy/       AudioLazy package modules source code
+audiolazy/tests/ Testing subpackage
+docs/            Documentation generation scripts
+examples/        Examples for some AudioLazy use cases
+images/          Images referenced by some reStructuredText documentation file
+math/            Proof for some formula used by AudioLazy using Sympy CAS
+CHANGES.rst      AudioLazy History, a.k.a. change log
+conftest.py      Configuration for py.test, to work properly with doctests on
+                 StrategyDict strategies and on an environment missing Numpy
+COPYING.txt      License file
+MANIFEST.in      List of extra distributed files to be included in the tarball
+                 that doesn't need to be installed together with the package
+README.rst       Some general information about the AudioLazy project
+setup.py         General Python setup script for installation, testing, etc.
+tox.ini          Configuration for tox, py.test and pytest-cov
+.travis.yml      Travis-CI configuration (not in PyPI tarball/"egg" source
+                 distribution)
+================ =============================================================
+
+The ``examples`` and the ``math`` directories might be useful for an AudioLazy
+user. All Python files in these two directories are scripts intended to run on
+both Python 2 and 3 unless they need something not yet available for Python 3
+(e.g. wxPython), most of them have some external dependency.
+
 ----
 
-Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
+Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
 
 License is GPLv3. See COPYING.txt for more details.
