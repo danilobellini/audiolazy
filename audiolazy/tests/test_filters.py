@@ -604,7 +604,7 @@ class TestResonator(object):
 
 class TestLowpassHighpass(object):
 
-  @p("filt_func", [lowpass.pole, highpass.pole, highpass.z])
+  @p("filt_func", [lowpass.pole, highpass.pole, lowpass.z, highpass.z])
   @p("freq", [pi * k / 7 for k in xrange(1, 7)])
   def test_3dB_gain(self, filt_func, freq):
     filt = filt_func(freq)

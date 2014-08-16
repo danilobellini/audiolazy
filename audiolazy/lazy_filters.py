@@ -1371,6 +1371,34 @@ def lowpass(cutoff):
   return (1 - R) / (1 - R * z ** -1)
 
 
+@lowpass.strategy("z")
+def lowpass(cutoff):
+  """
+  Low-pass filter with one pole and one zero, with high-precision cut-off
+  frequency calculation.
+
+  Parameters
+  ----------
+  cutoff :
+    Cut-off frequency in rad/sample. It defines the filter frequency in which
+    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
+    power gain is about `3.0103 dB`).
+    Should be a value between 0 (DC) and pi (Nyquist).
+
+  Returns
+  -------
+  A ZFilter object.
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
+  frequency (zero rad/sample).
+
+  """
+  cutoff = thub(cutoff, 2)
+  R = (sin(cutoff) - 1) / cos(cutoff)
+  R = thub(R, 2)
+  gain = (1 + R) / 2
+  return gain * (1 + z ** -1) / (1 + R * z ** -1)
+
+
 highpass = StrategyDict("highpass")
 
 
