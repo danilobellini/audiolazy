@@ -19,6 +19,14 @@
 # danilo [dot] bellini [at] gmail [dot] com
 """
 Digital filter design for the AudioLazy highpass.z filter, with Sympy.
+
+Equation completely defined by:
+
+- Single zero at 1, so gain at the DC level is zero (-inf dB)
+- Single pole at R, where R needs to be real since output should be real
+- Max gain at pi rad/sample (Nyquist frequency) should be 1 (0 dB)
+- R should be defined by the 50% power cutoff frequency given in rad/sample
+- Filter should be stable (-1 < R < 1)
 """
 from __future__ import division, print_function, unicode_literals
 from functools import reduce
@@ -31,7 +39,7 @@ def fcompose(*funcs):
 
 
 G = Symbol("G", positive=True) # Gain (linear)
-R = Symbol("R", positive=True) # Radius (zero/pole magnitude)
+R = Symbol("R", real=True)     # "Radius" (pole magnitude)
 w = Symbol("omega", real=True) # Frequency (rad/s) usually in [0;pi]
 z = Symbol("z")                # Z-Transform complex variable
 
@@ -63,8 +71,8 @@ power_resp_no_G = power_resp.subs(G, Gsolutions[0])
 half_power_eq = Eq(power_resp_no_G, Rational(1, 2))
 Rsolutions = solve(half_power_eq, R)
 
-# Constraining R < 1 when w = pi/4 (although the constraint is general)
-Rsolutions_stable = [el for el in Rsolutions if el.subs(w, pi/4) < 1]
+# Constraining -1 < R < 1 when w = pi/4 (although the constraint is general)
+Rsolutions_stable = [el for el in Rsolutions if -1 < el.subs(w, pi/4) < 1]
 assert len(Rsolutions_stable) == 1
 
 # Constraining w to the [0;pi] range, so |sin(w)| = sin(w)
