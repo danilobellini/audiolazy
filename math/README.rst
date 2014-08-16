@@ -51,6 +51,7 @@ one of the following lines::
 Proofs
 ------
 
-* `highpass_z.py <highpass_z.py>`__
+* `lowpass_highpass_pole_z.py <lowpass_highpass_pole_z.py>`__
 
-  Includes the digital filter design of the ``highpass.z`` strategy.
+  Includes the digital filter design of the ``lowpass.pole``, ``highpass.z``,
+  ``highpass.pole`` and ``lowpass.z`` strategies.
