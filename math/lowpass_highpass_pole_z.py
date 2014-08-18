@@ -33,6 +33,10 @@ init_printing(use_unicode=True)
 def fcompose(*funcs):
   return lambda data: reduce(lambda d, p: p(d), funcs, data)
 
+def has_sqrt(sympy_obj):
+  return any(el.func is C.Pow and el.args[-1] is S.Half
+             for el in preorder_traversal(sympy_obj))
+
 
 G = Symbol("G", positive=True) # Gain (linear)
 R = Symbol("R", real=True)     # Pole "radius"
@@ -88,7 +92,7 @@ def design_z_filter_single_pole(filt_str, max_gain_freq):
 
   # Finds the unconstrained R values for a given cutoff frequency
   power_resp_no_G = power_resp.subs(G, Gsolutions[0])
-  half_power_eq = Eq(power_resp_no_G, Rational(1, 2))
+  half_power_eq = Eq(power_resp_no_G, S.Half)
   Rsolutions = solve(half_power_eq, R)
 
   # Constraining -1 < R < 1 when w = pi/4 (although the constraint is general)
@@ -98,6 +102,15 @@ def design_z_filter_single_pole(filt_str, max_gain_freq):
   # Constraining w to the [0;pi] range, so |sin(w)| = sin(w)
   Rsolution = Rsolutions_stable[0].subs(abs(sin(w)), sin(w))
   pprint(Eq(R, Rsolution))
+
+  # When R doesn't seem simple, rewrite it using a helper variable
+  if has_sqrt(Rsolution):
+    x = Symbol("x") # A helper symbol
+    xval = sum(el for el in Rsolution.args if not has_sqrt(el))
+    print("\n  ** Alternative way to write R **\n")
+    pprint(Eq(x, xval))
+    print()
+    pprint(Eq(R, expand(Rsolution.subs(xval, x))))
 
 
 filters_data = OrderedDict([

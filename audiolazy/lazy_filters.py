@@ -1335,7 +1335,7 @@ def lowpass(cutoff):
   """
   cutoff = thub(cutoff, 1)
   x = 2 - cos(cutoff)
-  x = thub(x,2)
+  x = thub(x, 2)
   R = x - sqrt(x ** 2 - 1)
   R = thub(R, 2)
   return (1 - R) / (1 - R * z ** -1)
@@ -1451,9 +1451,9 @@ def highpass(cutoff):
   frequency (pi rad/sample).
 
   """
-  rev_cutoff = thub(pi - cutoff, 1)
-  x = 2 - cos(rev_cutoff)
-  x = thub(x,2)
+  cutoff = thub(cutoff, 1)
+  x = 2 + cos(cutoff)
+  x = thub(x, 2)
   R = x - sqrt(x ** 2 - 1)
   R = thub(R, 2)
   return (1 - R) / (1 + R * z ** -1)
