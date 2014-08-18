@@ -1439,10 +1439,45 @@ def highpass(cutoff):
   """
   This strategy uses an exponential approximation for cut-off frequency
   calculation, found by matching the one-pole Laplace lowpass filter
-  and mirroring the resulting pole to be negative.
+  and mirroring the resulting filter to get a highpass.
   """
   R = thub(exp(cutoff - pi), 2)
   return (1 - R) / (1 + R * z ** -1)
+
+
+@lowpass.strategy("z_exp")
+@format_docstring(**lowpass._doc_kwargs("lowpass.z_exp",
+  R = "\exp{cutoff - \pi}",
+  xtra = """
+  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
+  """,
+))
+def lowpass(cutoff):
+  """
+  This strategy uses an exponential approximation for cut-off frequency
+  calculation, found by matching the single pole and single zero Laplace
+  highpass filter and mirroring the resulting filter to get a lowpass.
+  """
+  R = thub(exp(cutoff - pi), 2)
+  G = (R + 1) / 2
+  return G * (1 + z ** -1) / (1 + R * z ** -1)
+
+@highpass.strategy("z_exp")
+@format_docstring(**lowpass._doc_kwargs("highpass.z_exp",
+  R = "\exp{-cutoff}",
+  xtra = """
+  Cut-off frequency is unreliable outside the [0; pi / 6] range.
+  """,
+))
+def highpass(cutoff):
+  """
+  This strategy uses an exponential approximation for cut-off frequency
+  calculation, found by matching the single pole and single zero Laplace
+  highpass filter.
+  """
+  R = thub(exp(-cutoff), 2)
+  G = (R + 1) / 2
+  return G * (1 - z ** -1) / (1 - R * z ** -1)
 
 
 # Default strategies

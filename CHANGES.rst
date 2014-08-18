@@ -129,9 +129,19 @@ AudioLazy changes history
 
   - LinearFilter coefficients can now be a Stream of Numpy matrices, as well
     as Sympy symbols (including symbolic matrices).
-  - New highpass filter strategies ``highpass.z`` (taken as the new default)
-    and ``highpass.pole_exp``
-  - New lowpass filter strategy ``lowpass.z``
+  - New simple lowpass/highpass IIR filter strategies:
+
+    * ``highpass.z`` (taken as the new ``highpass`` default)
+    * ``lowpass.z``
+    * ``highpass.pole_exp``
+    * ``highpass.z_exp``
+    * ``lowpass.z_exp``
+
+    Where the ``"z"`` name denotes the presence of a single zero (besides the
+    single pole) and ``"_exp"`` denotes the exponential approximation from
+    a matched Z-Transform pole value from the equivalent or mirrored analog
+    filter equation (Laplace). The absence of such suffix denotes it was
+    designed directly as a digital filter.
 
 + lazy_io:
 
