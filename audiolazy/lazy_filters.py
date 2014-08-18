@@ -32,7 +32,7 @@ from functools import reduce
 from .lazy_stream import Stream, avoid_stream, thub
 from .lazy_misc import elementwise, zero_pad, sHz, almost_eq
 from .lazy_text import (float_str, multiplication_formatter,
-                        pair_strings_sum_formatter)
+                        pair_strings_sum_formatter, format_docstring)
 from .lazy_compat import meta, iteritems, xrange, im_func
 from .lazy_poly import Poly
 from .lazy_core import AbstractOperatorOverloaderMeta, StrategyDict
@@ -1310,29 +1310,57 @@ def resonator(freq, bandwidth):
 
 
 lowpass = StrategyDict("lowpass")
+highpass = StrategyDict("highpass")
 
-
-@lowpass.strategy("pole")
-def lowpass(cutoff):
-  """
-  Low-pass filter with one pole and no zeros (constant numerator), with
-  high-precision cut-off frequency calculation.
-
+lowpass._doc_kwargs = lambda name, R=None, xtra="\n": dict(
+  name = name,
+  xtra = xtra,
+  template_ = """
+  {band}-pass filter with one pole and {zeros}.
+  {__doc__}
   Parameters
   ----------
   cutoff :
-    Cut-off frequency in rad/sample. It defines the filter frequency in which
-    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
-    power gain is about `3.0103 dB`).
-    Should be a value between 0 and pi.
-
+    Cut-off frequency in rad/sample. Should be a value between 0 (DC) and
+    :math:`pi` (Nyquist frequency, ``pi`` rad/sample).{cutoff_xtra}
   Returns
   -------
   A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
-  frequency (zero rad/sample).
+  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the
+  {freq}.{xtra}
+  Note
+  ----
+  The digital filter design for this filter strategy ({name})
+  can be found in the AudioLazy ``math`` directory, both in the source
+  distribution package and in main repository. That directory contains the
+  code for finding the filter parameters (symbolic, using Sympy), besides
+  the design details.
+  """,
 
-  """
+  # Build some information based on the parameters
+  band = "Low" if name[0] == "l" else "High",
+  zeros = "one zero" if "z" in name else "no zeros (constant numerator)",
+  freq = "DC frequency (zero rad/sample)" if name[0] == "l" else
+         "Nyquist frequency (pi rad/sample)",
+  cutoff_xtra = """
+    It defines the filter frequency in which the squared gain is `50%` (i.e,
+    when magnitude gain is `sqrt(2) / 2` and power gain is about `3.0103 dB`).
+  """ if R is None else """
+    This value is used to find the pole amplitude (radius)
+    :math:`R = {R}`.
+  """.format(R=R),
+
+  # A "default" docstring (used unless the function itself already has a
+  # docstring for explanation)
+  __doc__ = """
+    This strategy uses a high-precision cut-off frequency calculation.
+  """,
+)
+
+
+@lowpass.strategy("pole")
+@format_docstring(**lowpass._doc_kwargs("lowpass.pole"))
+def lowpass(cutoff):
   cutoff = thub(cutoff, 1)
   x = 2 - cos(cutoff)
   x = thub(x, 2)
@@ -1342,28 +1370,16 @@ def lowpass(cutoff):
 
 
 @lowpass.strategy("pole_exp")
+@format_docstring(**lowpass._doc_kwargs("lowpass.pole_exp",
+  R = "\exp{-cutoff}",
+  xtra = """
+  Cut-off frequency is unreliable outside the [0; pi / 6] range.
+  """,
+))
 def lowpass(cutoff):
   """
-  Low-pass filter with one pole and no zeros (constant numerator), with
-  exponential approximation for cut-off frequency calculation, found by
-  matching the one-pole Laplace lowpass filter.
-
-  Parameters
-  ----------
-  cutoff :
-    Cut-off frequency in rad/sample following the equation:
-
-      ``R = exp(-cutoff)``
-
-    where R is the pole amplitude (radius).
-
-  Returns
-  -------
-  A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
-  frequency (zero rad/sample).
-  Cut-off frequency is unreliable outside the [0; pi / 6] range.
-
+  This strategy uses an exponential approximation for cut-off frequency
+  calculation, found by matching the one-pole Laplace lowpass filter.
   """
   cutoff = thub(cutoff, 1)
   R = exp(-cutoff)
@@ -1372,26 +1388,8 @@ def lowpass(cutoff):
 
 
 @lowpass.strategy("z")
+@format_docstring(**lowpass._doc_kwargs("lowpass.z"))
 def lowpass(cutoff):
-  """
-  Low-pass filter with one pole and one zero, with high-precision cut-off
-  frequency calculation.
-
-  Parameters
-  ----------
-  cutoff :
-    Cut-off frequency in rad/sample. It defines the filter frequency in which
-    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
-    power gain is about `3.0103 dB`).
-    Should be a value between 0 (DC) and pi (Nyquist).
-
-  Returns
-  -------
-  A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the DC
-  frequency (zero rad/sample).
-
-  """
   cutoff = thub(cutoff, 2)
   numR = sin(cutoff) - 1
   if isinstance(cutoff, Iterable):
@@ -1405,30 +1403,9 @@ def lowpass(cutoff):
   return gain * (1 + z ** -1) / (1 + R * z ** -1)
 
 
-highpass = StrategyDict("highpass")
-
-
 @highpass.strategy("z")
+@format_docstring(**lowpass._doc_kwargs("highpass.z"))
 def highpass(cutoff):
-  """
-  High-pass filter with one pole and one zero, with high-precision cut-off
-  frequency calculation.
-
-  Parameters
-  ----------
-  cutoff :
-    Cut-off frequency in rad/sample. It defines the filter frequency in which
-    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
-    power gain is about `3.0103 dB`).
-    Should be a value between 0 (DC) and pi (Nyquist).
-
-  Returns
-  -------
-  A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the Nyquist
-  frequency (pi rad/sample).
-
-  """
   cutoff = thub(cutoff, 2)
   numR = 1 - sin(cutoff)
   if isinstance(cutoff, Iterable):
@@ -1443,26 +1420,8 @@ def highpass(cutoff):
 
 
 @highpass.strategy("pole")
+@format_docstring(**lowpass._doc_kwargs("highpass.pole"))
 def highpass(cutoff):
-  """
-  High-pass filter with one pole and no zeros (constant numerator), with
-  high-precision cut-off frequency calculation.
-
-  Parameters
-  ----------
-  cutoff :
-    Cut-off frequency in rad/sample. It defines the filter frequency in which
-    the squared gain is `50%` (a.k.a. magnitude gain is `sqrt(2) / 2` and
-    power gain is about `3.0103 dB`).
-    Should be a value between 0 and pi.
-
-  Returns
-  -------
-  A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the Nyquist
-  frequency (pi rad/sample).
-
-  """
   cutoff = thub(cutoff, 1)
   x = 2 + cos(cutoff)
   x = thub(x, 2)
@@ -1472,29 +1431,17 @@ def highpass(cutoff):
 
 
 @highpass.strategy("pole_exp")
+@format_docstring(**lowpass._doc_kwargs("highpass.pole_exp",
+  R = "\exp{cutoff - \pi}",
+  xtra = """
+  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
+  """,
+))
 def highpass(cutoff):
   """
-  High-pass filter with one pole and no zeros (constant numerator), with
-  exponential approximation for cut-off frequency calculation, found by
-  matching the one-pole Laplace lowpass filter and mirroring the resulting
-  pole to be negative.
-
-  Parameters
-  ----------
-  cutoff :
-    Cut-off frequency in rad/sample following the equation:
-
-      ``R = exp(cutoff - pi)``
-
-    where R is the pole amplitude (radius).
-
-  Returns
-  -------
-  A ZFilter object.
-  Gain is normalized to have peak with 0 dB (1.0 amplitude) at the Nyquist
-  frequency (pi rad/sample).
-  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
-
+  This strategy uses an exponential approximation for cut-off frequency
+  calculation, found by matching the one-pole Laplace lowpass filter
+  and mirroring the resulting pole to be negative.
   """
   R = thub(exp(thub(cutoff - pi, 1)), 2)
   return (1 - R) / (1 + R * z ** -1)
