@@ -33,7 +33,7 @@ from ..lazy_filters import (ZFilter, z, CascadeFilter, ParallelFilter,
                             resonator, lowpass, highpass)
 from ..lazy_misc import almost_eq, zero_pad
 from ..lazy_compat import orange, xrange, xzip, xmap
-from ..lazy_itertools import cycle, chain
+from ..lazy_itertools import cycle, chain, repeat
 from ..lazy_stream import Stream, thub
 from ..lazy_math import dB10, dB20, inf
 from ..lazy_synth import line
@@ -644,3 +644,19 @@ class TestLowpassHighpass(object):
     freqs = line(50, 0, pi)
     for a, b in filt.freq_response(freqs).map(abs).blocks(size=2, hop=1):
       assert a < b
+
+  @p("filt_func", [lowpass.z, highpass.z])
+  def test_single_zero_strategies_zeroed_R_denominator_lti(self, filt_func):
+    filt = filt_func(pi / 2)
+    assert almost_eq.diff(filt.denpoly[1], 0, max_diff=3e-16)
+    assert almost_eq(xmap(abs, filt.numlist), [.5, .5])
+
+  @p("filt_func", [lowpass.z, highpass.z])
+  def test_single_zero_strategies_zeroed_R_denominator_tvar(self, filt_func):
+    filt = filt_func(repeat(pi / 2))
+    pole_sig = filt.denpoly[1]
+    num_sig0, num_sig1 = filt.numlist
+    n = 3 # Amount of coefficient samples to get
+    assert almost_eq.diff(pole_sig.limit(n), [0] * n, max_diff=3e-16)
+    assert almost_eq(num_sig0.limit(n), [.5] * n)
+    assert almost_eq(abs(num_sig1).limit(n), [.5] * n)

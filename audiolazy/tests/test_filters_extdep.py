@@ -28,10 +28,11 @@ from scipy.optimize import fminbound
 from math import cos, pi, sqrt
 from numpy import mat
 from sympy import symbols, Matrix, sqrt as symb_sqrt
+import sympy
 
 # Audiolazy internal imports
-from ..lazy_filters import ZFilter, resonator, z
-from ..lazy_misc import almost_eq
+from ..lazy_filters import ZFilter, resonator, z, lowpass, highpass
+from ..lazy_misc import almost_eq, elementwise
 from ..lazy_compat import orange, xrange, xzip, xmap
 from ..lazy_math import dB20
 from ..lazy_itertools import repeat, cycle, count
@@ -265,3 +266,30 @@ class TestResonatorScipy(object):
 
     else: # Given frequency is the resonance frequency
       assert almost_eq(freq, resonance_freq)
+
+
+class TestLowpassHighpassSympy(object):
+
+  @p("filt_func", [lowpass.z, highpass.z])
+  def test_single_zero_strategies_zeroed_R_denominator_lti(self, filt_func,
+                                                           monkeypatch):
+    from .. import lazy_filters
+    monkeypatch.setattr(lazy_filters, "sin", elementwise("x", 0)(sympy.sin))
+    monkeypatch.setattr(lazy_filters, "cos", elementwise("x", 0)(sympy.cos))
+    filt = filt_func(sympy.pi / 2)
+    assert filt.denominator == [1] # R is zero
+    assert list(xmap(abs, filt.numerator)) == [sympy.S.Half] * 2
+
+  @p("filt_func", [lowpass.z, highpass.z])
+  def test_single_zero_strategies_zeroed_R_denominator_tvar(self, filt_func,
+                                                           monkeypatch):
+    from .. import lazy_filters
+    monkeypatch.setattr(lazy_filters, "sin", elementwise("x", 0)(sympy.sin))
+    monkeypatch.setattr(lazy_filters, "cos", elementwise("x", 0)(sympy.cos))
+    filt = filt_func(repeat(sympy.pi / 2))
+    pole_sig = filt.denpoly[1]
+    num_sig0, num_sig1 = filt.numlist
+    n = 3 # Amount of coefficient samples to get
+    assert pole_sig.take(n) == [0] * n
+    assert num_sig0.take(n) == [sympy.S.Half] * n
+    assert abs(num_sig0).take(n) == [sympy.S.Half] * n

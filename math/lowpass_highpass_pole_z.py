@@ -25,7 +25,9 @@ The single pole at R (or -R) should be real to ensure a real output.
 """
 from __future__ import division, print_function, unicode_literals
 from functools import reduce
-from sympy import *
+from sympy import (Symbol, preorder_traversal, C, init_printing, S, sympify,
+                   exp, expand_complex, cancel, trigsimp, pprint, Eq, factor,
+                   solve, I, expand, pi, sin, fraction, pretty)
 from collections import OrderedDict
 init_printing(use_unicode=True)
 
@@ -40,7 +42,7 @@ def has_sqrt(sympy_obj):
 
 G = Symbol("G", positive=True) # Gain (linear)
 R = Symbol("R", real=True)     # Pole "radius"
-w = Symbol("omega", real=True) # Frequency (rad/s) usually in [0;pi]
+w = Symbol("omega", real=True) # Frequency (rad/sample) usually in [0;pi]
 z = Symbol("z")                # Z-Transform complex variable
 
 
@@ -111,7 +113,15 @@ def design_z_filter_single_pole(filt_str, max_gain_freq):
     pprint(Eq(x, xval))
     print()
     pprint(Eq(R, expand(Rsolution.subs(xval, x))))
-
+  else: # See whether the R denominator could be zeroed
+    for root in solve(fraction(Rsolution)[1], w):
+      if 0 <= root <= pi:
+        power_resp_r = fcompose(expand, cancel)(power_resp_no_G.subs(w, root))
+        Rsolutions_r = solve(Eq(power_resp_r, S.Half), R)
+        assert len(Rsolutions_r) == 1
+        print("\nDenominator is zero for this value of " + pretty(w))
+        pprint(Eq(w, root))
+        pprint(Eq(R, Rsolutions_r[0]))
 
 filters_data = OrderedDict([
   ("lowpass.pole", # No zeros (constant numerator)

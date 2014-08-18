@@ -1393,8 +1393,14 @@ def lowpass(cutoff):
 
   """
   cutoff = thub(cutoff, 2)
-  R = (sin(cutoff) - 1) / cos(cutoff)
-  R = thub(R, 2)
+  numR = sin(cutoff) - 1
+  if isinstance(cutoff, Iterable):
+    denR = (el if el else 1 for el in cos(cutoff))
+  else:
+    denR = cos(cutoff)
+    if not denR:
+      denR = 1 # Since numerator is already zero
+  R = thub(numR / denR, 2)
   gain = (1 + R) / 2
   return gain * (1 + z ** -1) / (1 + R * z ** -1)
 
@@ -1424,8 +1430,14 @@ def highpass(cutoff):
 
   """
   cutoff = thub(cutoff, 2)
-  R = (1 - sin(cutoff)) / cos(cutoff)
-  R = thub(R, 2)
+  numR = 1 - sin(cutoff)
+  if isinstance(cutoff, Iterable):
+    denR = (el if el else 1 for el in cos(cutoff))
+  else:
+    denR = cos(cutoff)
+    if not denR:
+      denR = 1 # Since numerator is already zero
+  R = thub(numR / denR, 2)
   gain = (1 + R) / 2
   return gain * (1 - z ** -1) / (1 - R * z ** -1)
 
