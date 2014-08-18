@@ -1369,22 +1369,15 @@ def lowpass(cutoff):
   return (1 - R) / (1 - R * z ** -1)
 
 
-@lowpass.strategy("pole_exp")
-@format_docstring(**lowpass._doc_kwargs("lowpass.pole_exp",
-  R = "\exp{-cutoff}",
-  xtra = """
-  Cut-off frequency is unreliable outside the [0; pi / 6] range.
-  """,
-))
-def lowpass(cutoff):
-  """
-  This strategy uses an exponential approximation for cut-off frequency
-  calculation, found by matching the one-pole Laplace lowpass filter.
-  """
+@highpass.strategy("pole")
+@format_docstring(**lowpass._doc_kwargs("highpass.pole"))
+def highpass(cutoff):
   cutoff = thub(cutoff, 1)
-  R = exp(-cutoff)
+  x = 2 + cos(cutoff)
+  x = thub(x, 2)
+  R = x - sqrt(x ** 2 - 1)
   R = thub(R, 2)
-  return (1 - R) / (1 - R * z ** -1)
+  return (1 - R) / (1 + R * z ** -1)
 
 
 @lowpass.strategy("z")
@@ -1419,15 +1412,20 @@ def highpass(cutoff):
   return gain * (1 - z ** -1) / (1 - R * z ** -1)
 
 
-@highpass.strategy("pole")
-@format_docstring(**lowpass._doc_kwargs("highpass.pole"))
-def highpass(cutoff):
-  cutoff = thub(cutoff, 1)
-  x = 2 + cos(cutoff)
-  x = thub(x, 2)
-  R = x - sqrt(x ** 2 - 1)
-  R = thub(R, 2)
-  return (1 - R) / (1 + R * z ** -1)
+@lowpass.strategy("pole_exp")
+@format_docstring(**lowpass._doc_kwargs("lowpass.pole_exp",
+  R = "\exp{-cutoff}",
+  xtra = """
+  Cut-off frequency is unreliable outside the [0; pi / 6] range.
+  """,
+))
+def lowpass(cutoff):
+  """
+  This strategy uses an exponential approximation for cut-off frequency
+  calculation, found by matching the one-pole Laplace lowpass filter.
+  """
+  R = thub(exp(-cutoff), 2)
+  return (1 - R) / (1 - R * z ** -1)
 
 
 @highpass.strategy("pole_exp")
@@ -1443,5 +1441,10 @@ def highpass(cutoff):
   calculation, found by matching the one-pole Laplace lowpass filter
   and mirroring the resulting pole to be negative.
   """
-  R = thub(exp(thub(cutoff - pi, 1)), 2)
+  R = thub(exp(cutoff - pi), 2)
   return (1 - R) / (1 + R * z ** -1)
+
+
+# Default strategies
+lowpass.default = lowpass.pole
+highpass.default = highpass.z
