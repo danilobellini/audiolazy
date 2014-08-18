@@ -51,8 +51,8 @@ AudioLazy changes history
     and for skipping doctests known to need Numpy when it's not available
   - New ``math`` directory for adding scripts with symbolic math calculations
     (with Sympy) done for designing (or as a proof) for parts of the
-    AudioLazy code. The highpass.z strategy already has its code explanation
-    there
+    AudioLazy code. All lowpass and highpass strategies have their design
+    explicitly explained there
 
 + lazy_analysis:
 

@@ -47,11 +47,24 @@ one of the following lines::
   python script_name.py
   python3 script_name.py
 
+(where obviously you should replace ``script_name`` with the script file
+name).
+
 
 Proofs
 ------
 
-* `lowpass_highpass_pole_z.py <lowpass_highpass_pole_z.py>`__
+* `lowpass_highpass_digital.py <lowpass_highpass_digital.py>`__
 
   Includes the digital filter design of the ``lowpass.pole``, ``highpass.z``,
   ``highpass.pole`` and ``lowpass.z`` strategies.
+
+* `lowpass_highpass_matched_z.py <lowpass_highpass_matched_z.py>`__
+
+  Includes the analog filter design (Laplace) for a single pole lowpass IIR
+  filter, and for a single zero and single pole highpass IIR filter. These
+  are then converted to digital filters as a matched Z-Transform filter
+  (pole-zero mapping/matching), which yields the equations used by the
+  ``lowpass.pole_exp`` and ``highpass.z_exp`` filter strategies. These are
+  then mirrored to get the ``lowpass.z_exp`` and ``highpass.pole_exp`` filter
+  strategies.
