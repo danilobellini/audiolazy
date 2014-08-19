@@ -1316,13 +1316,14 @@ lowpass._doc_kwargs = lambda name, R=None, xtra="\n": dict(
   name = name,
   xtra = xtra,
   template_ = """
-  {band}-pass filter with one pole and {zeros}.
+  {design} {band}pass filter with one pole and {zeros}.
   {__doc__}
   Parameters
   ----------
   cutoff :
-    Cut-off frequency in rad/sample. Should be a value between 0 (DC) and
-    :math:`pi` (Nyquist frequency, ``pi`` rad/sample).{cutoff_xtra}
+    Cut-off frequency given in rad/sample. Should be a value (or a Stream of
+    values) ranging from :math:`0` (DC/constant level) up to :math:`\pi`
+    (Nyquist frequency).{cutoff_xtra}
   Returns
   -------
   A ZFilter object.
@@ -1335,20 +1336,27 @@ lowpass._doc_kwargs = lambda name, R=None, xtra="\n": dict(
   distribution package and in main repository. That directory contains the
   code for finding the filter parameters (symbolic, using Sympy), besides
   the design details.
+
+  See Also
+  --------
+  sHz :
+    Second and hertz constants from samples/second rate.
   """,
 
   # Build some information based on the parameters
-  band = "Low" if name[0] == "l" else "High",
+  band = name.split("pass")[0],
   zeros = "one zero" if "z" in name else "no zeros (constant numerator)",
-  freq = "DC frequency (zero rad/sample)" if name[0] == "l" else
+  freq = "DC frequency (zero rad/sample)" if name.startswith("l") else
          "Nyquist frequency (pi rad/sample)",
   cutoff_xtra = """
-    It defines the filter frequency in which the squared gain is `50%` (i.e,
-    when magnitude gain is `sqrt(2) / 2` and power gain is about `3.0103 dB`).
+    It defines the filter frequency in which the squared gain is 50% the
+    input gain (i.e, when magnitude gain is :math:`\sqrt{2}/2` and power
+    gain is about 3.0103 dB).
   """ if R is None else """
     This value is used to find the pole amplitude (radius)
     :math:`R = {R}`.
   """.format(R=R),
+  design = "Digital" if R is None else "Matched Z-Transform",
 
   # A "default" docstring (used unless the function itself already has a
   # docstring for explanation)
@@ -1414,9 +1422,9 @@ def highpass(cutoff):
 
 @lowpass.strategy("pole_exp")
 @format_docstring(**lowpass._doc_kwargs("lowpass.pole_exp",
-  R = "\exp{-cutoff}",
+  R = "e^{-cutoff}",
   xtra = """
-  Cut-off frequency is unreliable outside the [0; pi / 6] range.
+  Cut-off frequency is unreliable outside the :math:`[0; \pi/6]` range.
   """,
 ))
 def lowpass(cutoff):
@@ -1430,9 +1438,9 @@ def lowpass(cutoff):
 
 @highpass.strategy("pole_exp")
 @format_docstring(**lowpass._doc_kwargs("highpass.pole_exp",
-  R = "\exp{cutoff - \pi}",
+  R = "e^{cutoff - \pi}",
   xtra = """
-  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
+  Cut-off frequency is unreliable outside the :math:`[5\pi/6; \pi]` range.
   """,
 ))
 def highpass(cutoff):
@@ -1447,9 +1455,9 @@ def highpass(cutoff):
 
 @lowpass.strategy("z_exp")
 @format_docstring(**lowpass._doc_kwargs("lowpass.z_exp",
-  R = "\exp{cutoff - \pi}",
+  R = "e^{cutoff - \pi}",
   xtra = """
-  Cut-off frequency is unreliable outside the [5 * pi / 6; pi] range.
+  Cut-off frequency is unreliable outside the :math:`[5\pi/6; \pi]` range.
   """,
 ))
 def lowpass(cutoff):
@@ -1462,11 +1470,12 @@ def lowpass(cutoff):
   G = (R + 1) / 2
   return G * (1 + z ** -1) / (1 + R * z ** -1)
 
+
 @highpass.strategy("z_exp")
 @format_docstring(**lowpass._doc_kwargs("highpass.z_exp",
-  R = "\exp{-cutoff}",
+  R = "e^{-cutoff}",
   xtra = """
-  Cut-off frequency is unreliable outside the [0; pi / 6] range.
+  Cut-off frequency is unreliable outside the :math:`[0; \pi/6]` range.
   """,
 ))
 def highpass(cutoff):
