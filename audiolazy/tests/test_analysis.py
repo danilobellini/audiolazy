@@ -45,7 +45,7 @@ class TestWindowWsymm(object):
 
   def test_empty(self, wnd):
     assert wnd(0) == []
-    assert wsymm[wnd.__name__](0) == []
+    assert wnd.symm(0) == []
 
   @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
   def test_min_max_len_periodic_symmetry_besides_one_sample(self, wnd, size):
@@ -58,18 +58,28 @@ class TestWindowWsymm(object):
   @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
   def test_symm_with_size_at_least_2_compared_with_periodic(self, wnd, size):
     period = wnd(size) # The default "symm" value is False
-    symm = wsymm[wnd.__name__](size + 1)
+    symm = wnd.symm(size + 1)
     assert len(symm) - 1 == len(period) == size
     assert symm[:-1] == period
     assert almost_eq.diff(symm[0], symm[-1])
     assert almost_eq(symm[1:-1], symm[-2:0:-1])
 
   def test_symm_size_1(self, wnd):
-    assert wsymm[wnd.__name__](1) == [1.0]
+    assert wnd.symm(1) == [1.0]
 
   def test_distinct_periodic_and_symm(self, wnd):
     same = wnd.__name__ in ["rect"]
-    assert (wsymm[wnd.__name__] is wnd) == same
+    assert (wnd.symm is wnd) == same
+
+    assert wsymm[wnd.__name__] is wnd.symm
+    assert window.symm[wnd.__name__] is wnd.symm
+    assert wnd.symm.periodic.symm is wnd.symm
+    assert wnd.symm.symm is wnd.symm
+
+    assert window[wnd.symm.__name__] is wnd
+    assert wsymm.periodic[wnd.symm.__name__] is wnd
+    assert wnd.symm.periodic is wnd
+    assert wnd.periodic.periodic is wnd
 
 
 class TestZCross(object):

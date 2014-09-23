@@ -45,6 +45,9 @@ __all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
 window = StrategyDict("window")
 wsymm = StrategyDict("wsymm")
 
+window.symm = wsymm.symm = wsymm
+window.periodic = wsymm.periodic = window
+
 window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
                              name=None, names=None, params=None, expl=None,
                              out=None, params_def=None, seealso=None, : dict(
@@ -68,11 +71,20 @@ window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
   -------
   List with the window samples. {out}
   {sp_note}
+  Hint
+  ----
+  All ``window`` and ``wsymm`` strategies have both a ``periodic`` and
+  ``symm`` attribute with the respective strategy. The StrategyDict instances
+  themselves also have these attributes (with the respective StrategyDict
+  instance).{hint_extra}
+
   See Also
   --------{see_other}{seealso}{see_stft_ola}
   """,
 
   see_other = "" if not distinct else """
+  {other_sdict} :
+    StrategyDict instance with {other_sp} windowing/apodization functions.
   {other_sdict}.{sname} :
     {name} windowing/apodization function ({other_sp}).""".format(
     sname = sname,
@@ -120,6 +132,23 @@ window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
   As this strategy is both "symmetric" and "periodic", ``window.{sname}``
   and ``wsymm.{sname}`` are the very same function/strategy.
   """.format(sname=sname),
+
+  hint_extra = (""" However, in this case, they're the same, i.e.,
+  ``window.{sname}`` is ``wsymm.{sname}``.""" if not distinct else
+  """ You can get the {other_sp} strategy ``{other_sdict}.{sname}`` with:
+
+  * ``{sdict}.{sname}.{other_meth}``;
+  * ``{sdict}.{other_meth}.{sname}`` ({sdict}.{other_meth} is {other_sdict});
+  * ``{other_sdict}.{sname}.{other_meth}`` (unneeded ``.{other_meth}``);
+  * ``{other_sdict}.{other_meth}.{sname}`` (pleonastically, as
+    {other_sdict}.{other_meth} is {other_sdict}).""")
+  .format(
+    sname = sname,
+    sdict = "wsymm" if symm else "window",
+    other_meth = "periodic" if symm else "symm",
+    other_sp = "periodic" if symm else "symmetric",
+    other_sdict = "window" if symm else "wsymm",
+  ),
 ))
 
 window._content_generation_table = [
@@ -218,6 +247,8 @@ def _generate_window_strategies():
       if not wnd_dict.get("distinct", True):
         wsymm[sname] = window[sname]
         break
+    wsymm[sname].periodic = window[sname].periodic = window[sname]
+    wsymm[sname].symm = window[sname].symm = wsymm[sname]
 
 _generate_window_strategies()
 
