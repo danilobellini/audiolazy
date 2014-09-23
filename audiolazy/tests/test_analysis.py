@@ -30,7 +30,7 @@ from itertools import compress
 import operator
 
 # Audiolazy internal imports
-from ..lazy_analysis import (window, zcross, envelope, maverage, clip,
+from ..lazy_analysis import (window, wsymm, zcross, envelope, maverage, clip,
                              unwrap, amdf, overlap_add, stft)
 from ..lazy_stream import Stream, thub
 from ..lazy_misc import almost_eq, rint
@@ -41,14 +41,14 @@ from ..lazy_core import OpMethod
 from ..lazy_itertools import chain, repeat, count
 
 @p("wnd", window)
-class TestAllWindows(object):
+class TestWindowWsymm(object):
 
   def test_empty(self, wnd):
     assert wnd(0) == []
-    assert wnd(0, symm=True) == []
+    assert wsymm[wnd.__name__](0) == []
 
   @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
-  def test_min_max_len_periodic_symmetry(self, wnd, size):
+  def test_min_max_len_periodic_symmetry_besides_one_sample(self, wnd, size):
     data = wnd(size)
     assert max(data) <= 1.0
     assert min(data) >= 0.0
@@ -58,14 +58,14 @@ class TestAllWindows(object):
   @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
   def test_symm_size_at_least_2(self, wnd, size):
     period = wnd(size) # The default "symm" value is False
-    symm = wnd(size + 1, symm=True)
+    symm = wsymm[wnd.__name__](size + 1)
     assert len(symm) - 1 == len(period) == size
     assert symm[:-1] == period
     assert almost_eq.diff(symm[0], symm[-1])
     assert almost_eq(symm[1:-1], symm[-2:0:-1])
 
   def test_symm_size_1(self, wnd):
-    assert wnd(1, symm=True) == [1.0]
+    assert wsymm[wnd.__name__](1) == [1.0]
 
 
 class TestZCross(object):

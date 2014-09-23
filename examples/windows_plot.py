@@ -22,12 +22,12 @@ Window functions (in time) plot example
 """
 
 import pylab as plt
-from audiolazy import window
+from audiolazy import wsymm # Try using "window" instead of wsymm
 
 size = 256
 
-for func in window:
-  plt.plot(func(size, symm=True), label=func.__name__)
+for func in wsymm:
+  plt.plot(func(size), label=func.__name__)
 
 plt.legend(loc="best")
 plt.axis(xmin=-5, xmax=size + 5 - 1, ymin=-.05, ymax=1.05)

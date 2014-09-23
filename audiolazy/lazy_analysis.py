@@ -38,11 +38,13 @@ from .lazy_text import format_docstring
 from .lazy_synth import sinusoid
 
 
-__all__ = ["window", "acorr", "lag_matrix", "dft", "zcross", "envelope",
-           "maverage", "clip", "unwrap", "amdf", "overlap_add", "stft"]
+__all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
+           "envelope", "maverage", "clip", "unwrap", "amdf", "overlap_add",
+           "stft"]
 
 
 window = StrategyDict("window")
+wsymm = StrategyDict("wsymm")
 
 window._doc_template = """
   {name} windowing/apodization function.
@@ -51,9 +53,6 @@ window._doc_template = """
   ----------
   size :
     Window size in samples.{params}
-  symm :
-    Flag to choose whether the window should be "periodic" or "symmetric".
-    Defaults to False.
 
   Returns
   -------
@@ -100,10 +99,15 @@ window._doc_end_periodic = """
   params="",
   name="Hann",
   seealso="")
-def window(size, symm=False):
-  if symm and size == 1:
+def window(size):
+  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
+
+
+@wsymm.strategy("hann", "hanning")
+def wsymm(size):
+  if size == 1:
     return [1.0]
-  size, indexes = size - int(symm), xrange(size)
+  size, indexes = size - 1, xrange(size)
   return [.5 * (1 - cos(2 * pi * n / size)) for n in indexes]
 
 
@@ -114,10 +118,15 @@ def window(size, symm=False):
   params="",
   name="Hamming",
   seealso="")
-def window(size, symm=False):
-  if symm and size == 1:
+def window(size):
+  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
+
+
+@wsymm.strategy("hamming")
+def wsymm(size):
+  if size == 1:
     return [1.0]
-  size, indexes = size - int(symm), xrange(size)
+  size, indexes = size - 1, xrange(size)
   return [.54 - .46 * cos(2 * pi * n / size) for n in indexes]
 
 
@@ -128,7 +137,12 @@ def window(size, symm=False):
   params="",
   name="Dirichlet/rectangular",
   seealso="")
-def window(size, symm=False):
+def window(size):
+  return [1.0 for n in xrange(size)]
+
+
+@wsymm.strategy("rect", "dirichlet", "rectangular")
+def wsymm(size):
   return [1.0 for n in xrange(size)]
 
 
@@ -139,10 +153,15 @@ def window(size, symm=False):
   params="",
   name="Bartlett (triangular starting with zero)",
   seealso="""window.triangular :\n    Triangular with no zero end-point.\n""")
-def window(size, symm=False):
-  if symm and size == 1:
+def window(size):
+  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
+
+
+@wsymm.strategy("bartlett")
+def wsymm(size):
+  if size == 1:
     return [1.0]
-  size, indexes = size - int(symm), xrange(size)
+  size, indexes = size - 1, xrange(size)
   return [1 - 2.0 / size * abs(n - size / 2.0) for n in indexes]
 
 
@@ -153,10 +172,15 @@ def window(size, symm=False):
   params="",
   name="Triangular (with no zero end-point)",
   seealso="""window.bartlett :\n    Triangular starting with zero.\n""")
-def window(size, symm=False):
-  if symm and size == 1:
+def window(size):
+  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
+
+
+@wsymm.strategy("triangular", "triangle")
+def wsymm(size):
+  if size == 1:
     return [1.0]
-  size, indexes = size - int(symm), xrange(size)
+  size, indexes = size - 1, xrange(size)
   return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in indexes]
 
 
@@ -170,10 +194,17 @@ def window(size, symm=False):
     for the 'exact Blackman' window.""",
   name="Blackman",
   seealso="")
-def window(size, alpha=.16, symm=False):
-  if symm and size == 1:
+def window(size, alpha=.16):
+  return [alpha / 2 * cos(4 * pi * n / size)
+          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
+          for n in xrange(size)]
+
+
+@wsymm.strategy("blackman")
+def wsymm(size, alpha=.16):
+  if size == 1:
     return [1.0]
-  size, indexes = size - int(symm), xrange(size)
+  size, indexes = size - 1, xrange(size)
   return [alpha / 2 * cos(4 * pi * n / size)
           -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2 for n in indexes]
 
@@ -187,11 +218,15 @@ def window(size, alpha=.16, symm=False):
     Power each sample. Defaults to 1.""",
   name="Cosine to the power of alpha",
   seealso="")
-def window(size, alpha=1, symm=False):
-  if symm and size == 1:
+def window(size, alpha=1):
+  return (sinusoid(pi / size) ** alpha).take(size) if size else []
+
+
+@wsymm.strategy("cos")
+def wsymm(size, alpha=1):
+  if size == 1:
     return [1.0]
-  period = size - int(symm)
-  return (sinusoid(pi / period) ** alpha).take(size) if period else []
+  return (sinusoid(pi / (size - 1)) ** alpha).take(size)
 
 
 def acorr(blk, max_lag=None):
