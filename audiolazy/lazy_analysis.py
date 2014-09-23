@@ -22,7 +22,7 @@ Audio analysis and block processing module
 
 from __future__ import division
 
-from math import cos, pi
+from math import sin, cos, pi
 from collections import deque, Sequence, Iterable
 from functools import wraps, reduce
 from itertools import chain
@@ -35,7 +35,6 @@ from .lazy_math import cexp, ceil
 from .lazy_filters import lowpass, z
 from .lazy_compat import xrange, xmap, xzip, iteritems
 from .lazy_text import format_docstring
-from .lazy_synth import sinusoid
 
 
 __all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
@@ -46,9 +45,9 @@ __all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
 window = StrategyDict("window")
 wsymm = StrategyDict("wsymm")
 
-
 window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
-                             seealso=None, expl=None, end=None: dict(
+                             seealso=None, expl=None, end=None, names=None,
+                             formula=None, params_def=None: dict(
   sname = sname,
   symm = symm,
   name = name or sname.capitalize(),
@@ -112,169 +111,98 @@ window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
   """),
 ))
 
+window._content_generation_table = [
+  dict(
+    names = ("hann", "hanning",),
+    formula = ".5 * (1 - cos(2 * pi * n / size))",
+  ),
 
-@window.strategy("hann", "hanning")
-@format_docstring(**window._doc_kwargs("hann"))
-def window(size):
-  return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
+  dict(
+    names = ("hamming",),
+    formula = ".54 - .46 * cos(2 * pi * n / size)",
+  ),
 
+  dict(
+    names = ("rect", "dirichlet", "rectangular",),
+    formula = "1.0",
+    name = "Dirichlet/rectangular",
+    expl = " ",
+    end = "All values are ones (1.0).\n",
+  ),
 
-@wsymm.strategy("hann", "hanning")
-@format_docstring(**window._doc_kwargs("hann", symm=True))
-def wsymm(size):
-  if size == 1:
-    return [1.0]
-  size, indexes = size - 1, xrange(size)
-  return [.5 * (1 - cos(2 * pi * n / size)) for n in indexes]
-
-
-@window.strategy("hamming")
-@format_docstring(**window._doc_kwargs("hamming"))
-def window(size):
-  return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
-
-
-@wsymm.strategy("hamming")
-@format_docstring(**window._doc_kwargs("hamming", symm=True))
-def wsymm(size):
-  if size == 1:
-    return [1.0]
-  size, indexes = size - 1, xrange(size)
-  return [.54 - .46 * cos(2 * pi * n / size) for n in indexes]
-
-
-@window.strategy("rect", "dirichlet", "rectangular")
-@format_docstring(**window._doc_kwargs("rect",
-  name="Dirichlet/rectangular",
-  expl=" ",
-  end="All values are ones (1.0).\n",
-))
-def window(size):
-  return [1.0 for n in xrange(size)]
-
-
-@wsymm.strategy("rect", "dirichlet", "rectangular")
-@format_docstring(**window._doc_kwargs("rect", symm=True,
-  name="Dirichlet/rectangular",
-  expl=" ",
-  end="All values are ones (1.0).\n",
-))
-def wsymm(size):
-  return [1.0 for n in xrange(size)]
-
-
-@window.strategy("bartlett")
-@format_docstring(**window._doc_kwargs("bartlett",
-  name="Bartlett (triangular starting with zero)",
-  expl=" ",
-  seealso="""
+  dict(
+    names = ("bartlett",),
+    formula = "1 - 2.0 / size * abs(n - size / 2.0)",
+    name = "Bartlett (triangular starting with zero)",
+    expl = " ",
+    seealso = """
   window.triangular :
     Triangular with no zero end-point (periodic).
   wsymm.triangular :
     Triangular with no zero end-point (symmetric).""",
-))
-def window(size):
-  return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
+  ),
 
-
-@wsymm.strategy("bartlett")
-@format_docstring(**window._doc_kwargs("bartlett", symm=True,
-  name="Bartlett (triangular starting with zero)",
-  expl=" ",
-  seealso="""
-  window.triangular :
-    Triangular with no zero end-point (periodic).
-  wsymm.triangular :
-    Triangular with no zero end-point (symmetric).""",
-))
-def wsymm(size):
-  if size == 1:
-    return [1.0]
-  size, indexes = size - 1, xrange(size)
-  return [1 - 2.0 / size * abs(n - size / 2.0) for n in indexes]
-
-
-@window.strategy("triangular", "triangle")
-@format_docstring(**window._doc_kwargs("triangular",
-  name="Triangular (with no zero end-point)",
-  expl=" ",
-  seealso="""
+  dict(
+    names = ("triangular", "triangle",),
+    formula = "1 - 2.0 / (size + 2) * abs(n - size / 2.0)",
+    name = "Triangular (with no zero end-point)",
+    expl = " ",
+    seealso = """
   window.bartlett :
     Triangular starting with zero (periodic).
   wsymm.bartlett :
     Triangular starting with zero (symmetric).""",
-))
-def window(size):
-  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
+  ),
 
-
-@wsymm.strategy("triangular", "triangle")
-@format_docstring(**window._doc_kwargs("triangular", symm=True,
-  name="Triangular (with no zero end-point)",
-  expl=" ",
-  seealso="""
-  window.bartlett :
-    Triangular starting with zero (periodic).
-  wsymm.bartlett :
-    Triangular starting with zero (symmetric).""",
-))
-def wsymm(size):
-  if size == 1:
-    return [1.0]
-  size, indexes = size - 1, xrange(size)
-  return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in indexes]
-
-
-@window.strategy("blackman")
-@format_docstring(**window._doc_kwargs("blackman",
-  params="""
+  dict(
+    names = ("blackman",),
+    formula = "(1 - alpha) / 2 + alpha / 2 * cos(4 * pi * n / size)"
+              " - .5 * cos(2 * pi * n / size)",
+    params = """
   alpha :
     Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
     for the 'exact Blackman' window.""",
-))
-def window(size, alpha=.16):
-  return [alpha / 2 * cos(4 * pi * n / size)
-          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
-          for n in xrange(size)]
+    params_def = ", alpha=.16"
+  ),
 
-
-@wsymm.strategy("blackman")
-@format_docstring(**window._doc_kwargs("blackman", symm=True,
-  params="""
+  dict(
+    names = ("cos",),
+    formula = "sin(pi * n / size) ** alpha",
+    name = "Cosine to the power of alpha",
+    params = """
   alpha :
-    Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
-    for the 'exact Blackman' window.""",
-))
-def wsymm(size, alpha=.16):
+    Power value. Defaults to 1.""",
+    params_def = ", alpha=1"
+  ),
+]
+
+window._code_template = """
+def {sname}(size{params_def}):
+  return [{formula} for n in xrange(size)]
+"""
+
+wsymm._code_template = """
+def {sname}(size{params_def}):
   if size == 1:
     return [1.0]
   size, indexes = size - 1, xrange(size)
-  return [alpha / 2 * cos(4 * pi * n / size)
-          -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2 for n in indexes]
+  return [{formula} for n in indexes]
+"""
 
+def _generate_window_strategies():
+  """ Create all window and wsymm strategies """
+  for wnd_dict in window._content_generation_table:
+    names = wnd_dict["names"]
+    sname = wnd_dict["sname"] = names[0]
+    wnd_dict.setdefault("params_def", "")
+    for sdict in [window, wsymm]:
+      docs_dict = window._doc_kwargs(symm = sdict is wsymm, **wnd_dict)
+      decorators = [format_docstring(**docs_dict), sdict.strategy(*names)]
+      ns = dict(pi=pi, sin=sin, cos=cos, xrange=xrange, __name__=__name__)
+      exec(sdict._code_template.format(**wnd_dict), ns, ns)
+      reduce(lambda func, dec: dec(func), decorators, ns[sname])
 
-@window.strategy("cos")
-@format_docstring(**window._doc_kwargs("cos",
-  name="Cosine to the power of alpha",
-  params="""
-  alpha :
-    Power each sample. Defaults to 1.""",
-))
-def window(size, alpha=1):
-  return (sinusoid(pi / size) ** alpha).take(size) if size else []
-
-
-@wsymm.strategy("cos")
-@format_docstring(**window._doc_kwargs("cos", symm=True,
-  name="Cosine to the power of alpha",
-  params="""
-  alpha :
-    Power each sample. Defaults to 1.""",
-))
-def wsymm(size, alpha=1):
-  if size == 1:
-    return [1.0]
-  return (sinusoid(pi / (size - 1)) ** alpha).take(size)
+_generate_window_strategies()
 
 
 def acorr(blk, max_lag=None):
