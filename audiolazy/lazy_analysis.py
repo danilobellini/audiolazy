@@ -46,8 +46,20 @@ __all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
 window = StrategyDict("window")
 wsymm = StrategyDict("wsymm")
 
-window._doc_template = """
-  {name} windowing/apodization function.
+
+window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
+                             seealso=None, expl=None, end=None: dict(
+  sname = sname,
+  symm = symm,
+  name = name or sname.capitalize(),
+  params = params or "",
+  seealso = seealso or "",
+  sp = "symmetric" if symm else "periodic",
+  other_sp = "periodic" if symm else "symmetric",
+  other_sdict = "window" if symm else "wsymm",
+
+  template_ = """
+  {name} windowing/apodization function ({sp}).
   {expl}
   Parameters
   ----------
@@ -60,22 +72,30 @@ window._doc_template = """
   {end}
   See Also
   --------
+  {other_sdict}.{sname} :
+    {name} windowing/apodization function ({other_sp}).{seealso}{see_stft_ola}
+  """,
+
+  see_stft_ola = "" if symm else """
   stft :
     Short Time Fourier Transform block processor / phase vocoder wrapper.
   overlap_add :
-    Overlap-add algorithm for an interables of blocks.
-  {seealso}
-"""
+    Overlap-add algorithm for an interables of blocks.""",
 
-window._doc_expl_harris = """
+  expl = expl or """
   This window model was taken from:
 
     ``Harris, F. J. "On the Use of Windows for Harmonic Analysis with the
     Discrete Fourier Transform". Proceedings of the IEEE, vol. 66, no. 1,
     January 1978.``
-"""
+  """,
 
-window._doc_end_periodic = """
+  end = end or ("""
+  Warning
+  -------
+  Don't use this strategy for FFT/DFT/STFT windowing! You should use the
+  periodic approach for that. See the F. J. Harris paper for more information.
+  """ if symm else """
   Note
   ----
   Be careful as this isn't a "symmetric" window implementation by default, you
@@ -89,21 +109,18 @@ window._doc_end_periodic = """
   the size is 1 (which means the window is actually empty). Here the
   implementation differ expecting that these functions will be mainly used in
   a DFT/STFT process.
-"""
+  """),
+))
 
 
 @window.strategy("hann", "hanning")
-@format_docstring(window._doc_template,
-  expl=window._doc_expl_harris,
-  end=window._doc_end_periodic,
-  params="",
-  name="Hann",
-  seealso="")
+@format_docstring(**window._doc_kwargs("hann"))
 def window(size):
   return [.5 * (1 - cos(2 * pi * n / size)) for n in xrange(size)]
 
 
 @wsymm.strategy("hann", "hanning")
+@format_docstring(**window._doc_kwargs("hann", symm=True))
 def wsymm(size):
   if size == 1:
     return [1.0]
@@ -112,17 +129,13 @@ def wsymm(size):
 
 
 @window.strategy("hamming")
-@format_docstring(window._doc_template,
-  expl=window._doc_expl_harris,
-  end=window._doc_end_periodic,
-  params="",
-  name="Hamming",
-  seealso="")
+@format_docstring(**window._doc_kwargs("hamming"))
 def window(size):
   return [.54 - .46 * cos(2 * pi * n / size) for n in xrange(size)]
 
 
 @wsymm.strategy("hamming")
+@format_docstring(**window._doc_kwargs("hamming", symm=True))
 def wsymm(size):
   if size == 1:
     return [1.0]
@@ -131,33 +144,49 @@ def wsymm(size):
 
 
 @window.strategy("rect", "dirichlet", "rectangular")
-@format_docstring(window._doc_template,
-  expl="",
-  end="All values are ones (1.0).\n",
-  params="",
+@format_docstring(**window._doc_kwargs("rect",
   name="Dirichlet/rectangular",
-  seealso="")
+  expl=" ",
+  end="All values are ones (1.0).\n",
+))
 def window(size):
   return [1.0 for n in xrange(size)]
 
 
 @wsymm.strategy("rect", "dirichlet", "rectangular")
+@format_docstring(**window._doc_kwargs("rect", symm=True,
+  name="Dirichlet/rectangular",
+  expl=" ",
+  end="All values are ones (1.0).\n",
+))
 def wsymm(size):
   return [1.0 for n in xrange(size)]
 
 
 @window.strategy("bartlett")
-@format_docstring(window._doc_template,
-  expl="",
-  end=window._doc_end_periodic,
-  params="",
+@format_docstring(**window._doc_kwargs("bartlett",
   name="Bartlett (triangular starting with zero)",
-  seealso="""window.triangular :\n    Triangular with no zero end-point.\n""")
+  expl=" ",
+  seealso="""
+  window.triangular :
+    Triangular with no zero end-point (periodic).
+  wsymm.triangular :
+    Triangular with no zero end-point (symmetric).""",
+))
 def window(size):
   return [1 - 2.0 / size * abs(n - size / 2.0) for n in xrange(size)]
 
 
 @wsymm.strategy("bartlett")
+@format_docstring(**window._doc_kwargs("bartlett", symm=True,
+  name="Bartlett (triangular starting with zero)",
+  expl=" ",
+  seealso="""
+  window.triangular :
+    Triangular with no zero end-point (periodic).
+  wsymm.triangular :
+    Triangular with no zero end-point (symmetric).""",
+))
 def wsymm(size):
   if size == 1:
     return [1.0]
@@ -166,17 +195,29 @@ def wsymm(size):
 
 
 @window.strategy("triangular", "triangle")
-@format_docstring(window._doc_template,
-  expl="",
-  end=window._doc_end_periodic,
-  params="",
+@format_docstring(**window._doc_kwargs("triangular",
   name="Triangular (with no zero end-point)",
-  seealso="""window.bartlett :\n    Triangular starting with zero.\n""")
+  expl=" ",
+  seealso="""
+  window.bartlett :
+    Triangular starting with zero (periodic).
+  wsymm.bartlett :
+    Triangular starting with zero (symmetric).""",
+))
 def window(size):
   return [1 - 2.0 / (size + 2) * abs(n - size / 2.0) for n in xrange(size)]
 
 
 @wsymm.strategy("triangular", "triangle")
+@format_docstring(**window._doc_kwargs("triangular", symm=True,
+  name="Triangular (with no zero end-point)",
+  expl=" ",
+  seealso="""
+  window.bartlett :
+    Triangular starting with zero (periodic).
+  wsymm.bartlett :
+    Triangular starting with zero (symmetric).""",
+))
 def wsymm(size):
   if size == 1:
     return [1.0]
@@ -185,15 +226,12 @@ def wsymm(size):
 
 
 @window.strategy("blackman")
-@format_docstring(window._doc_template,
-  expl=window._doc_expl_harris,
-  end=window._doc_end_periodic,
+@format_docstring(**window._doc_kwargs("blackman",
   params="""
   alpha :
     Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
     for the 'exact Blackman' window.""",
-  name="Blackman",
-  seealso="")
+))
 def window(size, alpha=.16):
   return [alpha / 2 * cos(4 * pi * n / size)
           -.5 * cos(2 * pi * n / size) + (1 - alpha) / 2
@@ -201,6 +239,12 @@ def window(size, alpha=.16):
 
 
 @wsymm.strategy("blackman")
+@format_docstring(**window._doc_kwargs("blackman", symm=True,
+  params="""
+  alpha :
+    Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
+    for the 'exact Blackman' window.""",
+))
 def wsymm(size, alpha=.16):
   if size == 1:
     return [1.0]
@@ -210,19 +254,23 @@ def wsymm(size, alpha=.16):
 
 
 @window.strategy("cos")
-@format_docstring(window._doc_template,
-  expl=window._doc_expl_harris,
-  end=window._doc_end_periodic,
+@format_docstring(**window._doc_kwargs("cos",
+  name="Cosine to the power of alpha",
   params="""
   alpha :
     Power each sample. Defaults to 1.""",
-  name="Cosine to the power of alpha",
-  seealso="")
+))
 def window(size, alpha=1):
   return (sinusoid(pi / size) ** alpha).take(size) if size else []
 
 
 @wsymm.strategy("cos")
+@format_docstring(**window._doc_kwargs("cos", symm=True,
+  name="Cosine to the power of alpha",
+  params="""
+  alpha :
+    Power each sample. Defaults to 1.""",
+))
 def wsymm(size, alpha=1):
   if size == 1:
     return [1.0]
