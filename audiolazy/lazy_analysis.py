@@ -49,8 +49,9 @@ window.symm = wsymm.symm = wsymm
 window.periodic = wsymm.periodic = window
 
 window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
-                             name=None, names=None, params=None, expl=None,
-                             out=None, params_def=None, seealso=None, : dict(
+                             name=None, names=None, params=None, math=None,
+                             math_symm=None, bib=None, out=None,
+                             params_def=None, seealso=None: dict(
   sname = sname,
   symm = symm,
   name = name or sname.capitalize(),
@@ -61,7 +62,7 @@ window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
 
   template_ = """
   {name} windowing/apodization function{sp_detail}.
-  {expl}
+  {expl}{bib}
   Parameters
   ----------
   size :
@@ -99,7 +100,15 @@ window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
   overlap_add :
     Overlap-add algorithm for an interables of blocks.""",
 
-  expl = expl or """
+  expl = "" if not math else """
+  For this model, the resulting :math:`n`-th sample
+  (where :math:`n = 0, 1, \\cdots, size - 1`) is:
+
+  .. math:: {math}
+  """.format(math = (math_symm or math.replace("size", "size - 1"))
+                    if symm else math),
+
+  bib = bib or """
   This window model was taken from:
 
     ``Harris, F. J. "On the Use of Windows for Harmonic Analysis with the
@@ -155,11 +164,14 @@ window._content_generation_table = [
   dict(
     names = ("hann", "hanning",),
     formula = ".5 * (1 - cos(2 * pi * n / size))",
+    math = r"\frac{1}{2} \left[ 1 - \cos \left( \frac{2 \pi n}{size} \right) "
+                       r"\right]",
   ),
 
   dict(
     names = ("hamming",),
     formula = ".54 - .46 * cos(2 * pi * n / size)",
+    math = r"0.54 - 0.46 \cos \left( \frac{2 \pi n}{size} \right)",
   ),
 
   dict(
@@ -176,8 +188,9 @@ window._content_generation_table = [
   dict(
     names = ("bartlett",),
     formula = "1 - 2.0 / size * abs(n - size / 2.0)",
+    math = r"1 - \frac{2}{size} \left| \frac{n - size}{2} \right|",
     name = "Bartlett (triangular starting with zero)",
-    expl = " ",
+    bib = " ",
     seealso = """
   window.triangular :
     Triangular with no zero end-point (periodic).
@@ -188,8 +201,11 @@ window._content_generation_table = [
   dict(
     names = ("triangular", "triangle",),
     formula = "1 - 2.0 / (size + 2) * abs(n - size / 2.0)",
+    math = r"1 - \frac{2}{size + 2} \left| \frac{n - size}{2} \right|",
+    math_symm = r"1 - \frac{2}{size + 1} \left| \frac{n - size - 1}{2} "
+                                       r"\right|",
     name = "Triangular (with no zero end-point)",
-    expl = " ",
+    bib = " ",
     seealso = """
   window.bartlett :
     Triangular starting with zero (periodic).
@@ -201,6 +217,9 @@ window._content_generation_table = [
     names = ("blackman",),
     formula = "(1 - alpha) / 2 + alpha / 2 * cos(4 * pi * n / size)"
               " - .5 * cos(2 * pi * n / size)",
+    math = r"\frac{1 - \alpha}{2} "
+           r" - \frac{1}{2} \cos \left( \frac{2 \pi n}{size} \right)"
+           r" + \frac{\alpha}{2} \cos \left( \frac{4 \pi n}{size} \right)",
     params = """
   alpha :
     Blackman window alpha value. Defaults to 0.16. Use ``2.0 * 1430 / 18608``
@@ -211,6 +230,7 @@ window._content_generation_table = [
   dict(
     names = ("cos",),
     formula = "sin(pi * n / size) ** alpha",
+    math = r"\left[ \sin \left( \frac{\pi n}{size} \right) \right]^{\alpha}",
     name = "Cosine to the power of alpha",
     params = """
   alpha :
