@@ -26,9 +26,8 @@ You should call rst_creator first!
 
 """
 
-import shlex
+import shlex, sphinx, sys
 from subprocess import call
-import sphinx
 
 # Call string templates
 sphinx_template = "sphinx-build -b {out_type} -d {build_dir}/doctrees "\
@@ -66,6 +65,6 @@ def call_sphinx(out_type, build_dir = "build"):
 
 # Calling this as a script builds/makes all targets in the list below
 if __name__ == "__main__":
-  out_types = ["text", "html", "latex", "man", "texinfo", "epub"]
-  for out_type in out_types:
-    call_sphinx(out_type)
+  for target in sys.argv[1:] or ["text", "html", "latex", "man",
+                                 "texinfo", "epub"]:
+    call_sphinx(target)
