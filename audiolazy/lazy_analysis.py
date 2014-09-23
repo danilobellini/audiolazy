@@ -45,20 +45,19 @@ __all__ = ["window", "wsymm", "acorr", "lag_matrix", "dft", "zcross",
 window = StrategyDict("window")
 wsymm = StrategyDict("wsymm")
 
-window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
-                             seealso=None, expl=None, end=None, names=None,
-                             formula=None, params_def=None: dict(
+window._doc_kwargs = (lambda sname, symm=False, distinct=True, formula=None,
+                             name=None, names=None, params=None, expl=None,
+                             out=None, params_def=None, seealso=None, : dict(
   sname = sname,
   symm = symm,
   name = name or sname.capitalize(),
   params = params or "",
   seealso = seealso or "",
-  sp = "symmetric" if symm else "periodic",
-  other_sp = "periodic" if symm else "symmetric",
-  other_sdict = "window" if symm else "wsymm",
+  sp_detail = (" (symmetric)" if symm else " (periodic)") if distinct else "",
+  out = out or "",
 
   template_ = """
-  {name} windowing/apodization function ({sp}).
+  {name} windowing/apodization function{sp_detail}.
   {expl}
   Parameters
   ----------
@@ -67,15 +66,22 @@ window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
 
   Returns
   -------
-  List with the window samples.
-  {end}
+  List with the window samples. {out}
+  {sp_note}
   See Also
-  --------
-  {other_sdict}.{sname} :
-    {name} windowing/apodization function ({other_sp}).{seealso}{see_stft_ola}
+  --------{see_other}{seealso}{see_stft_ola}
   """,
 
-  see_stft_ola = "" if symm else """
+  see_other = "" if not distinct else """
+  {other_sdict}.{sname} :
+    {name} windowing/apodization function ({other_sp}).""".format(
+    sname = sname,
+    name = name or sname.capitalize(),
+    other_sp = "periodic" if symm else "symmetric",
+    other_sdict = "window" if symm else "wsymm",
+  ),
+
+  see_stft_ola = "" if symm or not distinct else """
   stft :
     Short Time Fourier Transform block processor / phase vocoder wrapper.
   overlap_add :
@@ -89,7 +95,7 @@ window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
     January 1978.``
   """,
 
-  end = end or ("""
+  sp_note = ("""
   Warning
   -------
   Don't use this strategy for FFT/DFT/STFT windowing! You should use the
@@ -108,7 +114,12 @@ window._doc_kwargs = (lambda sname, symm=False, name=None, params=None,
   the size is 1 (which means the window is actually empty). Here the
   implementation differ expecting that these functions will be mainly used in
   a DFT/STFT process.
-  """),
+  """) if distinct else """
+  Note
+  ----
+  As this strategy is both "symmetric" and "periodic", ``window.{sname}``
+  and ``wsymm.{sname}`` are the very same function/strategy.
+  """.format(sname=sname),
 ))
 
 window._content_generation_table = [
@@ -126,8 +137,11 @@ window._content_generation_table = [
     names = ("rect", "dirichlet", "rectangular",),
     formula = "1.0",
     name = "Dirichlet/rectangular",
-    expl = " ",
-    end = "All values are ones (1.0).\n",
+    out = "All values are ones (1.0).",
+    distinct = False,
+    seealso = """
+  ones :
+    Lazy ``1.0`` stream generator.""",
   ),
 
   dict(
@@ -201,6 +215,9 @@ def _generate_window_strategies():
       ns = dict(pi=pi, sin=sin, cos=cos, xrange=xrange, __name__=__name__)
       exec(sdict._code_template.format(**wnd_dict), ns, ns)
       reduce(lambda func, dec: dec(func), decorators, ns[sname])
+      if not wnd_dict.get("distinct", True):
+        wsymm[sname] = window[sname]
+        break
 
 _generate_window_strategies()
 

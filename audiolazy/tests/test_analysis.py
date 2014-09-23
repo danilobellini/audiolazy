@@ -56,7 +56,7 @@ class TestWindowWsymm(object):
     assert almost_eq(data[1:], data[:0:-1])
 
   @p("size", [1, 2, 3, 4, 16, 128, 256, 512, 1024, 768])
-  def test_symm_size_at_least_2(self, wnd, size):
+  def test_symm_with_size_at_least_2_compared_with_periodic(self, wnd, size):
     period = wnd(size) # The default "symm" value is False
     symm = wsymm[wnd.__name__](size + 1)
     assert len(symm) - 1 == len(period) == size
@@ -66,6 +66,10 @@ class TestWindowWsymm(object):
 
   def test_symm_size_1(self, wnd):
     assert wsymm[wnd.__name__](1) == [1.0]
+
+  def test_distinct_periodic_and_symm(self, wnd):
+    same = wnd.__name__ in ["rect"]
+    assert (wsymm[wnd.__name__] is wnd) == same
 
 
 class TestZCross(object):
