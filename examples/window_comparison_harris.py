@@ -62,11 +62,56 @@ def processing_loss(wnd):
 def worst_case_processing_loss(wnd):
   return scalloping_loss(wnd) + processing_loss(wnd)
 
+
 def find_xdb_bin(wnd, power=.5, res=1500):
-  """ A not so fast way to find the x-dB cutoff frequency "bin" index """
+  """
+  A not so fast way to find the x-dB cutoff frequency "bin" index.
+
+  Parameters
+  ----------
+  wnd:
+    The window itself as an iterable.
+  power:
+    The power value (squared amplitude) where the x-dB value should lie,
+    using ``x = dB10(power)``.
+  res :
+    Zero-padding factor. 1 for no zero-padding, 2 for twice the length, etc..
+  """
   spectrum = dB20(rfft(wnd, res * len(wnd)))
   root_at_xdb = spectrum - spectrum[0] - dB10(power)
   return next(i for i, el in enumerate(zcross(root_at_xdb)) if el) / res
+
+
+def get_peaks(blk, neighbors=2):
+  """
+  Get all peak indices in blk (sorted by index value) but the ones at the
+  vector limits (first and last ``neighbors - 1`` values). A peak is the max
+  value in a neighborhood of ``neighbors`` values for each side.
+  """
+  size = 1 + 2 * neighbors
+  pairs = enumerate(Stream(blk).blocks(size=size, hop=1).map(list), neighbors)
+  for idx, nbhood in pairs:
+    center = nbhood.pop(neighbors)
+    if all(center >= el for el in nbhood):
+      yield idx
+      next(pairs) # Skip ones we already know can't be peaks
+      next(pairs)
+
+
+def hsll(wnd, res=20, neighbors=2):
+  """
+  Highest Side Lobe Level (dB).
+
+  Parameters
+  ----------
+  res :
+    Zero-padding factor. 1 for no zero-padding, 2 for twice the length, etc..
+  neighbors :
+    Number of neighbors needed by ``get_peaks`` to define a peak.
+  """
+  spectrum = dB20(rfft(wnd, res * len(wnd)))
+  first_peak = next(get_peaks(spectrum, neighbors=neighbors))
+  return max(spectrum[first_peak:]) - spectrum[0]
 
 
 def to_string(el):
@@ -88,6 +133,7 @@ table_wnds = OrderedDict([
 
 schema = OrderedDict([
   ("name", "Window"), # Window name
+  ("hsll", "HSLL"), # Highest Side Lobe Level (dB)
   ("cg", "CG"), # Coherent gain
   ("enbw", "ENBW"), # Equivalent Noise Bandwidth (bins)
   ("bw3", "3dB BW"), # 50% power bandwidth (bins)
@@ -97,6 +143,7 @@ schema = OrderedDict([
   ("ol75", "75% OL"), # 75% overlap correlation (percent)
   ("ol50", "50% OL"), # 50% overlap correlation (percent)
 ])
+
 
 size = 50 # Must be even!
 full_size = 20 * size
@@ -108,6 +155,7 @@ for name, wnd_func in iteritems(table_wnds):
   wnd_full = wnd_func(full_size)
   wnd_data = {
     "name": name,
+    "hsll": hsll(wnd_full),
     "cg": coherent_gain(wnd_full),
     "enbw": enbw(wnd_full),
     "bw3": 2 * find_xdb_bin(wnd, .5),
