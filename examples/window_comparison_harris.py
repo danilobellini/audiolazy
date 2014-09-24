@@ -32,10 +32,11 @@ The original is the Table 1 found in:
 from __future__ import division
 
 from audiolazy import (window, rst_table, Stream, line, cexp, dB10, dB20,
-                       zcross, iteritems, pi)
+                       zcross, iteritems, pi, z, inf)
 import matplotlib.pyplot as plt
 from numpy.fft import rfft
 import numpy as np
+import scipy.optimize as so
 from collections import OrderedDict
 
 
@@ -114,6 +115,84 @@ def hsll(wnd, res=20, neighbors=2):
   return max(spectrum[first_peak:]) - spectrum[0]
 
 
+def slfo(wnd, res=50, neighbors=2, max_miss=.7, start_delta=1e-4):
+  """
+  Side Lobe Fall Off (dB/oct).
+
+  Finds the side lobe peak fall off numerically in dB/octave by using the
+  ``scipy.optimize.fmin`` function.
+
+  Hint
+  ----
+  Originally, Harris rounded the results he found to a multiple of -6, you can
+  use the AudioLazy ``rint`` function for that: ``rint(falloff, 6)``.
+
+  Parameters
+  ----------
+  res :
+    Zero-padding factor. 1 for no zero-padding, 2 for twice the length, etc..
+  neighbors :
+    Number of neighbors needed by ``get_peaks`` to define a peak.
+  max_miss :
+    Maximum percent of peaks that might be missed when approximating them
+    by a line.
+  start_delta :
+    Minimum acceptable value for an orthogonal deviation from the
+    approximation line to include a peak.
+  """
+  # Finds all side lobe peaks, to find the "best" line for it afterwards
+  spectrum = dB20(rfft(wnd, res * len(wnd)))
+  peak_indices = list(get_peaks(spectrum, neighbors=neighbors))
+  log2_peak_indices = np.log2(peak_indices) # Base 2 ensures result in dB/oct
+  peaks = spectrum[peak_indices]
+  npeaks = len(peak_indices)
+
+  # This length (actually, twice the length) is the "weight" of each peak
+  lengths = np.array([0] + (1 - z **-2)(log2_peak_indices).skip(2).take(inf) +
+                     [0]) # Extreme values weights to zero
+  max_length = sum(lengths)
+
+  # First guess for the polynomial "a*x + b" is at the center
+  idx = np.searchsorted(log2_peak_indices,
+                        .5 * (log2_peak_indices[-1] + log2_peak_indices[0]))
+  a = ((peaks[idx+1] - peaks[idx]) /
+       (log2_peak_indices[idx+1] - log2_peak_indices[idx]))
+  b = peaks[idx] - a * log2_peak_indices[idx]
+
+  # Scoring for the optimization function
+  def score(vect, show=False):
+    a, b = vect
+    h = start_delta * (1 + a ** 2) ** .5 # Vertical deviation
+
+    while True:
+      pdelta = peaks - (a * log2_peak_indices + b)
+      peaks_idx_included = np.nonzero((pdelta < h) & (pdelta > -h))
+      missing = npeaks - len(peaks_idx_included[0])
+      if missing < npeaks * max_miss:
+        break
+      h *= 2
+
+    pdelta_included = pdelta[peaks_idx_included]
+    real_delta = max(pdelta_included) - min(pdelta_included)
+    total_length = sum(lengths[peaks_idx_included])
+
+    if show: # For debug
+      print(real_delta, len(peaks_idx_included[0]))
+
+    return -total_length / max_length + 4 * real_delta ** .5
+
+  a, b = so.fmin(score, [a, b], xtol=1e-12, ftol=1e-12, disp=False)
+
+#  # For Debug only
+#  score([a, b], show=True)
+#  plt.figure()
+#  plt.plot(log2_peak_indices, peaks, "x-")
+#  plt.plot(log2_peak_indices, a * log2_peak_indices + b)
+#  plt.show()
+
+  return a
+
+
 def to_string(el):
   return "%01.2f" % el if isinstance(el, float) else el
 
@@ -134,6 +213,7 @@ table_wnds = OrderedDict([
 schema = OrderedDict([
   ("name", "Window"), # Window name
   ("hsll", "HSLL"), # Highest Side Lobe Level (dB)
+  ("slfo", "SLFO"), # Side Lobe Fall Off (dB/oct)
   ("cg", "CG"), # Coherent gain
   ("enbw", "ENBW"), # Equivalent Noise Bandwidth (bins)
   ("bw3", "3dB BW"), # 50% power bandwidth (bins)
@@ -156,6 +236,7 @@ for name, wnd_func in iteritems(table_wnds):
   wnd_data = {
     "name": name,
     "hsll": hsll(wnd_full),
+    "slfo": slfo(wnd_full),
     "cg": coherent_gain(wnd_full),
     "enbw": enbw(wnd_full),
     "bw3": 2 * find_xdb_bin(wnd, .5),
