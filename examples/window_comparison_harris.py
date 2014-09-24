@@ -29,7 +29,7 @@ The original is the Table 1 found in:
   January 1978.``
 """
 
-from __future__ import division
+from __future__ import division, print_function
 
 from audiolazy import (window, rst_table, Stream, line, cexp, dB10, dB20,
                        zcross, iteritems, pi, z, inf)
@@ -210,25 +210,45 @@ table_wnds = OrderedDict([
 ])
 
 
+has_separator_before = ["Cosine", "Hamming", "Exact Blackman"]
+
+
 schema = OrderedDict([
   ("name", "Window"), # Window name
-  ("hsll", "HSLL"), # Highest Side Lobe Level (dB)
-  ("slfo", "SLFO"), # Side Lobe Fall Off (dB/oct)
-  ("cg", "CG"), # Coherent gain
+  ("hsll", "SLobe"), # Highest Side Lobe Level (dB)
+  ("slfo", "Falloff"), # Side Lobe Fall Off (dB/oct)
+  ("cg", "CGain"), # Coherent gain
   ("enbw", "ENBW"), # Equivalent Noise Bandwidth (bins)
-  ("bw3", "3dB BW"), # 50% power bandwidth (bins)
+  ("bw3", "BW3dB"), # 50% power bandwidth (bins)
   ("scallop", "Scallop"), # Scallop loss (dB)
-  ("wcpl", "Worst PL"), # Worst case process loss (dB)
-  ("bw6", "6dB BW"), # 25% power bandwidth (bins)
-  ("ol75", "75% OL"), # 75% overlap correlation (percent)
-  ("ol50", "50% OL"), # 50% overlap correlation (percent)
+  ("wcpl", "Worst"), # Worst case process loss (dB)
+  ("bw6", "BW6dB"), # 25% power bandwidth (bins)
+  ("ol75", "OL75%"), # 75% overlap correlation (percent)
+  ("ol50", "OL50%"), # 50% overlap correlation (percent)
 ])
 
+
+schema_full = OrderedDict([
+  ("name", "Window name"),
+  ("hsll", "Highest Side Lobe Level (dB)"),
+  ("slfo", "Side Lobe Fall Off (dB/oct)"),
+  ("cg", "Coherent gain"),
+  ("enbw", "Equivalent Noise Bandwidth (bins)"),
+  ("bw3", "50% power bandwidth (bins)"),
+  ("scallop", "Scallop loss (dB)"), #
+  ("wcpl", "Worst case process loss (dB)"), #
+  ("bw6", "25% power bandwidth (bins)"), #
+  ("ol75", "75% overlap correlation (percent)"), #
+  ("ol50", "50% overlap correlation (percent)"), #
+])
 
 size = 50 # Must be even!
 full_size = 20 * size
 table = []
 for name, wnd_func in iteritems(table_wnds):
+  if name in has_separator_before:
+    table.append([".."] + [""] * (len(schema) - 1))
+
   wnd = wnd_func(size)
   spectrum = dB20(rfft(wnd, full_size))
 
@@ -251,16 +271,31 @@ for name, wnd_func in iteritems(table_wnds):
   wnd_symm = wnd + [wnd[0]]
   full_spectrum = np.hstack([spectrum[::-1], spectrum[1:-1]]) - spectrum[0]
 
+  smallest_peak_idx = min(get_peaks(spectrum), key=spectrum.__getitem__)
+  ymin = (spectrum[smallest_peak_idx] - spectrum[0] - 5) // 10 * 10
+
   fig, (time_ax, freq_ax) = plt.subplots(2, 1, num=name)
   time_ax.vlines(np.arange(- size // 2, size // 2 + 1), 0, wnd_symm)
   time_ax.set(xlim=(-(size // 2), size // 2), ylim=(-.1, 1.1),
               xlabel="Time (samples)", title=name)
   freq_ax.plot(list(line(full_size, -1, 1)), full_spectrum)
-  freq_ax.set(xlim=(-1, 1), ylim=(-90, 0), ylabel="dB",
+  freq_ax.set(xlim=(-1, 1), ylim=(ymin, 0), ylabel="dB",
               xlabel="Frequency (% of the Nyquist frequency)")
   fig.tight_layout()
 
+# Prints the table and other text contents
 print(__doc__)
+print("""
+Schema
+------
+""")
+for row in rst_table([(v, schema_full[k]) for k, v in iteritems(schema)],
+           ["Column", "Description"]):
+  print(row)
+print("""
+Windows and Figures of Merit
+----------------------------
+""")
 for row in rst_table(table, schema.values()):
   print(row) # Some values aren't the same to the paper, though
 
