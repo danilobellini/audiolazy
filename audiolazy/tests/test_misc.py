@@ -255,3 +255,48 @@ class TestCached(object):
                            ["n + m", ("n", "m"), None], # Using default None
                            ["n + m", ("n", "m"), "named_one"],
                            ["n + m", ("n", "m"), None]] # Passing 3rd arg
+
+
+  def test_direct_cache_access(self):
+    @cached
+    def yet_another_sum(*args):
+      return args[0] + yet_another_sum(*args[1:]) if args else 0
+
+    assert yet_another_sum(2, 3, 4) == 9
+    assert isinstance(yet_another_sum(2, 3, 4), int)
+
+    assert isinstance(yet_another_sum.cache, dict)
+    assert len(yet_another_sum.cache) == 4 # (2, 3, 4), (3, 4), (4), tuple()
+
+    # Let's make it work with tuples
+    yet_another_sum.cache[tuple()] = tuple()
+    assert yet_another_sum((2, 3, 4), (5, "why not?")
+                          ) == (2, 3, 4, 5, "why not?")
+    with pytest.raises(TypeError):
+      assert yet_another_sum([2, 3, 5]) # Can't add 5 + tuple()
+    assert yet_another_sum(2, 3, 4) == 9 # But this one was already in cache!
+
+    # Let's make it work with int again
+    yet_another_sum.cache[tuple()] = 0.
+
+    assert yet_another_sum(2, 3, 4) == 9 # Cached
+    assert isinstance(yet_another_sum(2, 3, 4), int)
+
+    assert yet_another_sum(2, 3, 5) == 10.
+    assert isinstance(yet_another_sum(2, 3, 5), float)
+
+    assert yet_another_sum(4, 3, 4) == 11 # (3, 4) was cached
+    assert isinstance(yet_another_sum(4, 3, 4), int)
+
+    del yet_another_sum.cache[(3, 4)]
+    del yet_another_sum.cache[(4,)]
+    assert yet_another_sum(5, 3, 4) == 12.
+    assert isinstance(yet_another_sum(5, 3, 4), float)
+
+    yet_another_sum.cache[(3, 4)] = -27 # Using a weird cached value
+    assert yet_another_sum(4, 3, 4) == 11 # (4, 3, 4) was cached
+    assert yet_another_sum(7, 3, 4) == -20
+    assert isinstance(yet_another_sum(7, 3, 4), int)
+
+    yet_another_sum.cache[(tuple(), frozenset([1, 2]), 23)] = -1
+    assert yet_another_sum(5, tuple(), frozenset([1, 2]), 23) == 4

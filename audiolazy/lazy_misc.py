@@ -332,10 +332,18 @@ lag_to_freq = _internals.deprecate(freq2lag)
 
 
 def cached(func):
-  """ Cache decorator for a function without keyword arguments """
+  """
+  Cache decorator for a function without keyword arguments
+
+  You can access the cache contents using the ``cache`` attribute in the
+  resulting function, which is a dictionary mapping the arguments tuple to
+  the previously returned function result.
+  """
   class Cache(dict):
     def __missing__(self, key):
       result = self[key] = func(*key)
       return result
   cache = Cache()
-  return wraps(func)(lambda *key: cache[key])
+  f = wraps(func)(lambda *key: cache[key])
+  f.cache = cache
+  return f
