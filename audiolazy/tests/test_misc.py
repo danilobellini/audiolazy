@@ -24,10 +24,12 @@ import pytest
 p = pytest.mark.parametrize
 
 import itertools as it
-import cmath
+import cmath, operator
+from functools import reduce
 
 # Audiolazy internal imports
-from ..lazy_misc import rint, elementwise, freq2lag, lag2freq, almost_eq
+from ..lazy_misc import (rint, elementwise, freq2lag, lag2freq, almost_eq,
+                         cached)
 from ..lazy_compat import INT_TYPES, orange, xrange
 from ..lazy_math import pi
 from ..lazy_stream import Stream
@@ -165,3 +167,91 @@ class TestAlmostEq(object):
     assert almost_eq(items_list, items_tuple)
     items_list[-1][-1] = 11.9999
     assert not almost_eq(items_list, items_tuple)
+
+
+class TestCached(object):
+
+  def test_single_parameter(self):
+    call_values = []
+
+    @cached
+    def square_it(n):
+      call_values.append(n)
+      return n ** 2
+
+    for el in [5, 7, 1, 5, .2, 1, 0, -5, .2, 1, 1, 3, 2, 1, 0., 441]:
+      assert square_it(el) == el * el
+
+    # Zero appears once, since hash(0) == hash(0.) == 0
+    assert call_values == [5, 7, 1, .2, 0, -5, 3, 2, 441]
+
+
+  def test_two_parameters(self):
+    call_values = []
+
+    @cached
+    def add(a, b):
+      call_values.append((a, b))
+      return a + b
+
+    for x, y  in [(4, 5), ("abs", "de"), (.3, 2), ("abs", "de"), (pi, 1),
+                  (4, 5), (pi, 1), (1, pi), (5, 4), ("", ""), (0., 0),
+                  ("", ""), (5, 4), (0, 0.), (.3, 2.), (0., 0j)]:
+      assert add(x, y) == x + y
+
+    # Twos are same since hash(2) == hash(2.) == 2 ; The same with zeros
+    # (float, int and complex), as hash(0) == hash(0.) == hash(0j) == 0
+    assert call_values == [(4, 5), ("abs", "de"), (.3, 2), (pi, 1), (1, pi),
+                           (5, 4), ("", ""), (0., 0)]
+
+
+  def test_variable_amount_of_parameters_recursive(self):
+    call_values = []
+
+    @cached
+    def prod(*args):
+      call_values.append(args)
+      if len(args) == 0:
+        return 1
+      return args[0] * prod(*args[1:])
+
+    for blk in [[3, 5, 2], [7, .7, 7, 5], [7, 5], [8, 2, 7, 5], [.8, 5, 2]]:
+      assert prod(*blk) == reduce(operator.mul, blk)
+
+    assert call_values == [(3, 5, 2), (5, 2), (2,), tuple(),
+                           (7, .7, 7, 5), (.7, 7, 5), (7, 5), (5,),
+                           (8, 2, 7, 5), (2, 7, 5),
+                           (.8, 5, 2)]
+
+
+  def test_parameters_with_defaults(self):
+    call_values = []
+
+    @cached # The "name" and "params" can't be used as keyword args
+    def lamb(eq, params=None, name=None):
+      """ Just an unsafe "lambda" function "creator" """
+      call_values.append([eq, params, name])
+      func = eval("lambda {}: {}".format(", ".join(params or []), eq))
+      if name is not None:
+        func.__name__ = name
+      return func
+
+    assert lamb("2")() == 2
+    assert lamb("n + m", ("n", "m"))(1, 3) == 4
+    assert lamb("n + m", ("n", "m"), "named_one")("a", "b") == "ab"
+    assert lamb("n + m", ("n", "m"))("c", "de") == "cde"
+    assert lamb("2")() == 2
+    assert lamb("n + m", ("n", "m"), None)([1], ["a"]) == [1, "a"]
+    assert lamb("n + m", ("n", "m"), "named_one")(45, 0) == 45
+    assert lamb("n + m", ("n", "m"))([], []) == []
+    assert lamb("n + m", ("n", "m"), None)([5, 5], [5]) == [5, 5, 5]
+
+    assert lamb("n + m", ("n", "m")).__name__ == "<lambda>"
+    assert lamb("n + m", ("n", "m"), "named_one").__name__ == "named_one"
+    assert lamb("n + m", ("n", "m"), None).__name__ == "<lambda>"
+    assert lamb("2").__name__ == "<lambda>"
+
+    assert call_values == [["2", None, None],
+                           ["n + m", ("n", "m"), None], # Using default None
+                           ["n + m", ("n", "m"), "named_one"],
+                           ["n + m", ("n", "m"), None]] # Passing 3rd arg

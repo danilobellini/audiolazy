@@ -35,7 +35,7 @@ from .lazy_core import StrategyDict
 
 __all__ = ["DEFAULT_SAMPLE_RATE", "rint", "blocks", "zero_pad", "elementwise",
            "almost_eq", "sHz", "freq2lag", "lag2freq", "freq_to_lag",
-           "lag_to_freq"]
+           "lag_to_freq", "cached"]
 
 DEFAULT_SAMPLE_RATE = 44100 # Hz (samples/second)
 
@@ -329,3 +329,13 @@ def lag2freq(v):
   """ Converts from lag (number of samples) to frequency (rad/sample). """
   return 2 * pi / v
 lag_to_freq = _internals.deprecate(freq2lag)
+
+
+def cached(func):
+  """ Cache decorator for a function without keyword arguments """
+  class Cache(dict):
+    def __missing__(self, key):
+      result = self[key] = func(*key)
+      return result
+  cache = Cache()
+  return wraps(func)(lambda *key: cache[key])

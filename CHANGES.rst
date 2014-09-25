@@ -156,6 +156,11 @@ AudioLazy changes history
 
   - Signal function ``sign`` now works on Python 3
 
++ lazy_misc:
+
+  - New ``cached`` decorator caching the results for a function without
+    keyword arguments
+
 + lazy_poly:
 
   - Complex numbers and Sympy symbols can now be used as Poly powers
