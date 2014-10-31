@@ -287,9 +287,52 @@ class TestLowpassHighpassSympy(object):
     monkeypatch.setattr(lazy_filters, "sin", elementwise("x", 0)(sympy.sin))
     monkeypatch.setattr(lazy_filters, "cos", elementwise("x", 0)(sympy.cos))
     filt = filt_func(repeat(sympy.pi / 2))
+    assert filt.denpoly[0] == 1
     pole_sig = filt.denpoly[1]
     num_sig0, num_sig1 = filt.numlist
     n = 3 # Amount of coefficient samples to get
     assert pole_sig.take(n) == [0] * n
     assert num_sig0.take(n) == [sympy.S.Half] * n
     assert abs(num_sig0).take(n) == [sympy.S.Half] * n
+
+  @p(("filt_func", "fsign"), [(lowpass.z, 1), (highpass.z, -1)])
+  def test_single_zero_strategies_2pi3_lti(self, filt_func, fsign,
+                                                 monkeypatch):
+    from .. import lazy_filters
+    monkeypatch.setattr(lazy_filters, "sin", elementwise("x", 0)(sympy.sin))
+    monkeypatch.setattr(lazy_filters, "cos", elementwise("x", 0)(sympy.cos))
+
+    R = (2 - sympy.sqrt(3)) * fsign
+    G = (R + 1) / 2
+
+    filt = filt_func(2 * sympy.pi / 3)
+    assert filt.numerator == [G, fsign * G]
+    assert filt.denominator == [1, fsign * R]
+
+  @p(("filt_func", "fsign"), [(lowpass.z, 1), (highpass.z, -1)])
+  def test_single_zero_strategies_tvar(self, filt_func, fsign,
+                                             monkeypatch):
+    from .. import lazy_filters
+    monkeypatch.setattr(lazy_filters, "sin", elementwise("x", 0)(sympy.sin))
+    monkeypatch.setattr(lazy_filters, "cos", elementwise("x", 0)(sympy.cos))
+
+    start = 2
+    n = 3 # Amount of coefficient samples to get
+    freqs = repeat(sympy.pi) / count(start=start)
+
+    filt = filt_func(freqs)
+    assert filt.denpoly[0] == 1
+
+    t = sympy.Symbol("t")
+    Rs = [sympy.limit(fsign * (sympy.sin(t) - 1) / sympy.cos(t),
+                      t, sympy.pi / el)
+          for el in xrange(2, 2 + n)]
+    Gs = [(R + 1) / 2 for R in Rs]
+
+    pole_sig = filt.denpoly[1]
+    assert (fsign * pole_sig).cancel().take(n) == Rs
+    assert len(filt.denpoly) == 2
+
+    num_sig0, num_sig1 = filt.numlist
+    assert num_sig0.cancel().take(n) == Gs
+    assert (fsign * num_sig1).cancel().take(n) == Gs

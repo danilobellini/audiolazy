@@ -645,18 +645,22 @@ class TestLowpassHighpass(object):
     for a, b in filt.freq_response(freqs).map(abs).blocks(size=2, hop=1):
       assert a < b
 
-  @p("filt_func", [lowpass.z, highpass.z])
-  def test_single_zero_strategies_zeroed_R_denominator_lti(self, filt_func):
+  @p(("filt_func", "fsign"), [(lowpass.z, 1), (highpass.z, -1)])
+  def test_single_zero_strategies_zeroed_R_denominator_lti(self, filt_func,
+                                                                 fsign):
     filt = filt_func(pi / 2)
+    assert filt.denpoly[0] == 1
     assert almost_eq.diff(filt.denpoly[1], 0, max_diff=3e-16)
-    assert almost_eq(xmap(abs, filt.numlist), [.5, .5])
+    assert almost_eq(filt.numlist, [.5, fsign * .5])
 
-  @p("filt_func", [lowpass.z, highpass.z])
-  def test_single_zero_strategies_zeroed_R_denominator_tvar(self, filt_func):
+  @p(("filt_func", "fsign"), [(lowpass.z, 1), (highpass.z, -1)])
+  def test_single_zero_strategies_zeroed_R_denominator_tvar(self, filt_func,
+                                                                  fsign):
     filt = filt_func(repeat(pi / 2))
+    assert filt.denpoly[0] == 1
     pole_sig = filt.denpoly[1]
     num_sig0, num_sig1 = filt.numlist
     n = 3 # Amount of coefficient samples to get
     assert almost_eq.diff(pole_sig.limit(n), [0] * n, max_diff=3e-16)
     assert almost_eq(num_sig0.limit(n), [.5] * n)
-    assert almost_eq(abs(num_sig1).limit(n), [.5] * n)
+    assert almost_eq(num_sig1.limit(n), [fsign * .5] * n)
