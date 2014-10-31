@@ -27,7 +27,7 @@ from __future__ import division, print_function, unicode_literals
 from functools import reduce
 from sympy import (Symbol, preorder_traversal, C, init_printing, S, sympify,
                    exp, expand_complex, cancel, trigsimp, pprint, Eq, factor,
-                   solve, I, expand, pi, sin, fraction, pretty)
+                   solve, I, expand, pi, sin, fraction, pretty, tan)
 from collections import OrderedDict
 init_printing(use_unicode=True)
 
@@ -105,15 +105,19 @@ def design_z_filter_single_pole(filt_str, max_gain_freq):
   Rsolution = Rsolutions_stable[0].subs(abs(sin(w)), sin(w))
   pprint(Eq(R, Rsolution))
 
-  # When R doesn't seem simple, rewrite it using a helper variable
+  # More information about the pole (or -pole)
+  print("\n  ** Alternative way to write R **\n")
   if has_sqrt(Rsolution):
     x = Symbol("x") # A helper symbol
     xval = sum(el for el in Rsolution.args if not has_sqrt(el))
-    print("\n  ** Alternative way to write R **\n")
     pprint(Eq(x, xval))
     print()
     pprint(Eq(R, expand(Rsolution.subs(xval, x))))
-  else: # See whether the R denominator could be zeroed
+  else:
+    # That's also what would be found in a bilinear transform with prewarping
+    pprint(Eq(R, Rsolution.rewrite(tan).cancel())) # Not so nice numerically
+
+    # See whether the R denominator can be zeroed
     for root in solve(fraction(Rsolution)[1], w):
       if 0 <= root <= pi:
         power_resp_r = fcompose(expand, cancel)(power_resp_no_G.subs(w, root))
@@ -122,6 +126,7 @@ def design_z_filter_single_pole(filt_str, max_gain_freq):
         print("\nDenominator is zero for this value of " + pretty(w))
         pprint(Eq(w, root))
         pprint(Eq(R, Rsolutions_r[0]))
+
 
 filters_data = OrderedDict([
   ("lowpass.pole", # No zeros (constant numerator)

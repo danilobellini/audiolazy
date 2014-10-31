@@ -38,7 +38,7 @@ Running
 They're all scripts, you should just run them or call Python. Works on both
 Python 2 and 3, but be sure to have Sympy installed before that::
 
-  pip install scipy
+  pip install sympy
 
 So you can run them directly like you would with an AudioLazy example, with
 one of the following lines::
@@ -53,6 +53,13 @@ name).
 
 Proofs
 ------
+
+* `lowpass_highpass_bilinear.py <lowpass_highpass_bilinear.py>`__
+
+  An extra proof using the bilinear transformation method for designing the
+  single pole and single zero IIR lowpass and highpass filters from their
+  respective Laplace filters prewarped at the desired cut-off frequencies.
+  The result matches the ``highpass.z`` and ``lowpass.z`` strategies.
 
 * `lowpass_highpass_digital.py <lowpass_highpass_digital.py>`__
 
