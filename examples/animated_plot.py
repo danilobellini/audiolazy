@@ -82,7 +82,9 @@ def init(): # Called twice on init, also called on each resize
   time_plot_line.set_data([], []) # Clear
   freq_plot_line.set_data([], [])
   fig.tight_layout()
-  return []
+  return [] if init.rempty else [time_plot_line, freq_plot_line]
+
+init.rempty = False # At first, init() should show what belongs to the plot
 
 def animate(idx):
   array_data = np.array(data)
@@ -99,6 +101,7 @@ def animate(idx):
   elif top > dft_max_min and abs(smax/top) < .3:
     freq_ax.set_ylim(top=top / 2)
   else:
+    init.rempty = True # So "init" return [] (update everything on resizing)
     return [time_plot_line, freq_plot_line] # Update only what changed
   return []
 
