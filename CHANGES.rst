@@ -36,6 +36,10 @@ AudioLazy changes history
   - Playing/synthesizing "Ode to Joy" from its "score" written as code
   - All recording/playback examples now prepared for using both the default
     API and receiving it as an argument like "jack" or "alsa"
+  - Realtime STFT (Short Time Fourier Transform) effects:
+
+    * Robotize
+    * "Roll" the magnitude spectrum while keeping the phase
 
 + general:
 
