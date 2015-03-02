@@ -30,7 +30,11 @@ AudioLazy changes history
   - Matplotlib animated plot with mic input data (also works via jack!)
   - Perceptual experiment with butterworth filters (Scipy) applied to white
     noise (based on the Demonstrations to Auditory Scene Analysis)
-  - ISO/FDIS 226:2003 equal loudness contour curves plotting
+  - Psychoacoustics using ISO/FDIS 226:2003
+
+    * Equal loudness contour curves plotting
+    * Constant phon chirp playing
+
   - Partial recreation of the "Windows and Figures of Merit" F. Harris
     comparison table and window plots
   - Playing/synthesizing "Ode to Joy" from its "score" written as code
