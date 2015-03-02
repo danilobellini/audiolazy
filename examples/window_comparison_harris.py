@@ -299,4 +299,5 @@ Windows and Figures of Merit
 for row in rst_table(table, schema.values()):
   print(row) # Some values aren't the same to the paper, though
 
+plt.ioff()
 plt.show()

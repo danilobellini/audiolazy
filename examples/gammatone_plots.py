@@ -82,4 +82,5 @@ for graph in fig1.axes + fig2.axes:
 fig1.tight_layout()
 fig2.tight_layout()
 
+plt.ioff()
 plt.show()

@@ -75,4 +75,5 @@ pylab.ylabel("Sound Pressure (dB)")
 
 # Finish
 pylab.tight_layout()
+pylab.ioff()
 pylab.show()

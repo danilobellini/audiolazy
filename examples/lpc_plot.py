@@ -37,4 +37,5 @@ gain = 1e-2 # Gain just for alignment with DFT
 # - If blk is given, plots the block DFT together with the filter
 # - If rate is given, shows the frequency range in Hz
 (gain / filt).plot(blk=data, rate=rate, samples=1024, unwrap=False)
+pylab.ioff()
 pylab.show()

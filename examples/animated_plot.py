@@ -107,6 +107,7 @@ def animate(idx):
 
 # Animate! (assignment to anim is needed to avoid garbage collecting it)
 anim = FuncAnimation(fig, animate, init_func=init, interval=10, blit=True)
+plt.ioff()
 plt.show() # Blocking
 
 # Stop the recording thread after closing the window
