@@ -95,7 +95,7 @@ class TestZFilterNumpyScipySympy(object):
     symbol_tuple = symbols("a b c d")
     a, b, c, d = symbol_tuple
     ac, bc, cc = xmap(repeat, symbol_tuple[:-1]) # Coeffs (Stream instances)
-    zero = a - a # Symbolic zero
+    zero = sympy.S.Zero # Symbolic zero
 
     filt = (ac * z ** -1 + bc * z ** -2) / (1 + cc * z ** -2)
     sig = Stream([d] * 5, repeat(zero))
@@ -126,8 +126,7 @@ class TestZFilterNumpyScipySympy(object):
     assert another_result == another_expected
 
   def test_symbolic_matrices_sig_and_coeffs_state_space_filters(self):
-    # Create symbols k[0], k[1], k[2], ..., k[30]
-    k = symbols(" ".join("k{}".format(idx) for idx in range(31)))
+    k = symbols("k:31") # Symbols k[0], k[1], k[2], ..., k[30]
 
     # Matrices for coeffs
     am = [                  # Internal state delta matrix
@@ -147,7 +146,7 @@ class TestZFilterNumpyScipySympy(object):
                  [k[26], k[27], k[28], k[29]]])
 
     # Zero is needed, not only the symbol but the matrices
-    zero = k[30] - k[30]
+    zero = sympy.S.Zero
     zero_state = Matrix([[zero]] * 2)
     zero_input = Matrix([[zero]] * 4)
     zero_kwargs = dict(zero=zero_input, memory=repeat(zero_state))
@@ -179,7 +178,8 @@ class TestZFilterNumpyScipySympy(object):
       expected.append(cm * internal[-1] + dm * ui)
       internal.append(am[idx % 4] * internal[-1] + bm * ui)
     size = len(expected)
-    assert result.peek(size) == expected
+    assertion = result.peek(size) # Goes faster with py.test (don't generate
+    assert assertion              # "text"/string representations)
 
   def test_symbolic_fixed_matrices_sig_and_coeffs_state_space_filters(self):
     k = symbols("k")
@@ -200,7 +200,7 @@ class TestZFilterNumpyScipySympy(object):
     df = Matrix([[s2, 0, 0, 0], [0, s2, 0, 0], [0, 0, s2, 0]])
 
     # Zero is needed, not only the symbol but the matrices
-    zero = k - k
+    zero = sympy.S.Zero
     zero_state = Matrix([[zero]] * 2)
     zero_input = Matrix([[zero]] * 4)
     zero_kwargs = dict(zero=zero_input, memory=repeat(zero_state))
