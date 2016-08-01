@@ -32,6 +32,11 @@ from ..lazy_core import (OpMethod, AbstractOperatorOverloaderMeta,
                          MultiKeyDict, StrategyDict)
 from ..lazy_compat import meta
 
+if hasattr(operator, "matmul"):
+  HAS_REV = sorted("+ - * @ / // % ** >> << & | ^".split())
+else:
+  HAS_REV = sorted("+ - * / // % ** >> << & | ^".split())
+
 
 class TestOpMethod(object):
 
@@ -56,18 +61,18 @@ class TestOpMethod(object):
       assert ("unknown" in str(exc.value)) is (name != "div")
 
   def test_get_reversed(self):
-    has_rev = sorted("+ - * / // % ** >> << & | ^".split())
     result_all_rev = list(OpMethod.get("r"))
     result_no_rev = list(OpMethod.get("all", without="r"))
     result_all = list(OpMethod.get("all"))
-    assert len(result_all_rev) == len(has_rev)
-    assert has_rev == sorted(op.symbol for op in result_all_rev)
-    assert not any(el in has_rev for el in result_no_rev)
+    assert len(result_all_rev) == len(HAS_REV)
+    assert HAS_REV == sorted(op.symbol for op in result_all_rev)
+    assert not any(el in HAS_REV for el in result_no_rev)
     assert set(result_no_rev).union(set(result_all_rev)) == set(result_all)
 
   @p(("symbol", "name"), {"+": "add",
                           "-": "sub",
                           "*": "mul",
+                          "@": "matmul",
                           "/": "truediv",
                           "//": "floordiv",
                           "%": "mod",
@@ -85,11 +90,13 @@ class TestOpMethod(object):
                           ">": "gt",
                           ">=": "ge"}.items())
   def test_get_by_all_criteria_for_one_symbol(self, symbol, name):
+    if symbol == "@" and not hasattr(operator, "matmul"):
+      pytest.skip("Matrix multiplication operator '@' requires Python 3.5+")
+
     # Useful constants
     third_name = {"+": "pos",
                   "-": "neg"}
     without_binary = ["~"]
-    has_rev = "+ - * / // % ** >> << & | ^".split()
 
     # Search by symbol
     result = list(OpMethod.get(symbol))
@@ -104,7 +111,7 @@ class TestOpMethod(object):
     assert not result[0].rev
     func = getattr(operator, name.join(["__", "__"]))
     assert result[0].func is func
-    if symbol in has_rev:
+    if symbol in HAS_REV:
       assert result[1].name == "r" + name
       assert result[1].arity == 2
       assert result[1].rev
@@ -120,7 +127,7 @@ class TestOpMethod(object):
     # Length
     if symbol in third_name:
       assert len(result) == 3
-    elif symbol in has_rev:
+    elif symbol in HAS_REV:
       assert len(result) == 2
     else:
       assert len(result) == 1

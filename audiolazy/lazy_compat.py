@@ -55,6 +55,7 @@ INT_TYPES = (int, getattr(builtins, "long", None)) if PYTHON2 else (int,)
 SOME_GEN_TYPES = (types.GeneratorType, xrange(0).__class__, enumerate, xzip,
                   xzip_longest, xmap, xfilter)
 NEXT_NAME = "next" if PYTHON2 else "__next__"
+HAS_MATMUL = sys.version_info >= (3,5)
 
 
 def iteritems(dictionary):

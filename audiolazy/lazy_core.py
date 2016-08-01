@@ -27,7 +27,7 @@ from abc import ABCMeta
 import itertools as it
 
 # Audiolazy internal imports
-from .lazy_compat import STR_TYPES, iteritems, itervalues
+from .lazy_compat import STR_TYPES, HAS_MATMUL, iteritems, itervalues
 
 __all__ = ["OpMethod", "AbstractOperatorOverloaderMeta", "MultiKeyDict",
            "StrategyDict"]
@@ -101,14 +101,14 @@ class OpMethod(object):
     >>> list(OpMethod.get("*")) # By symbol
     [<mul operator method ('*' symbol)>, <rmul operator method ('*' symbol)>]
     >>> OpMethod.get(">>")
-    <generator object get at 0x...>
+    <generator object ... at 0x...>
     >>> len(list(_)) # Found __rshift__ and __rrshift__, as a generator
     2
     >>> next(OpMethod.get("__add__")).func(2, 3) # By name, finds 2 + 3
     5
     >>> next(OpMethod.get("rsub")).symbol # Name is without underscores
     '-'
-    >>> mod = list(OpMethod.get("%"))
+    >>> mod = list(OpMethod.get("%%"))
     >>> mod[0].rev # Is it reversed? The __mod__ isn't.
     False
     >>> mod[1].rev # But the __rmod__ is!
@@ -131,12 +131,12 @@ class OpMethod(object):
     2
     >>> list(OpMethod.get(["+", "&"], without=[operator.add, "r"]))
     [<pos operator method ('+' symbol)>, <and operator method ('&' symbol)>]
-    >>> len(set(OpMethod.get(2, without=["- + *", "%", "r"])))
-    14
+    >>> len(set(OpMethod.get(2, without=["- + *", "%%", "r"])))
+    %s
     >>> len(set(OpMethod.get("all"))) # How many operator methods there are?
-    33
+    %s
 
-    """
+    """ % (15, 35) if HAS_MATMUL else (14, 33)
     ignore = set() if without is None else set(cls.get(without))
     if key is None:
       return
@@ -201,8 +201,10 @@ class OpMethod(object):
       != ne
       > gt
       >= ge
-    """
-    for op_line in op_symbols.strip().splitlines():
+    """.strip().splitlines()
+    if HAS_MATMUL:
+      op_symbols.append("@ matmul rmatmul")
+    for op_line in op_symbols:
       symbol, names = op_line.split(None, 1)
       for name in names.split():
         cls._insert(name, symbol)

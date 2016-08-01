@@ -47,7 +47,7 @@ AudioLazy changes history
 
 + general:
 
-  - Tox for testing with CPython 2.7, 3.2, 3.3 and 3.4, as well as PyPy
+  - Tox for testing with CPython 2.7, CPython 3.2~3.6 and PyPy
   - Continuous integration wih Travis CI and Coveralls
   - New ``_internals.py`` module to avoid exposing package internals together
     with the API, which also allowed the new simplified ``__init__.py``
@@ -111,6 +111,7 @@ AudioLazy changes history
 
 + lazy_core:
 
+  - Add support to the new ``@`` matrix multiplication operator
   - ``OpMethod.get()`` now accepts numbers ``"1"`` and ``"2"`` as strings for
     unary and binary query for operators, and ``"all"`` is the new default, so
     ``OpMethod.get(without="2 ~")`` would get all operators but the [reversed
