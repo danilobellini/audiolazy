@@ -19,14 +19,55 @@
 AudioLazy
 =========
 
-.. image:: https://travis-ci.org/danilobellini/audiolazy.svg?branch=master
+.. list-table::
+  :stub-columns: 1
+
+  * - Development
+    - |travis| |coveralls|
+  * - Last release
+    - |v| |pyversions| |implementation|
+  * - PyPI status
+    - |format| |status| |l|
+
+.. |travis| image::
+  https://img.shields.io/travis/danilobellini/audiolazy/master.svg
   :target: https://travis-ci.org/danilobellini/audiolazy
-.. image:: https://coveralls.io/repos/danilobellini/audiolazy/badge.png
+  :alt: Travis CI builds
+
+.. |coveralls| image::
+  https://img.shields.io/coveralls/danilobellini/audiolazy/master.svg
   :target: https://coveralls.io/r/danilobellini/audiolazy
-.. image:: https://pypip.in/d/audiolazy/badge.png
-  :target: https://pypi.python.org/pypi/audiolazy/
-.. image:: https://pypip.in/v/audiolazy/badge.png
-  :target: https://pypi.python.org/pypi/audiolazy/
+  :alt: Coveralls coverage report
+
+.. |v| image::
+  https://img.shields.io/pypi/v/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: Last stable version (PyPI)
+
+.. |pyversions| image::
+  https://img.shields.io/pypi/pyversions/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: Python versions (PyPI)
+
+.. |implementation| image::
+  https://img.shields.io/pypi/implementation/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: Python implementations (PyPI)
+
+.. |format| image::
+  https://img.shields.io/pypi/format/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: Distribution format (PyPI)
+
+.. |status| image::
+  https://img.shields.io/pypi/status/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: Project status (PyPI)
+
+.. |l| image::
+  https://img.shields.io/pypi/l/audiolazy.svg
+  :target: https://pypi.python.org/pypi/audiolazy
+  :alt: License (PyPI)
 
 Real-Time Expressive Digital Signal Processing (DSP) Package for Python!
 

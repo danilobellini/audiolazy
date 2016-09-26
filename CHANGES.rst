@@ -19,7 +19,7 @@
 AudioLazy changes history
 -------------------------
 
-*** Development ***
+*** Version 0.6 (Examples, STFT, phon2dB, tox, CI, wave file) ***
 
 + examples:
 

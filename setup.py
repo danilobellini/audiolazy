@@ -84,8 +84,11 @@ def read_description(readme_file, changes_file, images_url):
   updater = image_path_processor_factory(images_url)
   readme_data = read_rst_and_process(readme_file, updater)
   changes_data = read_rst_and_process(changes_file, updater)
-  title, pins, descr, sections_and_ending = readme_data.split("\n\n", 3)
-  sections = sections_and_ending.rsplit("----", 1)[0]
+  parts = readme_data.split("\n\n", 12)
+  title = parts[0]
+  pins = "\n\n".join(parts[1:-2])
+  descr = parts[-2]
+  sections = parts[-1].rsplit("----", 1)[0]
   long_descr_blocks = ["", title, "", pins, "", sections, "", changes_data]
   return descr, "\n".join(block.strip() for block in long_descr_blocks)
 

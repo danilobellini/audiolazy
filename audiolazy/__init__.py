@@ -73,7 +73,7 @@ __modules__, __all__, __doc__ = \
 exec(("from .{} import *\n" * len(__modules__)).format(*__modules__))
 
 # Metadata (used by setup.py); Should use only local assignments!
-__version__ = "0.1dev"
+__version__ = "0.6"
 __author__ = "Danilo de Jesus da Silva Bellini"
 __author_email__  = "danilo [dot] bellini [at] gmail [dot] com"
 __url__ = "http://github.com/danilobellini/audiolazy"
