@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of AudioLazy, the signal processing Python package.
-# Copyright (C) 2012-2013 Danilo de Jesus da Silva Bellini
+# Copyright (C) 2012-2016 Danilo de Jesus da Silva Bellini
 #
 # AudioLazy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,12 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
-# Created on Fri Feb 08 2013
-# danilo [dot] bellini [at] gmail [dot] com
 """
 AudioLazy documentation configuration file for Sphinx
-
 """
 
 import sys, os
@@ -296,7 +292,7 @@ master_doc = "index"
 # General information about the project.
 project = "AudioLazy" # Typed just to keep the UpperCamelCase
 title = " ".join([project, "documentation"])
-year = "2012-2013" # Not used directly by Sphinx
+year = "2012-2016" # Not used directly by Sphinx
 author = audiolazy.__author__ # Not used directly by Sphinx
 copyright = ", ".join([year, author])
 version = audiolazy.__version__

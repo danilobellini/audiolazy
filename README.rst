@@ -1,6 +1,6 @@
 ..
   This file is part of AudioLazy, the signal processing Python package.
-  Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
+  Copyright (C) 2012-2016 Danilo de Jesus da Silva Bellini
 
   AudioLazy is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -13,8 +13,6 @@
 
   You should have received a copy of the GNU General Public License
   along with this program. If not, see <http://www.gnu.org/licenses/>.
-
-  danilo [dot] bellini [at] gmail [dot] com
 
 AudioLazy
 =========
@@ -429,6 +427,6 @@ both Python 2 and 3 unless they need something not yet available for Python 3
 
 ----
 
-Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
+Copyright (C) 2012-2016 Danilo de Jesus da Silva Bellini
 
 License is GPLv3. See COPYING.txt for more details.

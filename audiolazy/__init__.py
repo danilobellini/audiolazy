@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # This file is part of AudioLazy, the signal processing Python package.
-# Copyright (C) 2012-2014 Danilo de Jesus da Silva Bellini
+# Copyright (C) 2012-2016 Danilo de Jesus da Silva Bellini
 #
 # AudioLazy is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,9 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
-#
-# Created on Thu Jul 19 2012
-# danilo [dot] bellini [at] gmail [dot] com
 """
 AudioLazy package
 
@@ -75,5 +72,5 @@ exec(("from .{} import *\n" * len(__modules__)).format(*__modules__))
 # Metadata (used by setup.py); Should use only local assignments!
 __version__ = "0.6"
 __author__ = "Danilo de Jesus da Silva Bellini"
-__author_email__  = "danilo [dot] bellini [at] gmail [dot] com"
+__author_email__  = "danilo.bellini@gmail.com"
 __url__ = "http://github.com/danilobellini/audiolazy"
