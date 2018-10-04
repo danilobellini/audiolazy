@@ -1319,7 +1319,7 @@ lowpass._doc_kwargs = lambda name, R=None, xtra="\n": dict(
   ----------
   cutoff :
     Cut-off frequency given in rad/sample. Should be a value (or a Stream of
-    values) ranging from :math:`0` (DC/constant level) up to :math:`\pi`
+    values) ranging from :math:`0` (DC/constant level) up to :math:`\\pi`
     (Nyquist frequency).{cutoff_xtra}
   Returns
   -------
@@ -1347,7 +1347,7 @@ lowpass._doc_kwargs = lambda name, R=None, xtra="\n": dict(
          "Nyquist frequency (pi rad/sample)",
   cutoff_xtra = """
     It defines the filter frequency in which the squared gain is 50% the
-    input gain (i.e, when magnitude gain is :math:`\sqrt{2}/2` and power
+    input gain (i.e, when magnitude gain is :math:`\\sqrt{2}/2` and power
     gain is about 3.0103 dB).
   """ if R is None else """
     This value is used to find the pole amplitude (radius)
@@ -1421,7 +1421,7 @@ def highpass(cutoff):
 @format_docstring(**lowpass._doc_kwargs("lowpass.pole_exp",
   R = "e^{-cutoff}",
   xtra = """
-  Cut-off frequency is unreliable outside the :math:`[0; \pi/6]` range.
+  Cut-off frequency is unreliable outside the :math:`[0; \\pi/6]` range.
   """,
 ))
 def lowpass(cutoff):
@@ -1435,9 +1435,9 @@ def lowpass(cutoff):
 
 @highpass.strategy("pole_exp")
 @format_docstring(**lowpass._doc_kwargs("highpass.pole_exp",
-  R = "e^{cutoff - \pi}",
+  R = "e^{cutoff - \\pi}",
   xtra = """
-  Cut-off frequency is unreliable outside the :math:`[5\pi/6; \pi]` range.
+  Cut-off frequency is unreliable outside the :math:`[5\\pi/6; \\pi]` range.
   """,
 ))
 def highpass(cutoff):
@@ -1452,9 +1452,9 @@ def highpass(cutoff):
 
 @lowpass.strategy("z_exp")
 @format_docstring(**lowpass._doc_kwargs("lowpass.z_exp",
-  R = "e^{cutoff - \pi}",
+  R = "e^{cutoff - \\pi}",
   xtra = """
-  Cut-off frequency is unreliable outside the :math:`[5\pi/6; \pi]` range.
+  Cut-off frequency is unreliable outside the :math:`[5\\pi/6; \\pi]` range.
   """,
 ))
 def lowpass(cutoff):
@@ -1472,7 +1472,7 @@ def lowpass(cutoff):
 @format_docstring(**lowpass._doc_kwargs("highpass.z_exp",
   R = "e^{-cutoff}",
   xtra = """
-  Cut-off frequency is unreliable outside the :math:`[0; \pi/6]` range.
+  Cut-off frequency is unreliable outside the :math:`[0; \\pi/6]` range.
   """,
 ))
 def highpass(cutoff):

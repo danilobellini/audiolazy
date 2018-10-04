@@ -56,7 +56,7 @@ except ImportError:
   from _pytest.doctest import DoctestItem
   import pytest, re
 
-  nn_regex = re.compile(".*#[^#]*\s*needs?\s*numpy\s*$", re.IGNORECASE)
+  nn_regex = re.compile(r".*#[^#]*\s*needs?\s*numpy\s*$", re.IGNORECASE)
 
   def pytest_runtest_setup(item):
     """

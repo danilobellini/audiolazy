@@ -83,7 +83,7 @@ def float_str(value, order="pprpr", size=[4, 5, 3, 6, 4],
   Pretty string from int/float.
 
   "Almost" automatic string formatter for integer fractions, fractions of
-  :math:`\pi` and float numbers with small number of digits.
+  :math:`\\pi` and float numbers with small number of digits.
 
   Outputs a representation among ``float_str.pi``, ``float_str.frac`` (without
   a symbol) strategies, as well as the usual float representation. The
@@ -108,7 +108,7 @@ def float_str(value, order="pprpr", size=[4, 5, 3, 6, 4],
     The max size allowed for each formatting in the ``order``, respectively.
     Defaults to ``[4, 5, 3, 6, 4]``.
   after :
-    Chooses the place where the :math:`\pi` symbol should appear, when such
+    Chooses the place where the :math:`\\pi` symbol should appear, when such
     formatter apply. If ``True``, that's the end of the string. If ``False``,
     that's in between the numerator and the denominator, before the slash.
     Defaults to ``False``.
@@ -229,7 +229,7 @@ def float_str(value, symbol_str="", symbol_value=1, after=False,
 @float_str.strategy("pi")
 def float_str(value, after=False, max_denominator=1000000):
   """
-  String formatter for fractions of :math:`\pi`.
+  String formatter for fractions of :math:`\\pi`.
 
   Alike the rational_formatter, but fixed to the symbol string
   ``float_str.pi_symbol`` and value ``float_str.pi_value`` (both can be
@@ -329,7 +329,7 @@ def small_doc(obj, indent="", max_width=80):
 
   # No docstring
   elif (not obj.__doc__) or (obj.__doc__.strip() == ""):
-    data = "\ * * * * ...no docstring... * * * * \ "
+    data = "\\ * * * * ...no docstring... * * * * \\ "
 
   # Docstring
   else:

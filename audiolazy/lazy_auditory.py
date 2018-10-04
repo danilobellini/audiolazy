@@ -156,7 +156,7 @@ gammatone._doc_template = """
   ]),
 )
 def gammatone(freq, bandwidth, phase=0, eta=4):
-  """
+  r"""
     ``Bellini, D. J. S. "AudioLazy: Processamento digital de sinais
     expressivo e em tempo real", IME-USP, Mastership Thesis, 2013.``
 

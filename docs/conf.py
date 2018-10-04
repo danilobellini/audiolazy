@@ -173,7 +173,7 @@ def pre_processor(app, what, name, obj, options, lines,
             param = "[{0}]".format(param)
         while "," in param:
           fparam, param = param.split(",", 1)
-          result.append(":param {0}: {1}".format(fparam.strip(), "\.\.\."))
+          result.append(":param {0}: {1}".format(fparam.strip(), r"\.\.\."))
         result.append(":param {0}: {1}".format(param.strip(), expl.strip()))
 
     elif nlower == "returns":

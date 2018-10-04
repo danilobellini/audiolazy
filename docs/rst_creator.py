@@ -110,7 +110,7 @@ rfc_copyright = ("\n  ".join(el.strip() for el in rfc_copyright
 #
 readme_names = [] # Keep the file names
 for name, data in gen_blocks:
-  fname = "".join(re.findall("[\w ]", name)).replace(" ", "_").lower()
+  fname = "".join(re.findall(r"[\w ]", name)).replace(" ", "_").lower()
 
   # Image location should be corrected before
   img_string = ".. image:: "
@@ -187,7 +187,7 @@ new source codes, however stated in a far more precise way by experts in that
 kind of law text. That's at the same time far from the technical language from
 engineering, maths and computer science, and more details would be beyond the
 needs of this document. You should find the following information in all
-Python (*\*.py*) source code files and also in all reStructuredText (*\*.rst*)
+Python (*\\*.py*) source code files and also in all reStructuredText (*\\*.rst*)
 files:
 
   ::

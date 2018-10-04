@@ -653,11 +653,11 @@ def unwrap(sig, max_delta=pi, step=2*pi):
   sig :
     An iterable seen as an input signal.
   max_delta :
-    Maximum value of :math:`\Delta = sig_i - sig_{i-1}` to keep output
-    without another minimizing step change. Defaults to :math:`\pi`.
+    Maximum value of :math:`\\Delta = sig_i - sig_{i-1}` to keep output
+    without another minimizing step change. Defaults to :math:`\\pi`.
   step :
     The change in order to minimize the delta is an integer multiple of this
-    value. Defaults to :math:`2 . \pi`.
+    value. Defaults to :math:`2 . \\pi`.
 
   Returns
   -------
@@ -1027,7 +1027,7 @@ def stft(func=None, **kwparams):
   a DC-only signal keeping original energy/integral:
 
   >>> result.take()
-  array([ 0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5,  0.5])
+  array([ 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
   >>> result.take() # From [0, 0, -4, 0, 0] to [-4, 0, 0, 0, 0]
   array([-0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5, -0.5])
 
