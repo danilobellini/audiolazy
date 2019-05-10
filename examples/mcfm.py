@@ -145,7 +145,8 @@ class InteractiveFrame(McFMFrame):
                                   self._click_frame_y) / height > .5 else -1
 
     # "Polling watcher" for mouse left button while it's kept down
-    if ms.leftDown:
+    if (wx.__version__ >= "3" and ms.leftIsDown) or \
+       (wx.__version__ <  "3" and ms.leftDown):
       if self._last_ms != (ms.x, ms.y): # Moved?
         self._last_ms = (ms.x, ms.y)
         delta_x = ms.x - self._click_ms_x
