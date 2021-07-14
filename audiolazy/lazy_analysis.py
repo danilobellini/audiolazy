@@ -525,7 +525,7 @@ def maverage(size):
   Moving average
 
   This is the only strategy that uses a ``collections.deque`` object
-  instead of a ZFilter instance. Fast, but without extra capabilites such
+  instead of a ZFilter instance. Fast, but without extra capabilities such
   as a frequency response plotting method.
 
   Parameters
