@@ -18,7 +18,6 @@ AudioLazy testing sub-package
 """
 
 import pytest
-from _pytest.skipping import XFailed
 import types
 from importlib import import_module, sys
 
@@ -72,7 +71,7 @@ class XFailerModule(types.ModuleType):
       if isinstance(import_module(name.split(".", 1)[0]), XFailerModule):
         raise ImportError
       import_module(name)
-    except (ImportError, XFailed):
+    except (ImportError, pytest.xfail.Exception):
       sys.modules[name] = self
       self.__name__ = name
 
