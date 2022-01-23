@@ -23,6 +23,11 @@ AudioLazy changes history
 
   - Make "modulo counter FM" example compatible with wxPython 3+
 
++ general:
+
+  - Remove Travis CI configuration as it's no longer available
+    for open source projects
+
 *** Version 0.6 (Examples, STFT, phon2dB, tox, CI, wave file) ***
 
 + examples:
