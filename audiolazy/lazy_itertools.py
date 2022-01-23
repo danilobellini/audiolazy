@@ -18,7 +18,10 @@ Itertools module "decorated" replica, where all outputs are Stream instances
 """
 
 import itertools as it
-from collections import Iterator
+try:
+  from collections.abc import Iterator
+except ImportError:
+  from collections import Iterator
 
 # Audiolazy internal imports
 from .lazy_stream import tostream, Stream

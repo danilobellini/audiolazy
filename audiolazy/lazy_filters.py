@@ -21,7 +21,11 @@ from __future__ import division
 
 import operator
 from cmath import exp as complex_exp
-from collections import Iterable, OrderedDict
+from collections import OrderedDict
+try:
+  from collections.abc import Iterable
+except ImportError:
+  from collections import Iterable
 import itertools as it
 from functools import reduce
 

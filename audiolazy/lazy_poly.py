@@ -20,7 +20,11 @@ Polynomial model and Waring-Lagrange polynomial interpolator
 from __future__ import division
 
 import operator
-from collections import Iterable, deque, OrderedDict
+from collections import deque, OrderedDict
+try:
+  from collections.abc import Iterable
+except ImportError:
+  from collections import Iterable
 from functools import reduce
 import itertools as it
 

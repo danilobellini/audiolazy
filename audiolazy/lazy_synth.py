@@ -18,7 +18,10 @@ Simple audio/stream synthesis module
 """
 
 from math import sin, pi, ceil, isinf
-import collections
+try:
+  from collections.abc import Iterable
+except ImportError:
+  from collections import Iterable
 import random
 
 # Audiolazy internal imports
@@ -46,11 +49,11 @@ def modulo_counter(start=0., modulo=256., step=1.):
   of this counter happen when there's no more data in one of those inputs.
   to continue iteration.
   """
-  if isinstance(start, collections.Iterable):
+  if isinstance(start, Iterable):
     lastp = 0.
     c = 0.
-    if isinstance(step, collections.Iterable):
-      if isinstance(modulo, collections.Iterable):
+    if isinstance(step, Iterable):
+      if isinstance(modulo, Iterable):
         for p, m, s in xzip(start, modulo, step):
           c += p - lastp
           c = c % m % m
@@ -65,7 +68,7 @@ def modulo_counter(start=0., modulo=256., step=1.):
           c += s
           lastp = p
     else:
-      if isinstance(modulo, collections.Iterable):
+      if isinstance(modulo, Iterable):
         for p, m in xzip(start, modulo):
           c += p - lastp
           c = c % m % m
@@ -97,8 +100,8 @@ def modulo_counter(start=0., modulo=256., step=1.):
               lastp = p
   else:
     c = start
-    if isinstance(step, collections.Iterable):
-      if isinstance(modulo, collections.Iterable):
+    if isinstance(step, Iterable):
+      if isinstance(modulo, Iterable):
         for m, s in xzip(modulo, step):
           c = c % m % m
           yield c
@@ -109,7 +112,7 @@ def modulo_counter(start=0., modulo=256., step=1.):
           yield c
           c += s
     else:
-      if isinstance(modulo, collections.Iterable):
+      if isinstance(modulo, Iterable):
         for m in modulo:
           c = c % m % m
           yield c
@@ -272,7 +275,7 @@ def attack(a, d, s):
 
   """
   # Configure sustain possibilities
-  if isinstance(s, collections.Iterable):
+  if isinstance(s, Iterable):
     it_s = iter(s)
     s = next(it_s)
   else:

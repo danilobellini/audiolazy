@@ -18,7 +18,11 @@ Stream class definition module
 """
 
 import itertools as it
-from collections import Iterable, deque
+from collections import deque
+try:
+  from collections.abc import Iterable
+except ImportError:
+  from collections import Iterable
 from functools import wraps
 import warnings
 from math import isinf

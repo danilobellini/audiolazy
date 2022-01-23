@@ -20,7 +20,11 @@ Audio analysis and block processing module
 from __future__ import division
 
 from math import sin, cos, pi
-from collections import deque, Sequence, Iterable
+from collections import deque
+try:
+  from collections.abc import Iterable, Sequence
+except ImportError:
+  from collections import Iterable, Sequence
 from functools import wraps, reduce
 from itertools import chain
 import operator

@@ -17,7 +17,11 @@
 Common miscellanous tools and constants for general use
 """
 
-from collections import deque, Iterable
+from collections import deque
+try:
+  from collections.abc import Iterable
+except ImportError:
+  from collections import Iterable
 from functools import wraps
 import itertools as it
 import sys
