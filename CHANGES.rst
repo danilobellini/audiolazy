@@ -27,6 +27,7 @@ AudioLazy changes history
 
   - Remove Travis CI configuration as it's no longer available
     for open source projects
+  - Update tox for testing with CPython 2.7, CPython 3.2~3.10, PyPy and PyPy 3
 
 *** Version 0.6 (Examples, STFT, phon2dB, tox, CI, wave file) ***
 
