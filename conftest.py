@@ -51,7 +51,11 @@ def pytest_configure(config):
 
 
 try:
-  import numpy
+  import numpy as np
+
+  if np is not None and np.__version__ >= "1.14":
+    np.set_printoptions(legacy="1.13")
+
 except ImportError:
   from _pytest.doctest import DoctestItem
   import pytest, re
