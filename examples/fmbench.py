@@ -81,10 +81,10 @@ rate = 44100
 dur = 5 * rate
 sustain_level = .8
 # The np.linspace isn't in numpypy yet; it uses float64
-attack = np.linspace(0., 1., num=np.round(20e-3 * rate), endpoint=False)
-decay = np.linspace(1., sustain_level, num=np.round(30e-3 * rate),
+attack = np.linspace(0., 1., num=int(np.round(20e-3 * rate)), endpoint=False)
+decay = np.linspace(1., sustain_level, num=int(np.round(30e-3 * rate)),
                     endpoint=False)
-release = np.linspace(sustain_level, 0., num=np.round(50e-3 * rate),
+release = np.linspace(sustain_level, 0., num=int(np.round(50e-3 * rate)),
                       endpoint=False)
 sustain_dur = dur - len(attack) - len(decay) - len(release)
 sustain = sustain_level * np.ones(sustain_dur)
