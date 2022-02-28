@@ -568,7 +568,7 @@ def resample(sig, old=1, new=1, order=3, zero=0.):
   Hint
   ----
   The time step can also be time-varying, although that's certainly difficult
-  to synchonize (one sample is needed for each output sample). Perhaps the
+  to synchronize (one sample is needed for each output sample). Perhaps the
   best approach for this case would be a ControlStream keeping the desired
   value at any time.
 

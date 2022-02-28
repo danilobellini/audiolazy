@@ -37,9 +37,9 @@ class OpMethod(object):
   """
   Internal class to represent an operator method metadata.
 
-  You can acess operator methods directly by using the OpMethod.get() class
+  You can access operator methods directly by using the OpMethod.get() class
   method, which always returns a generator from a query.
-  This might be helpful if you need to acess the operator module from
+  This might be helpful if you need to access the operator module from
   symbols. Given an instance "op", it has the following data:
 
   ========= ===========================================================
