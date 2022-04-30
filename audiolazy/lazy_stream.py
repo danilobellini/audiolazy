@@ -129,7 +129,7 @@ class Stream(meta(Iterable, metaclass=StreamMeta)):
   In that example, after declaring z as function of x and y, you should
   not use x and y anymore. Use the thub() or the tee() functions, or
   perhaps the x.tee() or x.copy() Stream methods instead, if you need
-  to use x again otherwhere.
+  to use x again elsewhere.
 
   """
   __ignored_classes__ = tuple()

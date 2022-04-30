@@ -529,7 +529,7 @@ def maverage(size):
   Moving average
 
   This is the only strategy that uses a ``collections.deque`` object
-  instead of a ZFilter instance. Fast, but without extra capabilites such
+  instead of a ZFilter instance. Fast, but without extra capabilities such
   as a frequency response plotting method.
 
   Parameters
@@ -875,7 +875,7 @@ def stft(func=None, **kwparams):
   * Directly as a signal processor builder, wrapping a spectrum block/grain
     processor function;
   * Directly as a decorator to a block processor;
-  * Called without the ``func`` parameter for a partial evalution style
+  * Called without the ``func`` parameter for a partial evaluation style
     changing the defaults.
 
   See the examples below for more information about these use cases.

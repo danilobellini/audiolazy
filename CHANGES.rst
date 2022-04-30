@@ -58,7 +58,7 @@ AudioLazy changes history
 + general:
 
   - Tox for testing with CPython 2.7, CPython 3.2~3.6 and PyPy
-  - Continuous integration wih Travis CI and Coveralls
+  - Continuous integration with Travis CI and Coveralls
   - New ``_internals.py`` module to avoid exposing package internals together
     with the API, which also allowed the new simplified ``__init__.py``
   - Renewed setup.py in both its internals (e.g. using AST instead of

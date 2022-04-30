@@ -37,9 +37,9 @@ class OpMethod(object):
   """
   Internal class to represent an operator method metadata.
 
-  You can acess operator methods directly by using the OpMethod.get() class
+  You can access operator methods directly by using the OpMethod.get() class
   method, which always returns a generator from a query.
-  This might be helpful if you need to acess the operator module from
+  This might be helpful if you need to access the operator module from
   symbols. Given an instance "op", it has the following data:
 
   ========= ===========================================================
@@ -221,7 +221,7 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
   """
   Abstract metaclass for classes with massively overloaded operators.
 
-  Dunders dont't appear within "getattr" nor "getattribute", and they should
+  Dunders don't appear within "getattr" nor "getattribute", and they should
   be inside the class dictionary, not the class instance one, otherwise they
   won't be found by the usual mechanism. That's why we have to be eager here.
   You need a concrete class inherited from this one, and the "abstract"
@@ -231,7 +231,7 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     query inputs, see that method docstring for more information and examples.
     Its a good idea to tell all operators that will be used, including the
     ones that should be defined in the instance namespace, since the
-    metaclass will enforce their existance without overwriting.
+    metaclass will enforce their existence without overwriting.
 
     These should be overridden by a string or a list with all operator names,
     symbols or operator functions (from the `operator` module) to be
@@ -295,7 +295,7 @@ class AbstractOperatorOverloaderMeta(ABCMeta):
     return cls
 
   # The 3 methods below should be overloaded, but they shouldn't be
-  # "abstractmethod" since it's unuseful (and perhaps undesirable)
+  # "abstractmethod" since it's useless (and perhaps undesirable)
   # when there could be only one type of operator being massively overloaded.
   def __binary__(cls, op):
     """
