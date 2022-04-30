@@ -34,8 +34,8 @@ def print_header(msg):
 
 def taylor(f, n=2, **kwargs):
   """
-  Taylor/Mclaurin polynomial aproximation for the given function.
-  The ``n`` (default 2) is the amount of aproximation terms for ``f``. Other
+  Taylor/Mclaurin polynomial approximation for the given function.
+  The ``n`` (default 2) is the amount of approximation terms for ``f``. Other
   arguments are keyword-only and will be passed to the ``f.series`` method.
   """
   return sum(Stream(f.series(n=None, **kwargs)).limit(n))

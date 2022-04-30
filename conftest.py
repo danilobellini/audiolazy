@@ -41,7 +41,7 @@ def pytest_configure(config):
     for name, attr in vars(obj).items(): # We know it's a module
       if isinstance(attr, StrategyDict):
         for st in attr: # Each strategy can have a doctest
-          if st.__module__ == module_name: # Avoid stuff from otherwhere
+          if st.__module__ == module_name: # Avoid stuff from elsewhere
             sname = ".".join([module_name, name, st.__name__])
             tests.extend(old_find(self, st, name=sname, module=obj, **kwargs))
     tests.sort()

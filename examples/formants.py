@@ -86,5 +86,5 @@ with AudioIO(api=api) as player:
   gain.value = 0
   sleep(inertia_dur / s + .2) # Divide by s because here it's already
                               # expecting a value in seconds, and we don't
-                              # want ot give a value in a time-squaed unit
+                              # want to give a value in a time-squaed unit
                               # like s ** 2

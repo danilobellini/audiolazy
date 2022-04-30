@@ -43,7 +43,7 @@ def modulo_counter(start=0., modulo=256., step=1.):
   Creates a lazy endless counter stream with the given modulo, i.e., its
   values ranges from 0. to the given "modulo", somewhat equivalent to:\n
     Stream(itertools.count(start, step)) % modulo\n
-  Yet the given step can be an iterable, and doen't create unneeded big
+  Yet the given step can be an iterable, and doesn't create unneeded big
   ints. All inputs can be float. Input order remembers slice/range inputs.
   All inputs can also be iterables. If any of them is an iterable, the end
   of this counter happen when there's no more data in one of those inputs.
@@ -154,7 +154,7 @@ def line(dur, begin=0., end=1., finish=False):
     respectively.
   finish :
     Choose if ``end`` it the last to be yielded or it shouldn't be yield at
-    all. Defauts to False, which means that ``end`` won't be yield. The last
+    all. Defaults to False, which means that ``end`` won't be yield. The last
     sample won't have "end" amplitude unless finish is True, i.e., without
     explicitly saying "finish=True", the "end" input works like a "stop" range
     parameter, although it can [should] be a float. This is so to help
@@ -167,7 +167,7 @@ def line(dur, begin=0., end=1., finish=False):
   Examples
   --------
   With ``finish = True``, it works just like NumPy ``np.linspace``, besides
-  argument order and lazyness:
+  argument order and laziness:
 
   >>> import numpy as np # This test needs Numpy
   >>> np.linspace(.2, .7, 6)

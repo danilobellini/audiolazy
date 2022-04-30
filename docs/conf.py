@@ -198,7 +198,7 @@ def pre_processor(app, what, name, obj, options, lines,
         else:
           result.append("  " + el)
 
-    else: # Unkown block name, perhaps the starting one (empty)
+    else: # Unknown block name, perhaps the starting one (empty)
       result.extend(blk)
 
     # Skip a line after each block
@@ -309,7 +309,7 @@ else:
   release = version
 
 # Get "today" using the last file modification date
-# WARNING: Be careful with git clone, clonning date will be "today"
+# WARNING: Be careful with git clone, cloning date will be "today"
 install_path = audiolazy.__path__[0]
 installed_nfile = newest_file(file_name_generator_recursive(install_path))
 installed_time = os.path.getmtime(installed_nfile)
@@ -366,7 +366,7 @@ texinfo_documents = [(
   author,
   project, # Dir menu entry
   description, # From README.rst
-  "Miscellanous", # Category
+  "Miscellaneous", # Category
 )]
 
 
