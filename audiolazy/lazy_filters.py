@@ -579,10 +579,10 @@ class LinearFilter(LinearFilterProperties):
 
     # Configure the plot limits
     border_width = .1
-    zp_plot.set_xlim(xmin=zp_plot.dataLim.xmin - border_width,
-                     xmax=zp_plot.dataLim.xmax + border_width)
-    zp_plot.set_ylim(ymin=zp_plot.dataLim.ymin - border_width,
-                     ymax=zp_plot.dataLim.ymax + border_width)
+    zp_plot.set_xlim(left=zp_plot.dataLim.xmin - border_width,
+                     right=zp_plot.dataLim.xmax + border_width)
+    zp_plot.set_ylim(bottom=zp_plot.dataLim.ymin - border_width,
+                     top=zp_plot.dataLim.ymax + border_width)
 
     # Multiple roots (or slightly same roots) detection
     def get_repeats(pairs):

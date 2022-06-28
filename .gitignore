@@ -1,0 +1,6 @@
+.project
+.pydevproject
+.settings
+audiolazy.egg-info
+build
+dist
