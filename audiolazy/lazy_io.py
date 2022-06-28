@@ -410,10 +410,10 @@ class AudioThread(threading.Thread):
     """
     # From now on, it's multi-thread. Let the force be with them.
     st = self.stream._stream
-
+    padval = 0.0 if self.dfmt in [ 'f', 'd' ] else 0
     for chunk in chunks(self.audio,
                         size=self.chunk_size*self.nchannels,
-                        dfmt=self.dfmt):
+                        dfmt=self.dfmt, padval=padval):
       #Below is a faster way to call:
       #  self.stream.write(chunk, self.chunk_size)
       self.write_stream(st, chunk, self.chunk_size, False)
